@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Gowun+Batang:wght@400;700&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#e9e7e2;font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  *{box-sizing:border-box}
+  a{color:#5b8bb5}a:hover{color:#3f6d95}
+  input,button,textarea{font-family:inherit}
+  ::-webkit-scrollbar{width:0;height:0}
+  @keyframes jz-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes jz-fade{from{opacity:0}to{opacity:1}}
+  @keyframes jz-pop{0%{transform:scale(.9);opacity:0}60%{transform:scale(1.03)}100%{transform:scale(1);opacity:1}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;gap:28px">
+  <div style="width:390px;height:844px;position:relative;border-radius:52px;background:#111113;padding:11px;box-shadow:0 40px 80px -20px rgba(0,0,0,.45),0 0 0 1px rgba(0,0,0,.5)">
+    <div style="width:100%;height:100%;border-radius:42px;overflow:hidden;background:#FAFAF9;display:flex;flex-direction:column;position:relative">
+
+      <div style="height:52px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 6px;font-size:13px;font-weight:500;color:#111">
+        <span>20:00</span>
+        <span style="display:flex;gap:5px;align-items:center;opacity:.85">
+          <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="1" fill="#111"/><rect x="4.5" y="5" width="3" height="6" rx="1" fill="#111"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" fill="#111"/><rect x="13.5" y="0" width="3" height="11" rx="1" fill="#111"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="#111" opacity=".4"/><rect x="2" y="2" width="15" height="8" rx="2" fill="#111"/><path d="M23 4v4a2.4 2.4 0 0 0 0-4z" fill="#111" opacity=".5"/></svg>
+        </span>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;overflow-x:hidden;position:relative">
+
+        <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:6px 22px 28px;animation:jz-fade .25s ease">
+            <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#fff;border-radius:22px;box-shadow:0 1px 2px rgba(17,17,19,.05),0 8px 24px -14px rgba(17,17,19,.18)">
+              <svg width="64" height="52" viewBox="0 0 64 52" fill="none" stroke="#17171a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 14c-1.5-3 .5-6 2-7.5"/><path d="M17 12.5c0-3.5 1.5-6 3.5-7"/>
+                <ellipse cx="14" cy="26" rx="10.5" ry="10" transform="rotate(-6 14 26)"/>
+                <ellipse cx="30" cy="29" rx="9" ry="8.6" transform="rotate(5 30 29)"/>
+                <ellipse cx="44" cy="30.5" rx="8" ry="7.6" transform="rotate(-4 44 30.5)"/>
+                <ellipse cx="55" cy="31" rx="6.4" ry="6" transform="rotate(7 55 31)"/>
+                <path d="M10.5 24.5c.2.6.1 1.2-.2 1.6" stroke-width="2.6"/><path d="M17.5 24c.3.6.3 1.3 0 1.8" stroke-width="2.6"/>
+                <path d="M11.5 30.5c1.8 1.6 4.4 1.5 6-.2"/>
+                <path d="M20 36.5c-.6 2.4-2 3.4-3.4 3.6"/><path d="M38 37.5c-.4 2.2-1.6 3.2-3 3.4"/><path d="M50 37c-.3 2-1.3 3-2.6 3.2"/>
+              </svg>
+              <div style="flex:1;min-width:0">
+                <div style="font-family:'Nanum Pen Script',cursive;font-size:20px;line-height:1;color:#8a8781">진지충 · 2단계</div>
+                <div style="font-size:17px;font-weight:500;letter-spacing:-.3px;color:#17171a;margin-top:3px">애벌레</div>
+                <div style="display:flex;gap:5px;margin-top:8px">
+                  <span style="font-size:11px;font-weight:500;padding:4px 9px;border-radius:9px;background:#EAF3FB;color:#3f6d95">생각 바뀜 5회 🔄</span>
+                  <span style="font-size:11px;font-weight:500;padding:4px 9px;border-radius:9px;background:#F6F5F3;color:#6d6a65">대화 27</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:4px;margin:14px 2px 0;align-items:center">
+              <div style="height:4px;flex:1;border-radius:2px;background:#17171a"></div>
+              <div style="height:4px;flex:1;border-radius:2px;background:#17171a"></div>
+              <div style="height:4px;flex:1;border-radius:2px;background:#E4E2DD"></div>
+              <div style="height:4px;flex:1;border-radius:2px;background:#E4E2DD"></div>
+              <div style="height:4px;flex:1;border-radius:2px;background:#E4E2DD"></div>
+              <div style="height:4px;flex:1;border-radius:2px;background:#E4E2DD"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin:6px 2px 0;font-size:10px;color:#9c9993">
+              <span>알</span><span>애벌레</span><span>번데기</span><span>성충</span><span>초성충</span><span>전설</span>
+            </div>
+            <div style="margin:8px 2px 0;font-size:11px;line-height:1.5;color:#8a8781">번데기 이후는 대화 횟수로 오를 수 없습니다. ‘생각이 바뀜’을 선언해야 날개가 생깁니다.</div>
+
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin:26px 2px 12px">
+              <h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.5px;color:#17171a">오늘의 편성표</h2>
+              <span style="font-size:11px;color:#9c9993">9월 8일 (화)</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="background:#fff;border-radius:20px;padding:16px 16px 14px;box-shadow:0 1px 2px rgba(17,17,19,.05),0 10px 26px -18px rgba(17,17,19,.25)">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:12px;font-weight:700;color:#17171a;letter-spacing:.2px">20:05</span>
+                  <span style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:7px;background:#EAF3FB;color:#3f6d95">B트랙 · 지적 토론</span>
+                  <span style="margin-left:auto;font-size:10px;color:#9c9993">2:2 + AI 심판</span>
+                </div>
+                <div style="font-size:17px;font-weight:500;letter-spacing:-.3px;color:#17171a;margin-top:9px;line-height:1.35">AI 생성물에 저작권을 인정해야 하는가</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+                  <div style="flex:1">
+                    <div style="font-size:10px;color:#9c9993">입장 마감까지</div>
+                    <div style="font-family:'Nanum Pen Script',cursive;font-size:26px;line-height:1;color:#17171a;margin-top:1px">{{ countdownLabel }}</div>
+                  </div>
+                  <button onClick="{{ openBriefing }}" style="border:none;cursor:pointer;background:#17171a;color:#fff;font-size:13px;font-weight:500;padding:11px 18px;border-radius:14px;transition:transform .15s ease,opacity .15s" style-hover="opacity:.85;transform:translateY(-1px)">입장하기</button>
+                </div>
+              </div>
+
+              <div style="background:#fff;border-radius:20px;padding:16px;box-shadow:0 1px 2px rgba(17,17,19,.04)">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:12px;font-weight:700;color:#17171a">21:00</span>
+                  <span style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:7px;background:#FBF3D6;color:#8a7429">A트랙 · 깊은 이야기</span>
+                  <span style="margin-left:auto;font-size:10px;color:#9c9993">1:1 · 기한 3일</span>
+                </div>
+                <div style="font-size:16px;font-weight:500;letter-spacing:-.3px;color:#17171a;margin-top:9px;line-height:1.35">가장 후회하는 선택을 아직도 붙잡고 있다면</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
+                  <span style="font-size:11px;color:#9c9993">비동기 스레드로 이어집니다</span>
+                  <span style="font-size:12px;color:#6d6a65;font-weight:500">대기 예약</span>
+                </div>
+              </div>
+
+              <div style="background:#fff;border-radius:20px;padding:16px;box-shadow:0 1px 2px rgba(17,17,19,.04)">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:12px;font-weight:700;color:#17171a">22:00</span>
+                  <span style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:7px;background:#F7E3E6;color:#96606c">진지한 싸움</span>
+                  <span style="margin-left:auto;font-size:10px;color:#9c9993">1:1 합의 격돌 · 관전 투표</span>
+                </div>
+                <div style="font-size:16px;font-weight:500;letter-spacing:-.3px;color:#17171a;margin-top:9px;line-height:1.35">능력주의는 공정의 이름을 쓸 자격이 있는가</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
+                  <span style="font-size:11px;color:#9c9993">관전자 128명 대기</span>
+                  <span style="font-size:12px;color:#6d6a65;font-weight:500">대기 예약</span>
+                </div>
+              </div>
+
+              <div style="background:#F6F5F3;border-radius:20px;padding:16px;border:1px dashed #DAD7D1">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:12px;font-weight:700;color:#6d6a65">목 21:00</span>
+                  <span style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:7px;background:#fff;color:#6d6a65">진지한 결혼</span>
+                </div>
+                <div style="font-size:15px;font-weight:500;color:#6d6a65;margin-top:9px;line-height:1.4">A·B 트랙 통과자 그룹 토론 → 1:1 전환</div>
+                <div style="font-size:11px;color:#9c9993;margin-top:8px">입장 조건: 성충 이상 · 생각 바뀜 3회 이상</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSession }}">
+          <div style="display:flex;flex-direction:column;height:100%;animation:jz-fade .25s ease">
+            <div style="flex:none;padding:4px 20px 12px;border-bottom:1px solid #EDEBE7;background:#FAFAF9">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:7px;background:#EAF3FB;color:#3f6d95">B트랙</span>
+                <span style="font-size:13px;font-weight:500;color:#17171a;letter-spacing:-.2px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AI 생성물의 저작권</span>
+                <span style="font-family:'Nanum Pen Script',cursive;font-size:22px;line-height:1;color:#17171a">{{ sessionLabel }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+                <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:11px;background:#fff;box-shadow:0 1px 2px rgba(17,17,19,.06)">
+                  <span style="width:6px;height:6px;border-radius:50%;background:#7FB2DC;box-shadow:0 0 0 4px rgba(127,178,220,.22)"></span>
+                  <span style="font-size:11px;color:#17171a;font-weight:500">발언 중 · {{ speaker }}</span>
+                </div>
+                <div style="margin-left:auto;display:flex;align-items:center;gap:5px">
+                  <span style="font-size:10px;color:#9c9993">인정권</span>
+                  <sc-for list="{{ ackDots }}" as="d" hint-placeholder-count="3">
+                    <sc-if value="{{ d.on }}" hint-placeholder-val="{{ true }}"><span style="width:8px;height:8px;border-radius:50%;background:#17171a;display:inline-block"></span></sc-if>
+                    <sc-if value="{{ d.off }}"><span style="width:8px;height:8px;border-radius:50%;border:1.4px solid #C9C6C0;display:inline-block"></span></sc-if>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+
+            <div ref="{{ logRef }}" data-log="1" style="flex:1;overflow-y:auto;padding:16px 18px 10px;display:flex;flex-direction:column;gap:14px">
+              <div style="text-align:center;font-size:10px;color:#9c9993;padding:2px 0 4px">브리핑 완독 확인 · 세션 시작</div>
+              <sc-for list="{{ msgs }}" as="m" hint-placeholder-count="3">
+                <sc-if value="{{ m.isOther }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;animation:jz-up .3s ease">
+                    <div style="font-size:10px;color:#9c9993;padding-left:4px">{{ m.name }}</div>
+                    <div style="max-width:82%;background:#fff;border-radius:18px 18px 18px 6px;padding:12px 14px;font-size:14px;line-height:1.6;color:#17171a;box-shadow:0 1px 2px rgba(17,17,19,.05),0 8px 20px -16px rgba(17,17,19,.3)">{{ m.text }}</div>
+                    <sc-if value="{{ m.canAck }}" hint-placeholder-val="{{ true }}">
+                      <button onClick="{{ m.onAck }}" style="cursor:pointer;margin-left:2px;background:#fff;border:1.4px solid #17171a;border-radius:14px 14px 4px 14px;padding:5px 11px;font-family:'Nanum Pen Script',cursive;font-size:16px;color:#17171a;transition:background .15s,transform .15s" style-hover="background:#FBF3D6;transform:translateY(-1px)">그건 맞네 🤍</button>
+                    </sc-if>
+                    <sc-if value="{{ m.acked }}">
+                      <div style="margin-left:2px;background:#FBF3D6;border-radius:14px 14px 4px 14px;padding:5px 11px;font-family:'Nanum Pen Script',cursive;font-size:16px;color:#8a7429;animation:jz-pop .3s ease">인정했습니다 🤍 · 양측 성장 +1</div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ m.isMe }}">
+                  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;animation:jz-up .3s ease">
+                    <div style="max-width:82%;background:#EAF3FB;border-radius:18px 18px 6px 18px;padding:12px 14px;font-size:14px;line-height:1.6;color:#17171a">{{ m.text }}</div>
+                    <sc-if value="{{ m.done }}" hint-placeholder-val="{{ true }}"><div style="font-size:10px;color:#9c9993;padding-right:4px">답변완료 · 턴 넘김</div></sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ m.isSystem }}">
+                  <div style="align-self:center;text-align:center;background:#F6F5F3;border-radius:14px;padding:9px 14px;font-size:11px;line-height:1.5;color:#6d6a65;max-width:86%;animation:jz-pop .3s ease">{{ m.text }}</div>
+                </sc-if>
+              </sc-for>
+            </div>
+
+            <div style="flex:none;padding:8px 16px 14px;background:#FAFAF9;border-top:1px solid #EDEBE7">
+              <sc-if value="{{ toastWarn }}">
+                <div style="background:#FBF3D6;border-radius:14px;padding:11px 13px;margin-bottom:9px;display:flex;gap:9px;align-items:flex-start;animation:jz-up .25s ease">
+                  <span style="font-size:13px;line-height:1.2">⚠️</span>
+                  <div>
+                    <div style="font-size:12px;line-height:1.55;color:#6b5a1e">상대의 생각 대신 태도를 겨누고 있진 않나요?</div>
+                    <div style="font-size:10px;color:#9a8846;margin-top:3px">조롱 감지 1차 · 나에게만 보입니다</div>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ toastGood }}">
+                <div style="background:#EAF3FB;border-radius:14px;padding:11px 13px;margin-bottom:9px;font-size:12px;line-height:1.55;color:#31597a;animation:jz-up .25s ease">{{ toastText }}</div>
+              </sc-if>
+
+              <div style="display:flex;gap:7px;margin-bottom:8px">
+                <button onClick="{{ raiseHand }}" style="cursor:pointer;flex:none;background:#fff;border:1px solid #E4E2DD;border-radius:12px;padding:7px 11px;font-size:11.5px;color:#17171a" style-hover="background:#F6F5F3">✋ 손들기 {{ handLabel }}</button>
+                <button onClick="{{ declareChange }}" style="cursor:pointer;flex:1;background:#fff;border:1.4px solid #17171a;border-radius:12px;padding:7px 11px;font-size:11.5px;font-weight:500;color:#17171a" style-hover="background:#FBF3D6">🔄 생각이 바뀜 선언</button>
+                <button onClick="{{ mockTest }}" style="cursor:pointer;flex:none;background:#F6F5F3;border:1px dashed #C9C6C0;border-radius:12px;padding:7px 10px;font-size:11px;color:#8a8781" style-hover="background:#EDEBE7">조롱 테스트</button>
+              </div>
+
+              <div style="display:flex;gap:8px;align-items:flex-end">
+                <input value="{{ draft }}" onChange="{{ onDraft }}" placeholder="내 차례 · 문장으로 답하세요" style="flex:1;min-width:0;background:#fff;border:1px solid #E4E2DD;border-radius:16px;padding:12px 14px;font-size:13.5px;color:#17171a;outline:none" style-focus="border-color:#7FB2DC"/>
+                <button onClick="{{ sendTurn }}" style="cursor:pointer;flex:none;background:#17171a;color:#fff;border:none;border-radius:16px;padding:12px 14px;font-size:13px;font-weight:500" style-hover="opacity:.85">답변완료</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSpar }}">
+          <div style="padding:6px 22px 28px;animation:jz-fade .25s ease">
+            <h2 style="margin:6px 0 4px;font-size:21px;font-weight:700;letter-spacing:-.5px;color:#17171a">AI 스파링 뒷방</h2>
+            <p style="margin:0 0 18px;font-size:12.5px;line-height:1.6;color:#8a8781">약관을 읽는 대신 규칙을 몸으로 익힙니다. 발언권 · 답변완료 · 인정 버튼을 두 턴 안에 체감합니다.</p>
+
+            <div style="display:flex;gap:5px;margin-bottom:16px">
+              <div style="height:3px;flex:1;border-radius:2px;background:#17171a"></div>
+              <div style="height:3px;flex:1;border-radius:2px;background:#17171a"></div>
+              <div style="height:3px;flex:1;border-radius:2px;background:#E4E2DD"></div>
+            </div>
+
+            <div style="background:#fff;border-radius:20px;padding:18px;box-shadow:0 1px 2px rgba(17,17,19,.05),0 10px 26px -18px rgba(17,17,19,.22)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px">
+                <span style="width:22px;height:22px;border-radius:50%;background:#F6F5F3;display:flex;align-items:center;justify-content:center;font-size:11px">AI</span>
+                <span style="font-size:11px;color:#9c9993">스파링 파트너 · {{ sparStepLabel }}</span>
+              </div>
+              <div style="font-size:15.5px;font-weight:500;line-height:1.6;letter-spacing:-.2px;color:#17171a">{{ sparQuestion }}</div>
+              <sc-if value="{{ sparFeedback }}">
+                <div style="margin-top:12px;background:#EAF3FB;border-radius:14px;padding:11px 13px;font-size:12px;line-height:1.6;color:#31597a;animation:jz-up .25s ease">{{ sparFeedbackText }}</div>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{ sparOpen }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top:12px;display:flex;gap:8px;align-items:flex-end">
+                <input value="{{ sparDraft }}" onChange="{{ onSparDraft }}" placeholder="한 문장으로 답해보세요" style="flex:1;min-width:0;background:#fff;border:1px solid #E4E2DD;border-radius:16px;padding:12px 14px;font-size:13.5px;color:#17171a;outline:none" style-focus="border-color:#7FB2DC"/>
+                <button onClick="{{ sparAnswer }}" style="cursor:pointer;flex:none;background:#17171a;color:#fff;border:none;border-radius:16px;padding:12px 14px;font-size:13px;font-weight:500" style-hover="opacity:.85">답변완료</button>
+              </div>
+              <div style="margin-top:8px;font-size:11px;color:#9c9993;line-height:1.5">답변완료를 누르지 않으면 상대는 아직 내 차례라고 봅니다. 말끊김이 없는 이유입니다.</div>
+            </sc-if>
+
+            <sc-if value="{{ sparDone }}">
+              <div style="margin-top:14px;background:#FBF3D6;border-radius:20px;padding:18px;animation:jz-pop .3s ease">
+                <div style="font-family:'Nanum Pen Script',cursive;font-size:24px;line-height:1;color:#6b5a1e">튜토리얼 통과</div>
+                <div style="font-size:12.5px;line-height:1.6;color:#6b5a1e;margin-top:8px">발언권 규칙 · 답변완료 · 인정 버튼을 익혔습니다. 이제 편성표에 입장할 수 있습니다.</div>
+                <button onClick="{{ goHome }}" style="cursor:pointer;margin-top:12px;background:#17171a;color:#fff;border:none;border-radius:14px;padding:11px 16px;font-size:13px;font-weight:500" style-hover="opacity:.85">편성표로 가기</button>
+              </div>
+            </sc-if>
+
+            <div style="margin-top:22px;background:#fff;border-radius:20px;padding:16px;box-shadow:0 1px 2px rgba(17,17,19,.04)">
+              <div style="font-size:13px;font-weight:500;color:#17171a;margin-bottom:10px">모더레이션 4대 축</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font-size:10px;color:#9c9993;width:14px">01</span><span style="font-size:12.5px;color:#6d6a65">비속어</span></div>
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font-size:10px;color:#9c9993;width:14px">02</span><span style="font-size:12.5px;color:#6d6a65">존대 이탈</span></div>
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font-size:10px;color:#9c9993;width:14px">03</span><span style="font-size:12.5px;color:#6d6a65">인신공격 — 주장이 아닌 사람을 겨눌 때</span></div>
+                <div style="display:flex;gap:9px;align-items:baseline"><span style="font-size:10px;color:#9c9993;width:14px">04</span><span style="font-size:12.5px;color:#17171a;font-weight:500">조롱 · 비꼼 — 이 서비스의 존재 이유</span></div>
+              </div>
+              <div style="margin-top:12px;padding-top:12px;border-top:1px solid #EDEBE7;font-size:11px;line-height:1.6;color:#9c9993">1차 비공개 경고 → 2차 30초 쿨다운 → 3차 퇴장</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isShelf }}">
+          <div style="padding:6px 22px 28px;animation:jz-fade .25s ease">
+            <div style="background:#fff;border-radius:24px;padding:20px 18px 18px;text-align:center;box-shadow:0 1px 2px rgba(17,17,19,.05),0 12px 30px -20px rgba(17,17,19,.28)">
+              <svg width="196" height="132" viewBox="0 0 196 132" fill="none" stroke="#17171a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto">
+                <path d="M92 34c-2-6-6.5-9.5-10-11"/><path d="M104 34c2.5-6 7-9.5 10.5-11"/>
+                <circle cx="80" cy="21" r="2.6"/><circle cx="118" cy="21" r="2.6"/>
+                <ellipse cx="98" cy="44" rx="12" ry="11"/>
+                <path d="M93.5 42.5c.3.7.2 1.5-.2 2" stroke-width="2.6"/><path d="M103 42c.4.7.4 1.5.1 2.1" stroke-width="2.6"/>
+                <path d="M94 49c2.4 2 5.6 1.9 8-.2"/>
+                <path d="M98 56c-3 6.5-3.5 20 0 30 3.5-10 3-23.5 0-30z"/>
+                <path d="M88 62c-14-14-32-16-42-9-9.5 6.5-6 22 6 29 12.5 7.5 28 3 36-8 1.5-2 1.5-8 0-12z" fill="#EAF3FB" fill-opacity=".55"/>
+                <path d="M108 62c14-14 32-16 42-9 9.5 6.5 6 22-6 29-12.5 7.5-28 3-36-8-1.5-2-1.5-8 0-12z" fill="#FBF3D6" fill-opacity=".6"/>
+                <path d="M60 60c-6 6-9 14-8 22"/><path d="M46 63c-4 5-6 12-5.5 18"/><path d="M74 62.5c-4.5 6-6.5 14-6 21"/>
+                <circle cx="52" cy="79" r="2"/><circle cx="66" cy="83" r="2"/>
+                <path d="M136 60c6 6 9 14 8 22"/><path d="M150 63.5c4 5 6 12 5.5 18"/><path d="M122 62.5c4.5 6 6.5 14 6 21"/>
+                <path d="M128 72h20"/><path d="M132 79h13"/>
+                <path d="M88 86c-11 12-27 15-37 10"/><path d="M108 86c11 12 27 15 37 10"/>
+                <path d="M92 92c-2.5 5-2.5 12 0 17"/><path d="M104 92c2.5 5 2.5 12 0 17"/>
+              </svg>
+              <div style="font-family:'Nanum Pen Script',cursive;font-size:22px;line-height:1;color:#8a8781;margin-top:6px">4단계 · 날개 획득</div>
+              <div style="font-size:20px;font-weight:700;letter-spacing:-.4px;color:#17171a;margin-top:4px">성충 진지충</div>
+              <div style="display:flex;justify-content:center;gap:6px;margin-top:11px">
+                <span style="font-size:11px;padding:4px 9px;border-radius:9px;background:#EAF3FB;color:#3f6d95">왼쪽 날개 · 철학</span>
+                <span style="font-size:11px;padding:4px 9px;border-radius:9px;background:#FBF3D6;color:#8a7429">오른쪽 날개 · 기술</span>
+              </div>
+              <div style="font-size:11px;line-height:1.6;color:#9c9993;margin-top:10px">날개 무늬는 다뤄온 주제에 따라 생성됩니다.</div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px">
+              <div style="background:#fff;border-radius:18px;padding:14px;box-shadow:0 1px 2px rgba(17,17,19,.04)">
+                <div style="font-size:16px">🎧</div>
+                <div style="font-size:12.5px;color:#6d6a65;margin-top:7px">끝까지 들음</div>
+                <div style="font-size:22px;font-weight:700;letter-spacing:-.6px;color:#17171a;margin-top:1px">32</div>
+              </div>
+              <div style="background:#fff;border-radius:18px;padding:14px;box-shadow:0 1px 2px rgba(17,17,19,.04)">
+                <div style="font-size:16px">🔄</div>
+                <div style="font-size:12.5px;color:#6d6a65;margin-top:7px">생각이 바뀜</div>
+                <div style="font-size:22px;font-weight:700;letter-spacing:-.6px;color:#17171a;margin-top:1px">{{ changedCount }}</div>
+              </div>
+              <div style="background:#fff;border-radius:18px;padding:14px;box-shadow:0 1px 2px rgba(17,17,19,.04)">
+                <div style="font-size:16px">🛡️</div>
+                <div style="font-size:12.5px;color:#6d6a65;margin-top:7px">스틸맨</div>
+                <div style="font-size:22px;font-weight:700;letter-spacing:-.6px;color:#17171a;margin-top:1px">12</div>
+              </div>
+              <div style="background:#fff;border-radius:18px;padding:14px;box-shadow:0 1px 2px rgba(17,17,19,.04)">
+                <div style="font-size:16px">📖</div>
+                <div style="font-size:12.5px;color:#6d6a65;margin-top:7px">브리핑 완독</div>
+                <div style="font-size:22px;font-weight:700;letter-spacing:-.6px;color:#17171a;margin-top:1px">40</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin:26px 2px 12px">
+              <h2 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.5px;color:#17171a">나의 대화 책장</h2>
+              <span style="font-size:11px;color:#9c9993">27권</span>
+            </div>
+
+            <div style="background:#fff;border-radius:20px;padding:16px 14px 12px;box-shadow:0 1px 2px rgba(17,17,19,.04)">
+              <div style="display:flex;gap:7px;align-items:flex-end;height:158px">
+                <div style="flex:1;height:100%;background:#EAF3FB;border-radius:5px 5px 2px 2px;padding:11px 6px;display:flex;align-items:center;justify-content:center;box-shadow:inset -3px 0 0 rgba(17,17,19,.06)">
+                  <div style="writing-mode:vertical-rl;font-family:'Gowun Batang',serif;font-size:12.5px;line-height:1.3;color:#31597a;letter-spacing:.5px">죽음을 세는 방식</div>
+                </div>
+                <div style="flex:1;height:92%;background:#F6F5F3;border-radius:5px 5px 2px 2px;padding:11px 6px;display:flex;align-items:center;justify-content:center;box-shadow:inset -3px 0 0 rgba(17,17,19,.06)">
+                  <div style="writing-mode:vertical-rl;font-family:'Gowun Batang',serif;font-size:12.5px;line-height:1.3;color:#4a4844;letter-spacing:.5px">노동의 값</div>
+                </div>
+                <div style="flex:1.15;height:100%;background:#FBF3D6;border-radius:5px 5px 2px 2px;padding:11px 6px;display:flex;align-items:center;justify-content:center;box-shadow:inset -3px 0 0 rgba(17,17,19,.06)">
+                  <div style="writing-mode:vertical-rl;font-family:'Gowun Batang',serif;font-size:13px;line-height:1.3;color:#6b5a1e;letter-spacing:.5px">생성물의 주인</div>
+                </div>
+                <div style="flex:1;height:86%;background:#F7E3E6;border-radius:5px 5px 2px 2px;padding:11px 6px;display:flex;align-items:center;justify-content:center;box-shadow:inset -3px 0 0 rgba(17,17,19,.06)">
+                  <div style="writing-mode:vertical-rl;font-family:'Gowun Batang',serif;font-size:12.5px;line-height:1.3;color:#7d4d59;letter-spacing:.5px">외로움의 구조</div>
+                </div>
+                <div style="flex:1;height:96%;background:#17171a;border-radius:5px 5px 2px 2px;padding:11px 6px;display:flex;align-items:center;justify-content:center">
+                  <div style="writing-mode:vertical-rl;font-family:'Gowun Batang',serif;font-size:12.5px;line-height:1.3;color:#F1EFEA;letter-spacing:.5px">공정이라는 말</div>
+                </div>
+              </div>
+              <div style="height:5px;background:#EDEBE7;border-radius:3px;margin-top:6px"></div>
+            </div>
+
+            <div style="margin-top:12px;background:#fff;border-radius:20px;padding:16px;box-shadow:0 1px 2px rgba(17,17,19,.04)">
+              <div style="font-size:10px;color:#9c9993;letter-spacing:.4px">발췌 · 생성물의 주인</div>
+              <div style="font-family:'Gowun Batang',serif;font-size:15px;line-height:1.8;color:#17171a;margin-top:8px">“창작을 노동으로 볼 것인가 결과로 볼 것인가에서 이미 답이 갈린다. 나는 결과라고 말해왔지만, 오늘 노동 쪽으로 옮겼다.”</div>
+              <div style="font-size:11px;color:#9c9993;margin-top:10px">9월 2일 · B트랙 · 생각 바뀜 선언 1회</div>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <div style="flex:none;height:78px;border-top:1px solid #EDEBE7;background:rgba(250,250,249,.92);backdrop-filter:blur(12px);display:flex;align-items:flex-start;padding:9px 6px 0">
+        <button onClick="{{ goHome }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;color:{{ homeColor }}">
+          <svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="3.5" width="16" height="15" rx="3"/><path d="M2.5 8h16M7 3.5V1.8M14 3.5V1.8M6.5 12h4"/></svg>
+          <span style="font-size:10px;font-weight:500">편성표</span>
+        </button>
+        <button onClick="{{ goSession }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;color:{{ sessionColor }}">
+          <svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M18 11.5c0 3.6-3.4 6.5-7.5 6.5-1 0-2-.2-2.9-.5L4 19l1-3.1A6.2 6.2 0 0 1 3 11.5C3 7.9 6.4 5 10.5 5S18 7.9 18 11.5z"/></svg>
+          <span style="font-size:10px;font-weight:500">대화 세션</span>
+        </button>
+        <button onClick="{{ goSpar }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;color:{{ sparColor }}">
+          <svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="7.5"/><path d="M7.5 8.5c0-1.7 1.3-2.8 3-2.8s2.9 1 2.9 2.5c0 1.3-1 1.9-2 2.4-.7.4-1 .8-1 1.6"/><circle cx="10.4" cy="15.1" r=".9" fill="currentColor" stroke="none"/></svg>
+          <span style="font-size:10px;font-weight:500">스파링</span>
+        </button>
+        <button onClick="{{ goShelf }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;color:{{ shelfColor }}">
+          <svg width="21" height="21" viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3.5 4.5A2 2 0 0 1 5.5 2.5H17v14H5.5a2 2 0 0 0-2 2v-14z"/><path d="M3.5 16.5A2 2 0 0 1 5.5 14.5H17"/></svg>
+          <span style="font-size:10px;font-weight:500">내 책장</span>
+        </button>
+      </div>
+
+      <sc-if value="{{ briefingOpen }}">
+        <div style="position:absolute;inset:0;background:rgba(17,17,19,.32);backdrop-filter:blur(3px);display:flex;align-items:flex-end;animation:jz-fade .2s ease">
+          <div style="width:100%;height:88%;background:#FAFAF9;border-radius:28px 28px 42px 42px;display:flex;flex-direction:column;animation:jz-up .3s cubic-bezier(.2,.8,.2,1);overflow:hidden">
+            <div style="flex:none;padding:14px 22px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #EDEBE7">
+              <div>
+                <div style="font-size:10px;color:#9c9993;letter-spacing:.4px">사전 브리핑 · 5분 전</div>
+                <div style="font-size:15px;font-weight:600;letter-spacing:-.3px;color:#17171a;margin-top:2px">AI 생성물의 저작권</div>
+              </div>
+              <button onClick="{{ closeBriefing }}" style="cursor:pointer;background:#F6F5F3;border:none;width:28px;height:28px;border-radius:50%;font-size:14px;color:#6d6a65" style-hover="background:#EDEBE7">✕</button>
+            </div>
+
+            <div style="flex:1;overflow-y:auto;padding:18px 22px 20px">
+              <div style="font-family:'Gowun Batang',serif;font-size:15px;line-height:1.85;color:#4a4844">이 세션은 1페이지 요약을 완독한 사람만 입장합니다. 준비 없는 발언이 대화를 무너뜨리기 때문입니다.</div>
+
+              <div style="margin-top:22px;font-size:10px;color:#9c9993;letter-spacing:.5px">핵심 용어 5</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">
+                <span style="font-size:12px;padding:6px 11px;border-radius:11px;background:#fff;color:#17171a;box-shadow:0 1px 2px rgba(17,17,19,.05)">저작인격권</span>
+                <span style="font-size:12px;padding:6px 11px;border-radius:11px;background:#fff;color:#17171a;box-shadow:0 1px 2px rgba(17,17,19,.05)">창작적 기여</span>
+                <span style="font-size:12px;padding:6px 11px;border-radius:11px;background:#fff;color:#17171a;box-shadow:0 1px 2px rgba(17,17,19,.05)">공정이용</span>
+                <span style="font-size:12px;padding:6px 11px;border-radius:11px;background:#fff;color:#17171a;box-shadow:0 1px 2px rgba(17,17,19,.05)">학습 데이터</span>
+                <span style="font-size:12px;padding:6px 11px;border-radius:11px;background:#fff;color:#17171a;box-shadow:0 1px 2px rgba(17,17,19,.05)">2차적 저작물</span>
+              </div>
+
+              <div style="margin-top:24px;font-size:10px;color:#9c9993;letter-spacing:.5px">주요 쟁점 3</div>
+              <div style="display:flex;flex-direction:column;gap:12px;margin-top:10px">
+                <div style="display:flex;gap:11px"><span style="font-family:'Nanum Pen Script',cursive;font-size:20px;line-height:1.1;color:#7FB2DC">1</span><span style="font-size:13.5px;line-height:1.65;color:#17171a">프롬프트 작성은 창작적 기여로 볼 수 있는가</span></div>
+                <div style="display:flex;gap:11px"><span style="font-family:'Nanum Pen Script',cursive;font-size:20px;line-height:1.1;color:#7FB2DC">2</span><span style="font-size:13.5px;line-height:1.65;color:#17171a">학습 데이터 이용은 공정이용의 범위에 들어가는가</span></div>
+                <div style="display:flex;gap:11px"><span style="font-family:'Nanum Pen Script',cursive;font-size:20px;line-height:1.1;color:#7FB2DC">3</span><span style="font-size:13.5px;line-height:1.65;color:#17171a">권리를 인정할 경우 그 주체는 이용자인가 모델 제공자인가</span></div>
+              </div>
+
+              <div style="margin-top:24px;font-size:10px;color:#9c9993;letter-spacing:.5px">예상 반대 논리 2</div>
+              <div style="display:flex;flex-direction:column;gap:9px;margin-top:10px">
+                <div style="background:#FBF3D6;border-radius:16px;padding:13px 14px;font-size:13px;line-height:1.65;color:#6b5a1e">“도구를 지시한 사람은 창작자가 아니다. 카메라 셔터와 프롬프트는 다르다.”</div>
+                <div style="background:#F7E3E6;border-radius:16px;padding:13px 14px;font-size:13px;line-height:1.65;color:#7d4d59">“권리를 인정하면 원작자 수천 명의 노동이 무보상으로 흡수된다.”</div>
+              </div>
+
+              <div style="margin-top:24px;padding:14px;background:#fff;border-radius:16px;box-shadow:0 1px 2px rgba(17,17,19,.05)">
+                <div style="font-size:11px;color:#9c9993;line-height:1.6">세션 규칙 요약</div>
+                <div style="font-size:12.5px;line-height:1.75;color:#4a4844;margin-top:6px">답변완료로 내 턴을 끝냅니다 · 인정권은 3회 · 조롱과 비꼼은 1차 비공개 경고 후 쿨다운</div>
+              </div>
+
+              <button onClick="{{ toggleRead }}" style="width:100%;margin-top:20px;cursor:pointer;background:none;border:none;padding:0;display:flex;gap:11px;align-items:flex-start;text-align:left">
+                <sc-if value="{{ briefRead }}" hint-placeholder-val="{{ true }}"><span style="flex:none;width:22px;height:22px;border-radius:7px;background:#17171a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px">✓</span></sc-if>
+                <sc-if value="{{ briefUnread }}"><span style="flex:none;width:22px;height:22px;border-radius:7px;border:1.5px solid #C9C6C0"></span></sc-if>
+                <span style="font-size:12.5px;line-height:1.6;color:#4a4844">브리핑을 끝까지 읽었고, 반대 입장을 이해했음을 확인합니다.</span>
+              </button>
+            </div>
+
+            <div style="flex:none;padding:12px 22px 26px;border-top:1px solid #EDEBE7">
+              <button onClick="{{ enterSession }}" disabled="{{ enterDisabled }}" style="width:100%;border:none;border-radius:18px;padding:15px;font-size:14px;font-weight:500;background:{{ enterBg }};color:{{ enterFg }};cursor:{{ enterCursor }};transition:background .2s">완독 확인 및 세션 입장</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ changeOpen }}">
+        <div style="position:absolute;inset:0;background:rgba(17,17,19,.35);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:32px;animation:jz-fade .2s ease">
+          <div style="background:#FAFAF9;border-radius:26px;padding:22px 20px;width:100%;text-align:center;animation:jz-pop .3s ease">
+            <div style="font-size:26px">🔄</div>
+            <div style="font-size:17px;font-weight:600;letter-spacing:-.3px;color:#17171a;margin-top:9px">생각이 바뀜을 선언합니까</div>
+            <div style="font-family:'Gowun Batang',serif;font-size:13.5px;line-height:1.8;color:#6d6a65;margin-top:9px">이 선언은 기록에 남고, 번데기에서 성충으로 변태하는 유일한 조건입니다. 여기서는 지는 것이 아닙니다.</div>
+            <div style="display:flex;gap:8px;margin-top:18px">
+              <button onClick="{{ cancelChange }}" style="flex:1;cursor:pointer;background:#F6F5F3;border:none;border-radius:15px;padding:13px;font-size:13px;color:#6d6a65" style-hover="background:#EDEBE7">아직 아닙니다</button>
+              <button onClick="{{ confirmChange }}" style="flex:1;cursor:pointer;background:#17171a;border:none;border-radius:15px;padding:13px;font-size:13px;font-weight:500;color:#fff" style-hover="opacity:.85">선언합니다</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:130px;height:5px;border-radius:3px;background:#17171a;opacity:.22;pointer-events:none"></div>
+    </div>
+  </div>
+
+  <div style="width:240px;font-size:12px;line-height:1.7;color:#6d6a65">
+    <div style="font-family:'Nanum Pen Script',cursive;font-size:26px;line-height:1;color:#17171a;margin-bottom:10px">진지 (가제)</div>
+    <p style="margin:0 0 14px">주제와 태도가 검증된 사람과, 구조를 갖춘 진지한 대화를 하는 곳.</p>
+    <div style="height:1px;background:#DAD7D1;margin:0 0 14px"></div>
+    <p style="margin:0 0 10px"><strong style="color:#17171a;font-weight:500">편성표</strong> 입장하기 → 5분 사전 브리핑 모달 → 체크 후 세션 입장.</p>
+    <p style="margin:0 0 10px"><strong style="color:#17171a;font-weight:500">세션</strong> 상대 말풍선의 ‘그건 맞네 🤍’로 인정권 차감, 답변완료로 턴 넘김, 조롱 테스트로 비공개 경고 토스트.</p>
+    <p style="margin:0 0 10px"><strong style="color:#17171a;font-weight:500">스파링</strong> 약관 대신 2턴 실습.</p>
+    <p style="margin:0"><strong style="color:#17171a;font-weight:500">책장</strong> 성충 날개 · 배지 · 어록 아카이브.</p>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;ackLimit&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:6,&quot;section&quot;:&quot;세션 규칙&quot;},&quot;showMockButton&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;세션 규칙&quot;}}">
+const OTHER = [
+  { name: "상대 · 번데기 3단계", text: "프롬프트 한 줄로 결과가 나온다면, 그 결과에 붙는 권리는 지시한 사람이 아니라 학습된 데이터를 만든 사람들에게 나눠져야 한다고 봅니다." },
+  { name: "상대 · 번데기 3단계", text: "다만 상업적 이용과 개인적 이용을 구분하지 않은 제 앞의 주장은 과했습니다. 그 부분은 정정합니다." },
+  { name: "상대 · 번데기 3단계", text: "그렇다면 기여의 기준을 결과물의 예측 가능성으로 두는 건 어떻습니까. 의도한 대로 나왔다면 기여가 있다고 볼 수 있습니다." }
+];
+
+const SPAR = [
+  { q: "당신이 가장 확신하는 주장 하나를 고르고, 그것이 틀렸을 가능성이 가장 큰 지점을 말해보세요.", fb: "좋습니다. 지금 누른 답변완료가 내 턴의 끝을 선언합니다. 상대는 이 신호 없이는 끼어들지 않습니다." },
+  { q: "상대가 “ㅋㅋ 그걸 왜 진지하게”라고 답했습니다. 이 서비스에서는 무엇이 작동해야 할까요.", fb: "조롱·비꼼 축이 작동합니다. 당신에게는 보이지 않고, 상대에게만 조용히 1차 경고가 갑니다." }
+];
+
+class Component extends DCLogic {
+  state = {
+    tab: "home", briefing: false, briefRead: false, changeOpen: false,
+    countdown: 295, sessionSec: 1080,
+    ackLeft: null, changed: 5, hand: 2,
+    draft: "", sparDraft: "", sparStep: 0, sparFb: "",
+    toast: null,
+    msgs: [
+      { who: "other", name: OTHER[0].name, text: OTHER[0].text, acked: false },
+      { who: "me", text: "권리 주체를 나누자는 데는 동의합니다. 그런데 나눔의 기준을 노동으로 두면, 검증 불가능한 지분 계산이 남습니다.", done: true },
+      { who: "other", name: OTHER[1].name, text: OTHER[1].text, acked: false }
+    ]
+  };
+
+  get limit() { return this.props.ackLimit ?? 3; }
+
+  componentDidMount() {
+    this.t = setInterval(() => this.setState(s => ({
+      countdown: Math.max(0, s.countdown - 1),
+      sessionSec: s.tab === "session" ? Math.max(0, s.sessionSec - 1) : s.sessionSec
+    })), 1000);
+  }
+  componentWillUnmount() { clearInterval(this.t); clearTimeout(this.tt); clearTimeout(this.pending); }
+
+  fmt(n) { const m = Math.floor(n / 60), s = n % 60; return m + ":" + String(s).padStart(2, "0"); }
+
+  toast(tone, text) {
+    clearTimeout(this.tt);
+    this.setState({ toast: { tone, text } });
+    this.tt = setTimeout(() => this.setState({ toast: null }), 5200);
+  }
+
+  ack = (i) => {
+    const left = this.state.ackLeft === null ? this.limit : this.state.ackLeft;
+    if (left <= 0) { this.toast("good", "인정권을 모두 사용했습니다. 세션당 " + this.limit + "회입니다."); return; }
+    this.setState(s => ({
+      ackLeft: left - 1,
+      msgs: s.msgs.map((m, k) => k === i ? Object.assign({}, m, { acked: true }) : m)
+    }));
+    this.toast("good", "상호 인정이 기록되었습니다. 양측 캐릭터가 함께 성장합니다.");
+  };
+
+  send = () => {
+    if (this.pending) return;
+    const text = this.state.draft.trim() || "예측 가능성을 기준으로 삼으면, 우연히 좋은 결과가 나온 경우를 설명할 수 없습니다. 기준을 다시 세워봅시다.";
+    const nth = this.state.msgs.filter(m => m.who === "other").length;
+    const reply = OTHER[Math.min(nth, OTHER.length - 1)];
+    this.setState(s => ({ msgs: s.msgs.concat([{ who: "me", text, done: true }]), draft: "" }));
+    this.scrollLog();
+    this.pending = setTimeout(() => {
+      this.pending = null;
+      this.setState(st => ({
+        msgs: st.msgs.concat([{ who: "other", name: reply.name, text: reply.text, acked: false }])
+      }));
+      this.scrollLog();
+    }, 1100);
+  };
+
+  logRef = (el) => { this.log = el; };
+
+  scrollLog = () => {
+    requestAnimationFrame(() => {
+      const el = this.log || document.querySelector('[data-log="1"]');
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+  };
+
+  renderVals() {
+    const s = this.state, left = s.ackLeft === null ? this.limit : s.ackLeft;
+    const active = "#17171a", idle = "#B4B1AB";
+    const msgs = s.msgs.map((m, i) => ({
+      isOther: m.who === "other", isMe: m.who === "me", isSystem: m.who === "sys",
+      name: m.name, text: m.text, done: !!m.done, acked: !!m.acked,
+      canAck: m.who === "other" && !m.acked,
+      onAck: () => this.ack(i)
+    }));
+    const dots = [];
+    for (let i = 0; i < this.limit; i++) dots.push({ on: i < left, off: i >= left });
+
+    return {
+      isHome: s.tab === "home", isSession: s.tab === "session", isSpar: s.tab === "spar", isShelf: s.tab === "shelf",
+      homeColor: s.tab === "home" ? active : idle,
+      sessionColor: s.tab === "session" ? active : idle,
+      sparColor: s.tab === "spar" ? active : idle,
+      shelfColor: s.tab === "shelf" ? active : idle,
+      goHome: () => this.setState({ tab: "home" }),
+      goSession: () => this.setState({ tab: "session" }),
+      goSpar: () => this.setState({ tab: "spar" }),
+      goShelf: () => this.setState({ tab: "shelf" }),
+
+      countdownLabel: this.fmt(s.countdown),
+      sessionLabel: this.fmt(s.sessionSec),
+      speaker: "나",
+
+      briefingOpen: s.briefing, briefRead: s.briefRead, briefUnread: !s.briefRead,
+      openBriefing: () => this.setState({ briefing: true }),
+      closeBriefing: () => this.setState({ briefing: false }),
+      toggleRead: () => this.setState(p => ({ briefRead: !p.briefRead })),
+      enterDisabled: !s.briefRead,
+      enterBg: s.briefRead ? "#17171a" : "#EDEBE7",
+      enterFg: s.briefRead ? "#ffffff" : "#B4B1AB",
+      enterCursor: s.briefRead ? "pointer" : "not-allowed",
+      enterSession: () => { if (s.briefRead) this.setState({ briefing: false, tab: "session" }); },
+
+      msgs, ackDots: dots, logRef: this.logRef,
+      draft: s.draft,
+      onDraft: (e) => this.setState({ draft: e.target.value }),
+      sendTurn: this.send,
+      handLabel: s.hand + "/3",
+      raiseHand: () => {
+        if (s.hand <= 0) { this.toast("good", "손들기 횟수를 모두 사용했습니다."); return; }
+        this.setState(p => ({ hand: p.hand - 1 }));
+        this.toast("good", "발언권을 요청했습니다. 현재 발언자의 답변완료 후 순서가 앞당겨집니다.");
+      },
+      mockTest: () => { if (this.props.showMockButton === false) return; this.toast("warn", "mock"); },
+      toastWarn: !!s.toast && s.toast.tone === "warn",
+      toastGood: !!s.toast && s.toast.tone === "good",
+      toastText: s.toast ? s.toast.text : "",
+
+      changeOpen: s.changeOpen,
+      declareChange: () => this.setState({ changeOpen: true }),
+      cancelChange: () => this.setState({ changeOpen: false }),
+      confirmChange: () => {
+        this.setState(p => ({
+          changeOpen: false, changed: p.changed + 1,
+          msgs: p.msgs.concat([{ who: "sys", text: "‘생각이 바뀜’이 선언되었습니다 🔄 · 이 세션의 기록에 남고, 날개 무늬에 반영됩니다." }])
+        }));
+        this.scrollLog();
+        this.toast("good", "선언이 기록되었습니다. 번데기 → 성충 변태 조건 충족.");
+      },
+      changedCount: s.changed,
+
+      sparQuestion: s.sparStep < SPAR.length ? SPAR[s.sparStep].q : "실습이 끝났습니다.",
+      sparStepLabel: s.sparStep < SPAR.length ? (s.sparStep + 1) + "턴 / 2턴" : "완료",
+      sparOpen: s.sparStep < SPAR.length,
+      sparDone: s.sparStep >= SPAR.length,
+      sparFeedback: !!s.sparFb, sparFeedbackText: s.sparFb,
+      sparDraft: s.sparDraft,
+      onSparDraft: (e) => this.setState({ sparDraft: e.target.value }),
+      sparAnswer: () => this.setState(p => ({
+        sparFb: SPAR[Math.min(p.sparStep, SPAR.length - 1)].fb,
+        sparStep: p.sparStep + 1,
+        sparDraft: ""
+      }))
+    };
+  }
+}
+
+</script>
+</body>
+</html>

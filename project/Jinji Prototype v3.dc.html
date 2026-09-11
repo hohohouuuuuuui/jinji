@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=DotGothic16&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#eceaf0;font-family:'Noto Sans KR',-apple-system,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  *{box-sizing:border-box}
+  a{color:#b0568f}a:hover{color:#8d3f70}
+  input,button{font-family:inherit}
+  ::-webkit-scrollbar{width:0;height:0}
+  @keyframes jz-up{from{opacity:0;transform:translateY(10px)}to{opacity:1}}
+  @keyframes jz-fade{from{opacity:0}to{opacity:1}}
+  @keyframes jz-pop{0%{transform:scale(.92);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+  @keyframes jz-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  @keyframes jz-blink{0%,92%,100%{opacity:1}95%{opacity:.25}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 20px">
+  <div style="width:390px;height:844px;border-radius:52px;background:#111113;padding:11px;box-shadow:0 40px 80px -22px rgba(0,0,0,.45)">
+    <div style="width:100%;height:100%;border-radius:42px;overflow:hidden;background:#fff;display:flex;flex-direction:column;position:relative">
+
+      <div style="height:50px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 5px;font-size:13px;font-weight:500;color:#111">
+        <span>20:00</span>
+        <span style="display:flex;gap:5px;align-items:center;opacity:.8">
+          <svg width="17" height="11" viewBox="0 0 17 11"><rect y="7" width="3" height="4" rx="1" fill="#111"/><rect x="4.5" y="5" width="3" height="6" rx="1" fill="#111"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" fill="#111"/><rect x="13.5" width="3" height="11" rx="1" fill="#111"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x=".5" y=".5" width="21" height="11" rx="3.5" fill="none" stroke="#111" opacity=".35"/><rect x="2" y="2" width="15" height="8" rx="2" fill="#111"/></svg>
+        </span>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;overflow-x:hidden">
+
+        <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+          <div style="animation:jz-fade .25s ease">
+
+            <div style="margin:0 16px;background:#17171a;border-radius:22px;padding:16px 18px 15px;position:relative;overflow:hidden">
+              <div style="display:flex;align-items:center;gap:7px">
+                <span style="width:7px;height:7px;border-radius:50%;background:#F586AE;animation:jz-blink 3s infinite"></span>
+                <span style="font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:1.6px;color:#F7B3D4">OPEN NOW · 진지 토론방</span>
+              </div>
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:11px">
+                <div>
+                  <div style="font-family:'DotGothic16',monospace;font-size:15px;color:#8f8b93">2026.09.08 화</div>
+                  <div style="font-size:21px;font-weight:900;letter-spacing:-.9px;color:#fff;margin-top:2px">오늘 4개 진행 예정</div>
+                </div>
+                <span style="font-size:11px;font-weight:700;padding:7px 13px;border-radius:999px;background:#26262b;color:#F7B3D4">참가 예정 1</span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:11px;padding:14px 20px 0">
+              <svg width="104" height="64" viewBox="0 0 26 16" shape-rendering="crispEdges" style="flex:none">
+  <rect x="4" y="2" width="1" height="1" fill="#4a3a55"/><rect x="12" y="2" width="1" height="1" fill="#4a3a55"/><rect x="5" y="1" width="7" height="1" fill="#4a3a55"/><rect x="3" y="3" width="1" height="1" fill="#4a3a55"/><rect x="13" y="3" width="1" height="1" fill="#4a3a55"/><rect x="4" y="2" width="1" height="1" fill="#4a3a55"/><rect x="12" y="2" width="1" height="1" fill="#4a3a55"/><rect x="2" y="4" width="1" height="1" fill="#4a3a55"/><rect x="14" y="4" width="1" height="1" fill="#4a3a55"/><rect x="3" y="3" width="1" height="1" fill="#4a3a55"/><rect x="13" y="3" width="1" height="1" fill="#4a3a55"/><rect x="2" y="5" width="1" height="1" fill="#4a3a55"/><rect x="14" y="5" width="1" height="1" fill="#4a3a55"/><rect x="2" y="6" width="1" height="1" fill="#4a3a55"/><rect x="14" y="6" width="1" height="1" fill="#4a3a55"/><rect x="3" y="7" width="1" height="1" fill="#4a3a55"/><rect x="13" y="7" width="1" height="1" fill="#4a3a55"/><rect x="3" y="7" width="1" height="1" fill="#4a3a55"/><rect x="13" y="7" width="1" height="1" fill="#4a3a55"/><rect x="4" y="8" width="9" height="1" fill="#4a3a55"/><rect x="4" y="9" width="1" height="1" fill="#4a3a55"/><rect x="18" y="9" width="1" height="1" fill="#4a3a55"/><rect x="5" y="8" width="13" height="1" fill="#4a3a55"/><rect x="3" y="10" width="1" height="1" fill="#4a3a55"/><rect x="20" y="10" width="1" height="1" fill="#4a3a55"/><rect x="4" y="9" width="1" height="1" fill="#4a3a55"/><rect x="18" y="9" width="2" height="1" fill="#4a3a55"/><rect x="4" y="11" width="1" height="1" fill="#4a3a55"/><rect x="4" y="11" width="1" height="1" fill="#4a3a55"/><rect x="20" y="11" width="1" height="1" fill="#4a3a55"/><rect x="5" y="12" width="2" height="1" fill="#4a3a55"/><rect x="18" y="12" width="2" height="1" fill="#4a3a55"/><rect x="6" y="12" width="1" height="1" fill="#4a3a55"/><rect x="18" y="12" width="1" height="1" fill="#4a3a55"/><rect x="7" y="13" width="11" height="1" fill="#4a3a55"/><rect x="5" y="2" width="7" height="1" fill="#F7B9CE"/><rect x="4" y="3" width="9" height="1" fill="#F7B9CE"/><rect x="3" y="4" width="11" height="1" fill="#F7B9CE"/><rect x="3" y="5" width="11" height="1" fill="#F7B9CE"/><rect x="3" y="6" width="11" height="1" fill="#F7B9CE"/><rect x="4" y="7" width="9" height="1" fill="#F7B9CE"/><rect x="5" y="9" width="13" height="1" fill="#F7B9CE"/><rect x="4" y="10" width="16" height="1" fill="#F7B9CE"/><rect x="5" y="11" width="15" height="1" fill="#F7B9CE"/><rect x="7" y="12" width="11" height="1" fill="#F7B9CE"/>
+  <rect x="4" y="3" width="5" height="1" fill="#FAD2E0"/><rect x="4" y="4" width="2" height="1" fill="#FAD2E0"/>
+  <rect x="10" y="10" width="1" height="2" fill="#EFA0BE"/><rect x="14" y="10" width="1" height="2" fill="#EFA0BE"/><rect x="18" y="11" width="1" height="1" fill="#EFA0BE"/>
+  <rect x="3" y="4" width="3" height="3" fill="#F2F8FF"/><rect x="8" y="4" width="3" height="3" fill="#F2F8FF"/>
+  <rect x="2" y="4" width="1" height="3" fill="#A9BBE0"/><rect x="6" y="4" width="1" height="3" fill="#A9BBE0"/><rect x="7" y="4" width="1" height="3" fill="#A9BBE0"/><rect x="11" y="4" width="1" height="3" fill="#A9BBE0"/>
+  <rect x="3" y="3" width="3" height="1" fill="#A9BBE0"/><rect x="8" y="3" width="3" height="1" fill="#A9BBE0"/><rect x="3" y="7" width="3" height="1" fill="#A9BBE0"/><rect x="8" y="7" width="3" height="1" fill="#A9BBE0"/>
+  <rect x="4" y="5" width="1" height="1" fill="#2a2436"/><rect x="9" y="5" width="1" height="1" fill="#2a2436"/>
+  <rect x="2" y="6" width="1" height="1" fill="#F5789E"/><rect x="11" y="6" width="1" height="1" fill="#F5789E"/>
+  <rect x="6" y="7" width="2" height="1" fill="#2a2436"/>
+  <rect x="15" y="7" width="7" height="1" fill="#4a3a55"/><rect x="15" y="12" width="7" height="1" fill="#4a3a55"/><rect x="14" y="8" width="1" height="4" fill="#4a3a55"/><rect x="22" y="8" width="1" height="4" fill="#4a3a55"/>
+  <rect x="15" y="8" width="7" height="4" fill="#8B3A4A"/><rect x="17" y="8" width="3" height="4" fill="#F7E7D6"/><rect x="18" y="8" width="1" height="4" fill="#4a3a55"/>
+</svg>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:7px">
+                  <span style="font-family:'DotGothic16',monospace;font-size:15px;color:#17171a">성장 애벌레 LV.2</span>
+                  <span style="font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:999px;background:#FBDFEC;color:#8d3f70">🔁 5</span>
+                </div>
+                <div style="display:flex;gap:3px;margin-top:8px">
+                  <div style="height:5px;flex:1;border-radius:999px;background:#F586AE"></div>
+                  <div style="height:5px;flex:1;border-radius:999px;background:#F586AE"></div>
+                  <div style="height:5px;flex:1;border-radius:999px;background:#EFEDF2"></div>
+                  <div style="height:5px;flex:1;border-radius:999px;background:#EFEDF2"></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:6px;overflow-x:auto;padding:16px 20px 12px">
+              <span style="flex:none;font-size:11.5px;font-weight:700;padding:8px 14px;border-radius:999px;background:#17171a;color:#fff">전체</span>
+              <span style="flex:none;font-size:11.5px;font-weight:700;padding:8px 14px;border-radius:999px;background:#F3F1F5;color:#4a4750">1번 방 토론</span>
+              <span style="flex:none;font-size:11.5px;font-weight:700;padding:8px 14px;border-radius:999px;background:#F3F1F5;color:#4a4750">2번 방 대화</span>
+              <span style="flex:none;font-size:11.5px;font-weight:700;padding:8px 14px;border-radius:999px;background:#F3F1F5;color:#4a4750">3번 방 격돌</span>
+            </div>
+
+            <div style="display:flex;gap:0;padding:0 20px 7px;border-bottom:1.5px solid #17171a">
+              <span style="width:52px;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.1px;color:#4a4750">방</span>
+              <span style="width:54px;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.1px;color:#4a4750">시간</span>
+              <span style="flex:1;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.1px;color:#4a4750">주제</span>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.1px;color:#4a4750">자리</span>
+            </div>
+
+            <div style="padding:0 20px">
+
+              <div style="display:flex;gap:0;padding:16px 0 15px;border-bottom:1px solid #EFEDF2;background:#FEF7FA;margin:0 -20px;padding-left:20px;padding-right:20px">
+                <div style="width:52px;flex:none">
+                  <div style="width:38px;height:38px;border-radius:12px;background:#F586AE;display:flex;align-items:center;justify-content:center">
+                    <span style="font-family:'DotGothic16',monospace;font-size:19px;color:#fff">1</span>
+                  </div>
+                </div>
+                <div style="width:54px;flex:none">
+                  <div style="font-family:'DotGothic16',monospace;font-size:19px;line-height:1.1;color:#17171a">20:05</div>
+                  <div style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:#b0568f;margin-top:3px">{{ countdownLabel }}</div>
+                </div>
+                <div style="flex:1;min-width:0;padding-right:8px">
+                  <div style="font-size:15.5px;font-weight:900;letter-spacing:-.5px;line-height:1.35;color:#17171a">AI 생성물에 저작권을 인정해야 하는가</div>
+                  <div style="display:flex;gap:5px;margin-top:8px">
+                    <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:999px;background:#fff;color:#8d3f70">2:2 토론</span>
+                    <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:999px;background:#fff;color:#4a4750">AI 심판</span>
+                  </div>
+                  <button onClick="{{ openBriefing }}" style="width:100%;margin-top:11px;border:none;cursor:pointer;background:#17171a;color:#fff;font-size:13.5px;font-weight:700;padding:13px;border-radius:999px" style-hover="opacity:.85">입장 신청하기</button>
+                </div>
+                <div style="flex:none;text-align:right">
+                  <div style="font-family:'DotGothic16',monospace;font-size:17px;color:#17171a">1</div>
+                  <div style="font-family:'Space Mono',monospace;font-size:9px;color:#4a4750">/4명</div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:0;padding:16px 0 15px;border-bottom:1px solid #EFEDF2">
+                <div style="width:52px;flex:none">
+                  <div style="width:38px;height:38px;border-radius:12px;background:#8ED4F0;display:flex;align-items:center;justify-content:center">
+                    <span style="font-family:'DotGothic16',monospace;font-size:19px;color:#fff">2</span>
+                  </div>
+                </div>
+                <div style="width:54px;flex:none">
+                  <div style="font-family:'DotGothic16',monospace;font-size:19px;line-height:1.1;color:#17171a">21:00</div>
+                  <div style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:#4a4750;margin-top:3px">신청중</div>
+                </div>
+                <div style="flex:1;min-width:0;padding-right:8px">
+                  <div style="font-size:15px;font-weight:900;letter-spacing:-.5px;line-height:1.35;color:#17171a">가장 후회하는 선택</div>
+                  <div style="display:flex;gap:5px;margin-top:8px">
+                    <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:999px;background:#E6F5FC;color:#1f5a75">1:1 대화</span>
+                    <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:999px;background:#F3F1F5;color:#4a4750">3일 진행</span>
+                  </div>
+                </div>
+                <div style="flex:none;text-align:right">
+                  <div style="font-family:'DotGothic16',monospace;font-size:17px;color:#17171a">1</div>
+                  <div style="font-family:'Space Mono',monospace;font-size:9px;color:#4a4750">/2명</div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:0;padding:16px 0 15px;border-bottom:1px solid #EFEDF2">
+                <div style="width:52px;flex:none">
+                  <div style="width:38px;height:38px;border-radius:12px;background:#17171a;display:flex;align-items:center;justify-content:center">
+                    <span style="font-family:'DotGothic16',monospace;font-size:19px;color:#fff">3</span>
+                  </div>
+                </div>
+                <div style="width:54px;flex:none">
+                  <div style="font-family:'DotGothic16',monospace;font-size:19px;line-height:1.1;color:#17171a">22:00</div>
+                  <div style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:#4a4750;margin-top:3px">관전가능</div>
+                </div>
+                <div style="flex:1;min-width:0;padding-right:8px">
+                  <div style="font-size:15px;font-weight:900;letter-spacing:-.5px;line-height:1.35;color:#17171a">능력주의는 공정한가</div>
+                  <div style="display:flex;gap:5px;margin-top:8px">
+                    <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:999px;background:#F3F1F5;color:#4a4750">1:1 격돌</span>
+                    <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:999px;background:#F3F1F5;color:#4a4750">관전 214</span>
+                  </div>
+                </div>
+                <div style="flex:none;text-align:right">
+                  <div style="font-family:'DotGothic16',monospace;font-size:17px;color:#b0568f">마감</div>
+                  <div style="font-family:'Space Mono',monospace;font-size:9px;color:#4a4750">/2명</div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:0;padding:16px 0 18px">
+                <div style="width:52px;flex:none">
+                  <div style="width:38px;height:38px;border-radius:12px;border:1.5px dashed #b8b4bd;display:flex;align-items:center;justify-content:center;opacity:.7">
+                    <span style="font-family:'DotGothic16',monospace;font-size:19px;color:#78747e">4</span>
+                  </div>
+                </div>
+                <div style="width:54px;flex:none">
+                  <div style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1px;color:#4a4750">THU</div>
+                  <div style="font-family:'DotGothic16',monospace;font-size:19px;line-height:1.1;color:#17171a;white-space:nowrap">21:00</div>
+                </div>
+                <div style="flex:1;min-width:0;padding-right:8px">
+                  <div style="font-size:15px;font-weight:900;letter-spacing:-.5px;color:#5a5760">진지한 결혼</div>
+                  <div style="font-size:11px;font-weight:700;color:#3f3c45;margin-top:7px">🔒 초성충부터 참가</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSession }}">
+          <div style="display:flex;flex-direction:column;height:100%;animation:jz-fade .25s ease">
+
+            <div style="flex:none;margin:0 16px;background:#17171a;border-radius:22px;padding:13px 16px 14px">
+              <div style="display:flex;align-items:center;gap:7px">
+                <span style="width:6px;height:6px;border-radius:50%;background:#F586AE;animation:jz-blink 3s infinite"></span>
+                <span style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.4px;color:#F7B3D4">진행 중 · 1번 방</span>
+                <span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:1.2px;color:#8f8b93">자리</span>
+                <span style="font-family:'DotGothic16',monospace;font-size:16px;line-height:1;color:#fff">{{ sessionLabel }}</span>
+              </div>
+              <div style="font-size:15px;font-weight:900;letter-spacing:-.5px;color:#fff;margin-top:9px">AI 생성물의 저작권</div>
+
+              <div style="display:flex;align-items:flex-end;gap:8px;margin-top:13px">
+                <div style="flex:1;background:#26262b;border-radius:14px;padding:9px 10px;border:1.5px solid #F586AE">
+                  <div style="font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:1px;color:#F7B3D4">발언 중 · 나</div>
+                  <div style="font-size:11.5px;font-weight:700;color:#fff;margin-top:3px">성장 애벌레</div>
+                </div>
+                <div style="flex:1;background:#26262b;border-radius:14px;padding:9px 10px">
+                  <div style="font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:1px;color:#78747e">상대</div>
+                  <div style="font-size:11.5px;font-weight:700;color:#c9c6cd;margin-top:3px">상대 번데기</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="flex:none;display:flex;align-items:center;gap:8px;padding:12px 20px 8px">
+              <span style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:6px 12px;border-radius:999px;background:#FBDFEC;color:#8d3f70">
+                <span style="width:6px;height:6px;border-radius:50%;background:#F586AE"></span>내 차례
+              </span>
+              <span style="margin-left:auto;display:flex;align-items:center;gap:6px">
+                <span style="font-size:10.5px;font-weight:700;color:#4a4750">인정권</span>
+                <sc-for list="{{ ackDots }}" as="d" hint-placeholder-count="3">
+                  <sc-if value="{{ d.on }}" hint-placeholder-val="{{ true }}"><span style="width:9px;height:9px;border-radius:50%;background:#17171a;display:inline-block"></span></sc-if>
+                  <sc-if value="{{ d.off }}"><span style="width:9px;height:9px;border-radius:50%;background:#E4E1E8;display:inline-block"></span></sc-if>
+                </sc-for>
+              </span>
+            </div>
+
+            <div style="flex:none;display:flex;gap:6px;overflow-x:auto;padding:0 20px 10px">
+              <span style="flex:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:999px;background:#F3F1F5;color:#4a4750">쟁점 1 창작적 기여</span>
+              <span style="flex:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:999px;background:#F3F1F5;color:#4a4750">2 공정이용</span>
+              <span style="flex:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:999px;background:#F3F1F5;color:#4a4750">3 권리 주체</span>
+            </div>
+
+            <div ref="{{ logRef }}" data-log="1" style="flex:1;overflow-y:auto;padding:4px 18px 10px;display:flex;flex-direction:column;gap:14px">
+              <sc-for list="{{ msgs }}" as="m" hint-placeholder-count="3">
+                <sc-if value="{{ m.isOther }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;animation:jz-up .3s ease">
+                    <div style="font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:1px;color:#78747e;padding-left:4px">상대</div>
+                    <div style="max-width:84%;background:#F3F1F5;border-radius:22px;padding:13px 17px;font-size:14px;line-height:1.6;color:#17171a">{{ m.text }}</div>
+                    <sc-if value="{{ m.canAck }}" hint-placeholder-val="{{ true }}">
+                      <button onClick="{{ m.onAck }}" style="cursor:pointer;background:#fff;border:2px solid #17171a;border-radius:999px;padding:8px 15px;font-size:12px;font-weight:700;color:#17171a" style-hover="background:#FBDFEC">그건 맞네 🤍</button>
+                    </sc-if>
+                    <sc-if value="{{ m.acked }}">
+                      <div style="background:#FBDFEC;border-radius:999px;padding:8px 15px;font-size:12px;font-weight:700;color:#8d3f70;animation:jz-pop .3s ease">인정 🤍 +1</div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ m.isMe }}">
+                  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;animation:jz-up .3s ease">
+                    <div style="max-width:84%;background:#F7B3D4;border-radius:22px;padding:13px 17px;font-size:14px;line-height:1.6;color:#3d1029">{{ m.text }}</div>
+                    <sc-if value="{{ m.done }}" hint-placeholder-val="{{ true }}"><div style="font-size:10px;color:#4a4750;padding-right:6px">발언 종료</div></sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ m.isSystem }}">
+                  <div style="align-self:center;background:#17171a;border-radius:999px;padding:9px 18px;font-size:11.5px;font-weight:700;color:#F7B3D4;animation:jz-pop .3s ease">{{ m.text }}</div>
+                </sc-if>
+              </sc-for>
+            </div>
+
+            <div style="flex:none;padding:8px 16px 14px;border-top:1px solid #EFEDF2">
+              <sc-if value="{{ toastWarn }}">
+                <div style="background:#FFF3D6;border-radius:20px;padding:13px 16px;margin-bottom:9px;font-size:12.5px;line-height:1.55;color:#63510f;font-weight:500;animation:jz-up .25s ease">태도가 아니라 생각을 겨누고 있나요? · 조롱 감지 1차</div>
+              </sc-if>
+              <sc-if value="{{ toastGood }}">
+                <div style="background:#FBDFEC;border-radius:20px;padding:13px 16px;margin-bottom:9px;font-size:12.5px;line-height:1.55;color:#8d3f70;font-weight:500;animation:jz-up .25s ease">{{ toastText }}</div>
+              </sc-if>
+
+              <div style="display:flex;gap:7px;margin-bottom:9px">
+                <button onClick="{{ raiseHand }}" style="cursor:pointer;background:#F3F1F5;border:none;border-radius:999px;padding:13px 16px;font-size:12px;font-weight:700;color:#17171a" style-hover="background:#E9E6ED">✋ {{ handLabel }}</button>
+                <button onClick="{{ declareChange }}" style="cursor:pointer;flex:1;background:#FBDFEC;border:none;border-radius:999px;padding:13px 16px;font-size:12px;font-weight:700;color:#8d3f70" style-hover="background:#F7CCE0">🔁 생각이 바뀜</button>
+                <button onClick="{{ mockTest }}" style="cursor:pointer;background:#fff;border:1.5px dashed #cbc7d1;border-radius:999px;padding:13px 15px;font-size:12px;font-weight:500;color:#4a4750" style-hover="background:#F7F6F9">조롱</button>
+              </div>
+
+              <div style="display:flex;gap:8px">
+                <input value="{{ draft }}" onChange="{{ onDraft }}" placeholder="발언대에서 말하기" style="flex:1;min-width:0;background:#F3F1F5;border:none;border-radius:999px;padding:14px 18px;font-size:14px;color:#17171a;outline:none" style-focus="background:#FBDFEC"/>
+                <button onClick="{{ sendTurn }}" style="cursor:pointer;flex:none;background:#17171a;color:#fff;border:none;border-radius:999px;padding:14px 19px;font-size:13px;font-weight:700" style-hover="opacity:.85">종료</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSpar }}">
+          <div style="padding:2px 20px 24px;animation:jz-fade .25s ease">
+            <div style="font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:1.6px;color:#4a4750;margin-top:8px">REHEARSAL ROOM</div>
+            <h2 style="margin:5px 0 4px;font-size:25px;font-weight:900;letter-spacing:-1.2px;color:#17171a">리허설룸</h2>
+            <p style="margin:0 0 18px;font-size:12.5px;color:#4a4750">첫 참가 전 2턴 연습</p>
+
+            <div style="display:flex;gap:5px;margin-bottom:16px">
+              <div style="height:7px;flex:1;border-radius:999px;background:#F586AE"></div>
+              <div style="height:7px;flex:1;border-radius:999px;background:#EFEDF2"></div>
+            </div>
+
+            <div style="background:#F3F1F5;border-radius:26px;padding:22px">
+              <div style="font-family:'DotGothic16',monospace;font-size:14px;color:#4a4750">AI 리허설 파트너 · {{ sparStepLabel }}</div>
+              <div style="font-size:17px;font-weight:900;line-height:1.5;letter-spacing:-.5px;color:#17171a;margin-top:10px">{{ sparQuestion }}</div>
+              <sc-if value="{{ sparFeedback }}">
+                <div style="margin-top:14px;background:#fff;border-radius:20px;padding:13px 16px;font-size:12.5px;line-height:1.6;font-weight:500;color:#4a4750;animation:jz-up .25s ease">{{ sparFeedbackText }}</div>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{ sparOpen }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top:12px;display:flex;gap:8px">
+                <input value="{{ sparDraft }}" onChange="{{ onSparDraft }}" placeholder="한 문장으로" style="flex:1;min-width:0;background:#F3F1F5;border:none;border-radius:999px;padding:14px 18px;font-size:14px;color:#17171a;outline:none" style-focus="background:#FBDFEC"/>
+                <button onClick="{{ sparAnswer }}" style="cursor:pointer;flex:none;background:#17171a;color:#fff;border:none;border-radius:999px;padding:14px 19px;font-size:13px;font-weight:700" style-hover="opacity:.85">종료</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ sparDone }}">
+              <div style="margin-top:12px;background:#17171a;border-radius:26px;padding:22px;animation:jz-pop .3s ease">
+                <div style="font-family:'DotGothic16',monospace;font-size:20px;color:#F7B3D4">입장 자격 획득</div>
+                <button onClick="{{ goHome }}" style="margin-top:14px;width:100%;cursor:pointer;background:#F586AE;color:#fff;border:none;border-radius:999px;padding:14px;font-size:14px;font-weight:700" style-hover="opacity:.88">시간표로</button>
+              </div>
+            </sc-if>
+
+            <div style="font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#4a4750;margin-top:28px">참가 규정</div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px">
+              <span style="font-size:12px;font-weight:700;padding:10px 16px;border-radius:999px;background:#F3F1F5;color:#4a4750">비속어</span>
+              <span style="font-size:12px;font-weight:700;padding:10px 16px;border-radius:999px;background:#F3F1F5;color:#4a4750">존대 이탈</span>
+              <span style="font-size:12px;font-weight:700;padding:10px 16px;border-radius:999px;background:#F3F1F5;color:#4a4750">인신공격</span>
+              <span style="font-size:12px;font-weight:700;padding:10px 16px;border-radius:999px;background:#FBDFEC;color:#8d3f70">조롱 · 비꼼</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isShelf }}">
+          <div style="padding:2px 20px 24px;animation:jz-fade .25s ease">
+
+            <div style="background:#E6F5FC;border-radius:26px;padding:18px;text-align:center">
+              <svg width="240" height="204" viewBox="0 0 32 27" shape-rendering="crispEdges" style="display:block;margin:0 auto;animation:jz-float 4.5s ease-in-out infinite">
+  <rect x="1" y="1" width="5" height="1" fill="#3a2f47"/><rect x="1" y="6" width="5" height="1" fill="#3a2f47"/><rect x="0" y="2" width="1" height="4" fill="#3a2f47"/><rect x="6" y="2" width="1" height="4" fill="#3a2f47"/><rect x="1" y="2" width="5" height="4" fill="#FFFFFF"/><rect x="2" y="6" width="1" height="1" fill="#FFFFFF"/><rect x="2" y="7" width="1" height="1" fill="#3a2f47"/><rect x="2" y="3" width="2" height="1" fill="#2a2436"/><rect x="3" y="4" width="1" height="1" fill="#2a2436"/><rect x="2" y="5" width="1" height="1" fill="#2a2436"/>
+  <rect x="11" y="-1" width="7" height="1" fill="#3a2f47"/><rect x="11" y="4" width="7" height="1" fill="#3a2f47"/><rect x="10" y="0" width="1" height="4" fill="#3a2f47"/><rect x="18" y="0" width="1" height="4" fill="#3a2f47"/><rect x="11" y="0" width="7" height="4" fill="#FFFFFF"/><rect x="12" y="4" width="1" height="1" fill="#FFFFFF"/><rect x="12" y="5" width="1" height="1" fill="#3a2f47"/><rect x="12" y="2" width="1" height="1" fill="#2a2436"/><rect x="14" y="2" width="1" height="1" fill="#2a2436"/><rect x="16" y="2" width="1" height="1" fill="#2a2436"/>
+  <rect x="24" y="1" width="5" height="1" fill="#3a2f47"/><rect x="24" y="6" width="5" height="1" fill="#3a2f47"/><rect x="23" y="2" width="1" height="4" fill="#3a2f47"/><rect x="29" y="2" width="1" height="4" fill="#3a2f47"/><rect x="24" y="2" width="5" height="4" fill="#FFFFFF"/><rect x="25" y="6" width="1" height="1" fill="#FFFFFF"/><rect x="25" y="7" width="1" height="1" fill="#3a2f47"/><rect x="25" y="3" width="2" height="1" fill="#2a2436"/><rect x="26" y="4" width="1" height="1" fill="#2a2436"/><rect x="25" y="5" width="1" height="1" fill="#2a2436"/>
+  <rect x="8" y="4" width="1" height="1" fill="#9CE9F2"/><rect x="23" y="4" width="1" height="1" fill="#9CE9F2"/><rect x="6" y="17" width="1" height="1" fill="#9CE9F2"/><rect x="25" y="17" width="1" height="1" fill="#9CE9F2"/>
+  <rect x="1" y="10" width="1" height="1" fill="#F6CF5C"/><rect x="0" y="11" width="3" height="1" fill="#F6CF5C"/><rect x="1" y="12" width="1" height="1" fill="#F6CF5C"/>
+  <rect x="29" y="13" width="1" height="1" fill="#F586AE"/><rect x="28" y="14" width="3" height="1" fill="#F586AE"/><rect x="29" y="15" width="1" height="1" fill="#F586AE"/>
+  <rect x="9" y="16" width="1" height="1" fill="#4A3585"/><rect x="24" y="16" width="1" height="1" fill="#4A3585"/><rect x="10" y="15" width="14" height="1" fill="#4A3585"/><rect x="8" y="17" width="1" height="1" fill="#4A3585"/><rect x="25" y="17" width="1" height="1" fill="#4A3585"/><rect x="9" y="16" width="1" height="1" fill="#4A3585"/><rect x="24" y="16" width="1" height="1" fill="#4A3585"/><rect x="8" y="18" width="1" height="1" fill="#4A3585"/><rect x="25" y="18" width="1" height="1" fill="#4A3585"/><rect x="9" y="19" width="1" height="1" fill="#4A3585"/><rect x="24" y="19" width="1" height="1" fill="#4A3585"/><rect x="9" y="19" width="1" height="1" fill="#4A3585"/><rect x="24" y="19" width="1" height="1" fill="#4A3585"/><rect x="10" y="20" width="2" height="1" fill="#4A3585"/><rect x="22" y="20" width="2" height="1" fill="#4A3585"/><rect x="11" y="20" width="1" height="1" fill="#4A3585"/><rect x="22" y="20" width="1" height="1" fill="#4A3585"/><rect x="12" y="21" width="10" height="1" fill="#4A3585"/><rect x="10" y="16" width="14" height="1" fill="#6B4FB0"/><rect x="9" y="17" width="16" height="1" fill="#6B4FB0"/><rect x="9" y="18" width="16" height="1" fill="#6B4FB0"/><rect x="10" y="19" width="14" height="1" fill="#6B4FB0"/><rect x="12" y="20" width="10" height="1" fill="#6B4FB0"/>
+  <rect x="10" y="17" width="3" height="1" fill="#8A6BD6"/><rect x="20" y="17" width="3" height="1" fill="#8A6BD6"/><rect x="11" y="19" width="2" height="1" fill="#8A6BD6"/><rect x="20" y="19" width="2" height="1" fill="#8A6BD6"/>
+  <rect x="12" y="16" width="1" height="1" fill="#3a2f47"/><rect x="21" y="16" width="1" height="1" fill="#3a2f47"/><rect x="13" y="15" width="8" height="1" fill="#3a2f47"/><rect x="11" y="17" width="1" height="1" fill="#3a2f47"/><rect x="22" y="17" width="1" height="1" fill="#3a2f47"/><rect x="12" y="16" width="1" height="1" fill="#3a2f47"/><rect x="21" y="16" width="1" height="1" fill="#3a2f47"/><rect x="10" y="18" width="1" height="1" fill="#3a2f47"/><rect x="23" y="18" width="1" height="1" fill="#3a2f47"/><rect x="11" y="17" width="1" height="1" fill="#3a2f47"/><rect x="22" y="17" width="1" height="1" fill="#3a2f47"/><rect x="11" y="19" width="1" height="1" fill="#3a2f47"/><rect x="22" y="19" width="1" height="1" fill="#3a2f47"/><rect x="11" y="19" width="1" height="1" fill="#3a2f47"/><rect x="22" y="19" width="1" height="1" fill="#3a2f47"/><rect x="12" y="20" width="2" height="1" fill="#3a2f47"/><rect x="21" y="20" width="1" height="1" fill="#3a2f47"/><rect x="13" y="20" width="1" height="1" fill="#3a2f47"/><rect x="21" y="20" width="1" height="1" fill="#3a2f47"/><rect x="14" y="21" width="7" height="1" fill="#3a2f47"/><rect x="13" y="16" width="8" height="1" fill="#2B2B52"/><rect x="12" y="17" width="10" height="1" fill="#2B2B52"/><rect x="11" y="18" width="12" height="1" fill="#2B2B52"/><rect x="12" y="19" width="10" height="1" fill="#2B2B52"/><rect x="14" y="20" width="7" height="1" fill="#2B2B52"/>
+  <rect x="14" y="16" width="2" height="1" fill="#FFFFFF"/><rect x="17" y="16" width="2" height="1" fill="#FFFFFF"/><rect x="16" y="16" width="1" height="1" fill="#E3455F"/><rect x="15" y="17" width="2" height="2" fill="#E3455F"/><rect x="15" y="19" width="2" height="1" fill="#E3455F"/>
+  <rect x="12" y="18" width="1" height="2" fill="#3D3D6B"/><rect x="20" y="18" width="1" height="2" fill="#3D3D6B"/>
+  <rect x="20" y="20" width="4" height="1" fill="#F7B9CE"/><rect x="22" y="21" width="3" height="1" fill="#F7B9CE"/><rect x="23" y="21" width="1" height="1" fill="#EFA0BE"/>
+  <rect x="12" y="6" width="1" height="1" fill="#3a2f47"/><rect x="21" y="6" width="1" height="1" fill="#3a2f47"/><rect x="13" y="5" width="8" height="1" fill="#3a2f47"/><rect x="11" y="7" width="1" height="1" fill="#3a2f47"/><rect x="22" y="7" width="1" height="1" fill="#3a2f47"/><rect x="12" y="6" width="1" height="1" fill="#3a2f47"/><rect x="21" y="6" width="1" height="1" fill="#3a2f47"/><rect x="10" y="8" width="1" height="1" fill="#3a2f47"/><rect x="23" y="8" width="1" height="1" fill="#3a2f47"/><rect x="11" y="7" width="1" height="1" fill="#3a2f47"/><rect x="22" y="7" width="1" height="1" fill="#3a2f47"/><rect x="10" y="9" width="1" height="1" fill="#3a2f47"/><rect x="23" y="9" width="1" height="1" fill="#3a2f47"/><rect x="10" y="10" width="1" height="1" fill="#3a2f47"/><rect x="23" y="10" width="1" height="1" fill="#3a2f47"/><rect x="10" y="11" width="1" height="1" fill="#3a2f47"/><rect x="23" y="11" width="1" height="1" fill="#3a2f47"/><rect x="10" y="12" width="1" height="1" fill="#3a2f47"/><rect x="23" y="12" width="1" height="1" fill="#3a2f47"/><rect x="11" y="13" width="1" height="1" fill="#3a2f47"/><rect x="22" y="13" width="1" height="1" fill="#3a2f47"/><rect x="11" y="13" width="1" height="1" fill="#3a2f47"/><rect x="22" y="13" width="1" height="1" fill="#3a2f47"/><rect x="12" y="14" width="1" height="1" fill="#3a2f47"/><rect x="21" y="14" width="1" height="1" fill="#3a2f47"/><rect x="12" y="14" width="1" height="1" fill="#3a2f47"/><rect x="21" y="14" width="1" height="1" fill="#3a2f47"/><rect x="13" y="15" width="8" height="1" fill="#3a2f47"/><rect x="13" y="6" width="8" height="1" fill="#F7B9CE"/><rect x="12" y="7" width="10" height="1" fill="#F7B9CE"/><rect x="11" y="8" width="12" height="1" fill="#F7B9CE"/><rect x="11" y="9" width="12" height="1" fill="#F7B9CE"/><rect x="11" y="10" width="12" height="1" fill="#F7B9CE"/><rect x="11" y="11" width="12" height="1" fill="#F7B9CE"/><rect x="11" y="12" width="12" height="1" fill="#F7B9CE"/><rect x="12" y="13" width="10" height="1" fill="#F7B9CE"/><rect x="13" y="14" width="8" height="1" fill="#F7B9CE"/>
+  <rect x="12" y="7" width="6" height="1" fill="#FAD2E0"/><rect x="12" y="8" width="2" height="1" fill="#FAD2E0"/>
+  <rect x="11" y="12" width="1" height="1" fill="#E88FAE"/><rect x="22" y="12" width="1" height="1" fill="#E88FAE"/>
+  <rect x="15" y="13" width="3" height="1" fill="#2a2436"/>
+  <rect x="2" y="10" width="28" height="1" fill="#FFA8B8"/>
+  <rect x="6" y="10" width="20" height="1" fill="#FF3B5C"/>
+  <rect x="16" y="6" width="1" height="8" fill="#FF3B5C"/><rect x="15" y="9" width="3" height="3" fill="#FFA8B8"/><rect x="14" y="10" width="5" height="1" fill="#FF3B5C"/>
+  <rect x="16" y="5" width="1" height="1" fill="#FFA8B8"/><rect x="16" y="14" width="1" height="1" fill="#FFA8B8"/>
+  <rect x="16" y="10" width="1" height="1" fill="#FFFFFF"/>
+</svg>
+              <div style="font-family:'DotGothic16',monospace;font-size:20px;color:#17171a;margin-top:4px">각성한 논객 LV.56</div>
+              <div style="font-size:11.5px;font-weight:700;color:#1f5a75;margin-top:5px">생각이 바뀜 누적 8회 · 반론 각성</div>
+              <div style="display:flex;justify-content:center;gap:6px;margin-top:10px">
+                <span style="font-size:11px;font-weight:700;padding:6px 13px;border-radius:999px;background:#fff;color:#8d3f70">철학 날개</span>
+                <span style="font-size:11px;font-weight:700;padding:6px 13px;border-radius:999px;background:#fff;color:#1f5a75">기술 날개</span>
+                <span style="font-size:11px;font-weight:700;padding:6px 13px;border-radius:999px;background:#FBE9AE;color:#63510f">🔥 각성</span>
+              </div>
+            </div>
+
+            <div style="margin-top:14px;padding:2px 2px 0">
+              <div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #EFEDF2">
+                <span style="font-size:15px;width:19px;flex:none;text-align:center">👂</span>
+                <span style="font-size:12.5px;font-weight:700;color:#17171a;width:76px;flex:none">끝까지 들음</span>
+                <span style="flex:1;height:6px;border-radius:999px;background:#EFEDF2;overflow:hidden"><span style="display:block;width:80%;height:100%;border-radius:999px;background:#F586AE"></span></span>
+                <span style="font-family:'DotGothic16',monospace;font-size:16px;color:#17171a;width:26px;text-align:right;flex:none">32</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #EFEDF2">
+                <span style="font-size:15px;width:19px;flex:none;text-align:center">🔁</span>
+                <span style="font-size:12.5px;font-weight:700;color:#17171a;width:76px;flex:none">생각이 바뀜</span>
+                <span style="flex:1;height:6px;border-radius:999px;background:#EFEDF2;overflow:hidden"><span style="display:block;width:18%;height:100%;border-radius:999px;background:#8ED4F0"></span></span>
+                <span style="font-family:'DotGothic16',monospace;font-size:16px;color:#17171a;width:26px;text-align:right;flex:none">{{ changedCount }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #EFEDF2">
+                <span style="font-size:15px;width:19px;flex:none;text-align:center">🫱</span>
+                <span style="font-size:12.5px;font-weight:700;color:#17171a;width:76px;flex:none">스틸맨</span>
+                <span style="flex:1;height:6px;border-radius:999px;background:#EFEDF2;overflow:hidden"><span style="display:block;width:30%;height:100%;border-radius:999px;background:#F6CF5C"></span></span>
+                <span style="font-family:'DotGothic16',monospace;font-size:16px;color:#17171a;width:26px;text-align:right;flex:none">12</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;padding:11px 0">
+                <span style="font-size:15px;width:19px;flex:none;text-align:center">👀</span>
+                <span style="font-size:12.5px;font-weight:700;color:#17171a;width:76px;flex:none">브리핑 완독</span>
+                <span style="flex:1;height:6px;border-radius:999px;background:#EFEDF2;overflow:hidden"><span style="display:block;width:100%;height:100%;border-radius:999px;background:#8FD8A4"></span></span>
+                <span style="font-family:'DotGothic16',monospace;font-size:16px;color:#17171a;width:26px;text-align:right;flex:none">40</span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin:28px 0 4px">
+              <div>
+                <div style="font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#4a4750">PARTICIPATION LOG</div>
+                <h2 style="margin:4px 0 0;font-size:25px;font-weight:900;letter-spacing:-1.2px;color:#17171a">참가 기록</h2>
+              </div>
+              <span style="font-family:'Space Mono',monospace;font-size:11px;color:#4a4750">27회</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px">
+              <div style="position:relative;display:flex;background:#FFFDF6;border:1.5px solid #17171a;border-radius:14px;overflow:hidden">
+                <div style="flex:none;width:52px;border-right:1.5px dashed #17171a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:12px 0">
+                  <span style="width:26px;height:26px;border-radius:8px;background:#F586AE;display:flex;align-items:center;justify-content:center"><span style="font-family:'DotGothic16',monospace;font-size:15px;color:#fff">1</span></span>
+                  <span style="font-family:'DotGothic16',monospace;font-size:13px;color:#17171a">09.02</span>
+                </div>
+                <div style="flex:1;min-width:0;padding:11px 14px 12px">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;padding-bottom:6px;border-bottom:1px solid #17171a">
+                    <span style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.3px;color:#4a4750">No.0398</span>
+                    <span style="font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:1.3px;color:#17171a">참가 완료</span>
+                  </div>
+                  <div style="height:2px"></div>
+                  <div style="border-top:1px solid #17171a;padding-top:9px">
+                    <div style="font-size:14.5px;font-weight:900;letter-spacing:-.4px;color:#17171a">생성물의 주인</div>
+                    <div style="font-size:12.5px;font-weight:500;line-height:1.55;color:#4a4750;margin-top:6px">“나는 결과라고 말해왔지만, 오늘 노동 쪽으로 옮겼다.”</div>
+                    <div style="display:flex;gap:5px;margin-top:9px"><span style="font-size:10.5px;font-weight:700;padding:5px 10px;border-radius:999px;background:#FBDFEC;color:#8d3f70">🔁 생각 바뀜</span><span style="font-size:10.5px;font-weight:700;padding:5px 10px;border-radius:999px;background:#F3F1F5;color:#4a4750">🤍 인정 2</span></div>
+                  </div>
+                </div>
+                <div style="position:absolute;left:45px;top:-7px;width:14px;height:14px;border-radius:50%;background:#fff;border:1.5px solid #17171a"></div>
+                <div style="position:absolute;left:45px;bottom:-7px;width:14px;height:14px;border-radius:50%;background:#fff;border:1.5px solid #17171a"></div>
+              </div>
+              <div style="position:relative;display:flex;background:#FFFDF6;border:1.5px solid #17171a;border-radius:14px;overflow:hidden">
+                <div style="flex:none;width:52px;border-right:1.5px dashed #17171a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:12px 0">
+                  <span style="width:26px;height:26px;border-radius:8px;background:#8ED4F0;display:flex;align-items:center;justify-content:center"><span style="font-family:'DotGothic16',monospace;font-size:15px;color:#fff">2</span></span>
+                  <span style="font-family:'DotGothic16',monospace;font-size:13px;color:#17171a">08.26</span>
+                </div>
+                <div style="flex:1;min-width:0;padding:11px 14px 12px">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;padding-bottom:6px;border-bottom:1px solid #17171a">
+                    <span style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.3px;color:#4a4750">No.0371</span>
+                    <span style="font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:1.3px;color:#17171a">참가 완료</span>
+                  </div>
+                  <div style="height:2px"></div>
+                  <div style="border-top:1px solid #17171a;padding-top:9px">
+                    <div style="font-size:14.5px;font-weight:900;letter-spacing:-.4px;color:#17171a">외로움의 구조</div>
+                    <div style="font-size:12.5px;font-weight:500;line-height:1.55;color:#4a4750;margin-top:6px">“외로움은 사람 수의 문제가 아니라 문장 길이의 문제였다.”</div>
+                    <div style="display:flex;gap:5px;margin-top:9px"><span style="font-size:10.5px;font-weight:700;padding:5px 10px;border-radius:999px;background:#E5F5E9;color:#3a5f48">👂 끝까지 들음</span></div>
+                  </div>
+                </div>
+                <div style="position:absolute;left:45px;top:-7px;width:14px;height:14px;border-radius:50%;background:#fff;border:1.5px solid #17171a"></div>
+                <div style="position:absolute;left:45px;bottom:-7px;width:14px;height:14px;border-radius:50%;background:#fff;border:1.5px solid #17171a"></div>
+              </div>
+              <div style="position:relative;display:flex;background:#FFFDF6;border:1.5px solid #17171a;border-radius:14px;overflow:hidden">
+                <div style="flex:none;width:52px;border-right:1.5px dashed #17171a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:12px 0">
+                  <span style="width:26px;height:26px;border-radius:8px;background:#17171a;display:flex;align-items:center;justify-content:center"><span style="font-family:'DotGothic16',monospace;font-size:15px;color:#fff">3</span></span>
+                  <span style="font-family:'DotGothic16',monospace;font-size:13px;color:#17171a">08.19</span>
+                </div>
+                <div style="flex:1;min-width:0;padding:11px 14px 12px">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;padding-bottom:6px;border-bottom:1px solid #17171a">
+                    <span style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.3px;color:#4a4750">No.0342</span>
+                    <span style="font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:1.3px;color:#17171a">참가 완료</span>
+                  </div>
+                  <div style="height:2px"></div>
+                  <div style="border-top:1px solid #17171a;padding-top:9px">
+                    <div style="font-size:14.5px;font-weight:900;letter-spacing:-.4px;color:#17171a">공정이라는 말</div>
+                    <div style="font-size:12.5px;font-weight:500;line-height:1.55;color:#4a4750;margin-top:6px">“공정을 말할 때 우리는 서로 다른 출발선을 세고 있었다.”</div>
+                    <div style="display:flex;gap:5px;margin-top:9px"><span style="font-size:10.5px;font-weight:700;padding:5px 10px;border-radius:999px;background:#F3F1F5;color:#4a4750">관전 214</span></div>
+                  </div>
+                </div>
+                <div style="position:absolute;left:45px;top:-7px;width:14px;height:14px;border-radius:50%;background:#fff;border:1.5px solid #17171a"></div>
+                <div style="position:absolute;left:45px;bottom:-7px;width:14px;height:14px;border-radius:50%;background:#fff;border:1.5px solid #17171a"></div>
+              </div>
+            </div>
+            <button style="width:100%;margin-top:16px;cursor:pointer;background:#F3F1F5;border:none;border-radius:999px;padding:15px;font-size:13px;font-weight:700;color:#17171a" style-hover="background:#E9E6ED">지난 24개 더 보기</button>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <div style="flex:none;height:76px;background:#fff;display:flex;align-items:flex-start;padding:8px 6px 0;border-top:1px solid #EFEDF2">
+        <button onClick="{{ goHome }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;color:{{ homeColor }}">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="3.5" width="15" height="13" rx="3"/><path d="M2.5 7.5h15M6 10.5h8M6 13.5h5"/></svg>
+          <span style="font-size:10px;font-weight:700">시간표</span>
+          <span style="width:5px;height:5px;border-radius:50%;background:{{ homeDot }}"></span>
+        </button>
+        <button onClick="{{ goSession }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;color:{{ sessionColor }}">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5.5h14v8H3z"/><path d="M6 16.5h8"/></svg>
+          <span style="font-size:10px;font-weight:700">토론방</span>
+          <span style="width:5px;height:5px;border-radius:50%;background:{{ sessionDot }}"></span>
+        </button>
+        <button onClick="{{ goSpar }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;color:{{ sparColor }}">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="10" r="7.5"/><path d="M7.4 8.2c0-1.6 1.2-2.6 2.7-2.6s2.6 1 2.6 2.4c0 1.2-.9 1.7-1.8 2.2-.6.4-.9.7-.9 1.4"/><circle cx="10" cy="14.4" r="1" fill="currentColor" stroke="none"/></svg>
+          <span style="font-size:10px;font-weight:700">리허설</span>
+          <span style="width:5px;height:5px;border-radius:50%;background:{{ sparDot }}"></span>
+        </button>
+        <button onClick="{{ goShelf }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;color:{{ shelfColor }}">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 3.5h12v13l-6-3.2-6 3.2z"/></svg>
+          <span style="font-size:10px;font-weight:700">참가기록</span>
+          <span style="width:5px;height:5px;border-radius:50%;background:{{ shelfDot }}"></span>
+        </button>
+      </div>
+
+      <sc-if value="{{ briefingOpen }}">
+        <div style="position:absolute;inset:0;background:rgba(17,17,19,.42);display:flex;align-items:flex-end;animation:jz-fade .2s ease">
+          <div style="width:100%;height:88%;background:#fff;border-radius:26px 26px 42px 42px;display:flex;flex-direction:column;animation:jz-up .3s cubic-bezier(.2,.8,.2,1);overflow:hidden">
+
+            <div style="flex:none;background:#17171a;padding:18px 22px 16px;display:flex;align-items:flex-start;justify-content:space-between">
+              <div>
+                <div style="font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:1.5px;color:#F7B3D4">1번 방 · 20:05 · 입장 전 브리핑</div>
+                <div style="font-size:19px;font-weight:900;letter-spacing:-.7px;color:#fff;margin-top:6px">AI 생성물의 저작권</div>
+                <div style="display:flex;gap:6px;margin-top:10px">
+                  <span style="font-size:10.5px;font-weight:700;padding:5px 10px;border-radius:999px;background:#26262b;color:#F7B3D4">발언 2번</span>
+                  <span style="font-size:10.5px;font-weight:700;padding:5px 10px;border-radius:999px;background:#26262b;color:#c9c6cd">2:2 토론</span>
+                </div>
+              </div>
+              <button onClick="{{ closeBriefing }}" style="cursor:pointer;background:#26262b;border:none;width:34px;height:34px;border-radius:50%;font-size:14px;color:#c9c6cd" style-hover="background:#34343b">✕</button>
+            </div>
+
+            <div style="flex:1;overflow-y:auto;padding:18px 22px 20px">
+              <div style="font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#4a4750">용어 5</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+                <span style="font-size:12px;font-weight:700;padding:9px 15px;border-radius:999px;background:#F3F1F5;color:#17171a">저작인격권</span>
+                <span style="font-size:12px;font-weight:700;padding:9px 15px;border-radius:999px;background:#F3F1F5;color:#17171a">창작적 기여</span>
+                <span style="font-size:12px;font-weight:700;padding:9px 15px;border-radius:999px;background:#F3F1F5;color:#17171a">공정이용</span>
+                <span style="font-size:12px;font-weight:700;padding:9px 15px;border-radius:999px;background:#F3F1F5;color:#17171a">학습 데이터</span>
+                <span style="font-size:12px;font-weight:700;padding:9px 15px;border-radius:999px;background:#F3F1F5;color:#17171a">2차적 저작물</span>
+              </div>
+
+              <div style="font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#4a4750;margin-top:26px">쟁점 3</div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+                <div style="background:#F3F1F5;border-radius:20px;padding:15px 17px;font-size:14px;font-weight:500;line-height:1.5;color:#17171a">프롬프트는 창작적 기여인가</div>
+                <div style="background:#F3F1F5;border-radius:20px;padding:15px 17px;font-size:14px;font-weight:500;line-height:1.5;color:#17171a">학습은 공정이용인가</div>
+                <div style="background:#F3F1F5;border-radius:20px;padding:15px 17px;font-size:14px;font-weight:500;line-height:1.5;color:#17171a">권리 주체는 이용자인가 제공자인가</div>
+              </div>
+
+              <div style="font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#4a4750;margin-top:26px">반대 2</div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+                <div style="background:#FBDFEC;border-radius:20px;padding:15px 17px;font-size:14px;font-weight:500;line-height:1.6;color:#8d3f70">“카메라 셔터와 프롬프트는 다르다.”</div>
+                <div style="background:#E6F5FC;border-radius:20px;padding:15px 17px;font-size:14px;font-weight:500;line-height:1.6;color:#1f5a75">“수천 명의 노동이 무보상으로 흡수된다.”</div>
+              </div>
+
+              <button onClick="{{ toggleRead }}" style="width:100%;margin-top:24px;cursor:pointer;background:#F7F6F9;border:none;border-radius:999px;padding:16px 20px;display:flex;gap:12px;align-items:center;text-align:left">
+                <sc-if value="{{ briefRead }}" hint-placeholder-val="{{ true }}"><span style="flex:none;width:26px;height:26px;border-radius:50%;background:#17171a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px">✓</span></sc-if>
+                <sc-if value="{{ briefUnread }}"><span style="flex:none;width:26px;height:26px;border-radius:50%;background:#fff"></span></sc-if>
+                <span style="font-size:13px;font-weight:700;color:#17171a">끝까지 읽었습니다</span>
+              </button>
+            </div>
+
+            <div style="flex:none;padding:10px 22px 26px">
+              <button onClick="{{ enterSession }}" disabled="{{ enterDisabled }}" style="width:100%;border:none;border-radius:999px;padding:17px;font-size:14px;font-weight:700;background:{{ enterBg }};color:{{ enterFg }};cursor:{{ enterCursor }}">1번 방 입장</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ changeOpen }}">
+        <div style="position:absolute;inset:0;background:rgba(17,17,19,.42);display:flex;align-items:center;justify-content:center;padding:30px;animation:jz-fade .2s ease">
+          <div style="background:#fff;border-radius:26px;padding:26px 20px;width:100%;text-align:center;animation:jz-pop .3s ease">
+            <div style="font-size:34px">🔁</div>
+            <div style="font-size:18px;font-weight:900;letter-spacing:-.6px;color:#17171a;margin-top:10px">생각이 바뀜을 선언?</div>
+            <div style="font-size:12.5px;line-height:1.6;color:#4a4750;margin-top:8px">다음 티어로 가는 유일한 조건</div>
+            <div style="display:flex;gap:8px;margin-top:20px">
+              <button onClick="{{ cancelChange }}" style="flex:1;cursor:pointer;background:#F3F1F5;border:none;border-radius:999px;padding:15px;font-size:13px;font-weight:700;color:#4a4750" style-hover="background:#E9E6ED">아직</button>
+              <button onClick="{{ confirmChange }}" style="flex:1;cursor:pointer;background:#17171a;border:none;border-radius:999px;padding:15px;font-size:13px;font-weight:700;color:#fff" style-hover="opacity:.85">선언</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:130px;height:5px;border-radius:3px;background:#17171a;opacity:.2;pointer-events:none"></div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;ackLimit&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:6},&quot;showMockButton&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const OTHER = [
+  "권리는 지시한 사람이 아니라, 학습된 데이터를 만든 사람들에게 나눠져야 합니다.",
+  "다만 상업적 이용과 개인적 이용을 구분하지 않은 건 과했습니다. 정정합니다.",
+  "기준을 결과의 예측 가능성으로 두면 어떻습니까."
+];
+
+const SPAR = [
+  { q: "가장 확신하는 주장 하나. 그게 틀렸을 가능성이 큰 지점은?", fb: "지금 누른 발언 종료가 내 턴의 끝입니다. 이 신호 없이 상대는 끼어들지 않습니다." },
+  { q: "상대가 “ㅋㅋ 그걸 왜 진지하게”라고 답했습니다. 무엇이 작동해야 할까요?", fb: "조롱·비꼼 축이 작동합니다. 상대에게만 조용히 1차 경고가 갑니다." }
+];
+
+class Component extends DCLogic {
+  state = {
+    tab: "home", briefing: false, briefRead: false, changeOpen: false,
+    countdown: 295, sessionSec: 1080,
+    ackLeft: null, changed: 5, hand: 2,
+    draft: "", sparDraft: "", sparStep: 0, sparFb: "", toast: null,
+    msgs: [
+      { who: "other", text: OTHER[0], acked: false },
+      { who: "me", text: "나눔의 기준을 노동으로 두면 검증 불가능한 지분 계산이 남습니다.", done: true },
+      { who: "other", text: OTHER[1], acked: false }
+    ]
+  };
+
+  get limit() { return this.props.ackLimit ?? 3; }
+
+  componentDidMount() {
+    this.t = setInterval(() => this.setState(s => ({
+      countdown: Math.max(0, s.countdown - 1),
+      sessionSec: s.tab === "session" ? Math.max(0, s.sessionSec - 1) : s.sessionSec
+    })), 1000);
+  }
+  componentWillUnmount() { clearInterval(this.t); clearTimeout(this.tt); clearTimeout(this.pending); }
+
+  fmt(n) { const m = Math.floor(n / 60), s = n % 60; return m + ":" + String(s).padStart(2, "0"); }
+
+  toast(tone, text) {
+    clearTimeout(this.tt);
+    this.setState({ toast: { tone, text } });
+    this.tt = setTimeout(() => this.setState({ toast: null }), 5000);
+  }
+
+  logRef = (el) => { this.log = el; };
+
+  componentDidUpdate() {
+    const n = this.state.msgs.length, tab = this.state.tab;
+    if (n !== this._n || tab !== this._tab) {
+      this._n = n; this._tab = tab;
+      const el = this.log || document.querySelector('[data-log="1"]');
+      if (el) el.scrollTop = el.scrollHeight;
+    }
+  }
+
+  scrollLog = () => {
+    requestAnimationFrame(() => {
+      const el = this.log || document.querySelector('[data-log="1"]');
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+  };
+
+  ack = (i) => {
+    const left = this.state.ackLeft === null ? this.limit : this.state.ackLeft;
+    if (left <= 0) { this.toast("good", "인정권을 모두 썼습니다 · " + this.limit + "회"); return; }
+    this.setState(s => ({
+      ackLeft: left - 1,
+      msgs: s.msgs.map((m, k) => k === i ? Object.assign({}, m, { acked: true }) : m)
+    }));
+    this.toast("good", "상호 인정 기록 · 양측 성장 +1");
+  };
+
+  send = () => {
+    if (this.pending) return;
+    const text = this.state.draft.trim() || "예측 가능성으로는 우연히 좋은 결과가 나온 경우를 설명할 수 없습니다.";
+    const nth = this.state.msgs.filter(m => m.who === "other").length;
+    const reply = OTHER[Math.min(nth, OTHER.length - 1)];
+    this.setState(s => ({ msgs: s.msgs.concat([{ who: "me", text, done: true }]), draft: "" }));
+    this.scrollLog();
+    this.pending = setTimeout(() => {
+      this.pending = null;
+      this.setState(st => ({ msgs: st.msgs.concat([{ who: "other", text: reply, acked: false }]) }));
+      this.scrollLog();
+    }, 1100);
+  };
+
+  renderVals() {
+    const s = this.state, left = s.ackLeft === null ? this.limit : s.ackLeft;
+    const active = "#17171a", idle = "#78747e";
+    const msgs = s.msgs.map((m, i) => ({
+      isOther: m.who === "other", isMe: m.who === "me", isSystem: m.who === "sys",
+      text: m.text, done: !!m.done, acked: !!m.acked,
+      canAck: m.who === "other" && !m.acked,
+      onAck: () => this.ack(i)
+    }));
+    const dots = [];
+    for (let i = 0; i < this.limit; i++) dots.push({ on: i < left, off: i >= left });
+
+    return {
+      isHome: s.tab === "home", isSession: s.tab === "session", isSpar: s.tab === "spar", isShelf: s.tab === "shelf",
+      homeColor: s.tab === "home" ? active : idle,
+      sessionColor: s.tab === "session" ? active : idle,
+      sparColor: s.tab === "spar" ? active : idle,
+      shelfColor: s.tab === "shelf" ? active : idle,
+      homeDot: s.tab === "home" ? active : "transparent",
+      sessionDot: s.tab === "session" ? active : "transparent",
+      sparDot: s.tab === "spar" ? active : "transparent",
+      shelfDot: s.tab === "shelf" ? active : "transparent",
+      goHome: () => this.setState({ tab: "home" }),
+      goSession: () => this.setState({ tab: "session" }),
+      goSpar: () => this.setState({ tab: "spar" }),
+      goShelf: () => this.setState({ tab: "shelf" }),
+
+      countdownLabel: this.fmt(s.countdown),
+      sessionLabel: this.fmt(s.sessionSec),
+
+      briefingOpen: s.briefing, briefRead: s.briefRead, briefUnread: !s.briefRead,
+      openBriefing: () => this.setState({ briefing: true }),
+      closeBriefing: () => this.setState({ briefing: false }),
+      toggleRead: () => this.setState(p => ({ briefRead: !p.briefRead })),
+      enterDisabled: !s.briefRead,
+      enterBg: s.briefRead ? "#17171a" : "#EFEDF2",
+      enterFg: s.briefRead ? "#ffffff" : "#a9a5af",
+      enterCursor: s.briefRead ? "pointer" : "not-allowed",
+      enterSession: () => { if (s.briefRead) this.setState({ briefing: false, tab: "session" }); },
+
+      msgs, ackDots: dots, logRef: this.logRef,
+      draft: s.draft,
+      onDraft: (e) => this.setState({ draft: e.target.value }),
+      sendTurn: this.send,
+      handLabel: s.hand + "/3",
+      raiseHand: () => {
+        if (s.hand <= 0) { this.toast("good", "손들기를 모두 썼습니다"); return; }
+        this.setState(p => ({ hand: p.hand - 1 }));
+        this.toast("good", "발언권 요청 · 다음 턴에 앞당겨집니다");
+      },
+      mockTest: () => { if (this.props.showMockButton === false) return; this.toast("warn", "mock"); },
+      toastWarn: !!s.toast && s.toast.tone === "warn",
+      toastGood: !!s.toast && s.toast.tone === "good",
+      toastText: s.toast ? s.toast.text : "",
+
+      changeOpen: s.changeOpen,
+      declareChange: () => this.setState({ changeOpen: true }),
+      cancelChange: () => this.setState({ changeOpen: false }),
+      confirmChange: () => {
+        this.setState(p => ({
+          changeOpen: false, changed: p.changed + 1,
+          msgs: p.msgs.concat([{ who: "sys", text: "생각이 바뀜 선언 🔁" }])
+        }));
+        this.scrollLog();
+        this.toast("good", "기록됨 · 다음 티어 변태 조건 충족");
+      },
+      changedCount: s.changed,
+
+      sparQuestion: s.sparStep < SPAR.length ? SPAR[s.sparStep].q : "리허설 종료",
+      sparStepLabel: s.sparStep < SPAR.length ? (s.sparStep + 1) + "/2" : "완료",
+      sparOpen: s.sparStep < SPAR.length,
+      sparDone: s.sparStep >= SPAR.length,
+      sparFeedback: !!s.sparFb, sparFeedbackText: s.sparFb,
+      sparDraft: s.sparDraft,
+      onSparDraft: (e) => this.setState({ sparDraft: e.target.value }),
+      sparAnswer: () => this.setState(p => ({
+        sparFb: SPAR[Math.min(p.sparStep, SPAR.length - 1)].fb,
+        sparStep: p.sparStep + 1, sparDraft: ""
+      }))
+    };
+  }
+}
+
+</script>
+</body>
+</html>
