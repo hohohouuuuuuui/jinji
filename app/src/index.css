@@ -1,0 +1,77 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #eceaf0;
+  font-family: 'Noto Sans KR', -apple-system, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: #b0568f;
+}
+a:hover {
+  color: #8d3f70;
+}
+
+input,
+button {
+  font-family: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+@keyframes jz-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes jz-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes jz-pop {
+  0% {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes jz-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes jz-blink {
+  0%,
+  92%,
+  100% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 0.25;
+  }
+}
