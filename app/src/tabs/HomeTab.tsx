@@ -140,13 +140,13 @@ export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTop
       <div
         style={{
           display: 'flex',
-          gap: 0,
+          gap: 10,
           padding: '0 20px 7px',
           borderBottom: '1.5px solid #17171a',
         }}
       >
-        <span style={{ width: 52, fontFamily: "'Space Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: 1.1, color: '#4a4750' }}>방</span>
-        <span style={{ width: 54, fontFamily: "'Space Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: 1.1, color: '#4a4750' }}>시간</span>
+        <span style={{ width: 38, fontFamily: "'Space Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: 1.1, color: '#4a4750' }}>방</span>
+        <span style={{ width: 58, fontFamily: "'Space Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: 1.1, color: '#4a4750' }}>시간</span>
         <span style={{ flex: 1, fontFamily: "'Space Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: 1.1, color: '#4a4750' }}>주제</span>
         <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: 1.1, color: '#4a4750' }}>자리</span>
       </div>
@@ -165,7 +165,7 @@ export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTop
               key={row.room.id}
               style={{
                 display: 'flex',
-                gap: 0,
+                gap: 10,
                 padding: isLast ? '16px 0 18px' : '16px 0 15px',
                 borderBottom: isLast ? 'none' : '1px solid #EFEDF2',
                 ...(row.featured
@@ -173,7 +173,7 @@ export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTop
                   : {}),
               }}
             >
-              <div style={{ width: 52, flex: 'none' }}>
+              <div style={{ width: 38, flex: 'none' }}>
                 {locked ? (
                   <div
                     style={{
@@ -209,7 +209,7 @@ export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTop
                   </div>
                 )}
               </div>
-              <div style={{ width: 54, flex: 'none' }}>
+              <div style={{ width: 58, flex: 'none' }}>
                 {row.day ? (
                   <>
                     <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: 1, color: '#4a4750' }}>
@@ -221,7 +221,7 @@ export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTop
                   </>
                 ) : (
                   <>
-                    <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 19, lineHeight: 1.1, color: '#17171a' }}>
+                    <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 19, lineHeight: 1.1, color: '#17171a', whiteSpace: 'nowrap' }}>
                       {row.time}
                     </div>
                     {(row.status || row.featured) && (
