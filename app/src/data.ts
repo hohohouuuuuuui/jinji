@@ -70,21 +70,6 @@ export const SCHEDULE: ScheduleRowData[] = [
 
 export const FILTER_CHIPS = ['전체', '1번 방 토론', '2번 방 대화', '3번 방 격돌'];
 
-export interface StatBar {
-  emoji: string;
-  label: string;
-  value: number;
-  pct: number;
-  color: string;
-}
-
-export const SHELF_STATS: StatBar[] = [
-  { emoji: '👂', label: '끝까지 들음', value: 32, pct: 80, color: '#F586AE' },
-  { emoji: '🔁', label: '생각이 바뀜', value: 5, pct: 18, color: '#8ED4F0' },
-  { emoji: '🫱', label: '스틸맨', value: 12, pct: 30, color: '#F6CF5C' },
-  { emoji: '👀', label: '브리핑 완독', value: 40, pct: 100, color: '#8FD8A4' },
-];
-
 export const ISSUE_CHIPS = ['쟁점 1 창작적 기여', '2 공정이용', '3 권리 주체'];
 
 export const RULES = ['비속어', '존대 이탈', '인신공격', '조롱 · 비꼼'];

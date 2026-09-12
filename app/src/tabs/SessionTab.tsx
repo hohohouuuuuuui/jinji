@@ -24,6 +24,13 @@ interface SessionTabProps {
   kindLabel?: string;
   closed?: boolean;
   leaveLabel?: string;
+  onDispute: (id: number) => void;
+  showEndorse: boolean;
+  onEndorseChange?: (id: number) => void;
+  onOpenStillman: () => void;
+  muted: boolean;
+  mutedSecondsLeft: number;
+  otherMuted: boolean;
 }
 
 export function SessionTab({
@@ -48,8 +55,15 @@ export function SessionTab({
   kindLabel = '진지한 대화',
   closed = false,
   leaveLabel = '나가기 · 참가기록 남기기',
+  onDispute,
+  showEndorse,
+  onEndorseChange,
+  onOpenStillman,
+  muted,
+  mutedSecondsLeft,
+  otherMuted,
 }: SessionTabProps) {
-  const canType = isMyTurn && !closed;
+  const canType = isMyTurn && !closed && !muted;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', animation: 'jz-fade .25s ease' }}>
       <div style={{ flex: 'none', margin: '0 16px', background: '#17171a', borderRadius: 22, padding: '13px 16px 14px' }}>
@@ -131,6 +145,12 @@ export function SessionTab({
         </span>
       </div>
 
+      {otherMuted && (
+        <div style={{ flex: 'none', padding: '0 20px 8px' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#78747e' }}>상대가 잠시 정리 중이에요</span>
+        </div>
+      )}
+
       <div style={{ flex: 'none', display: 'flex', justifyContent: 'flex-end', padding: '0 20px 4px' }}>
         <button
           onClick={onLeave}
@@ -188,7 +208,36 @@ export function SessionTab({
                 <div style={{ maxWidth: '84%', background: '#F7B3D4', borderRadius: 22, padding: '13px 17px', fontSize: 14, lineHeight: 1.6, color: '#3d1029' }}>
                   {m.text}
                 </div>
-                {m.done && <div style={{ fontSize: 10, color: '#4a4750', paddingRight: 6 }}>발언 종료</div>}
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', paddingRight: 6 }}>
+                  {m.done && <div style={{ fontSize: 10, color: '#4a4750' }}>발언 종료</div>}
+                  {m.flagged && !m.disputed && (
+                    <button
+                      onClick={() => onDispute(m.id)}
+                      style={{ cursor: 'pointer', background: 'none', border: 'none', fontSize: 10, fontWeight: 700, color: '#c0392b', padding: 0 }}
+                    >
+                      이의제기
+                    </button>
+                  )}
+                  {m.disputed && <div style={{ fontSize: 10, color: '#78747e' }}>이의제기로 무효 처리됨</div>}
+                </div>
+              </div>
+            );
+          }
+          if (m.kind === 'change_declare') {
+            return (
+              <div key={m.id} style={{ alignSelf: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, animation: 'jz-pop .3s ease' }}>
+                <div style={{ background: '#17171a', borderRadius: 999, padding: '9px 18px', fontSize: 11.5, fontWeight: 700, color: '#F7B3D4' }}>
+                  {m.text}
+                </div>
+                {showEndorse && m.canEndorse && (
+                  <button
+                    onClick={() => onEndorseChange?.(m.id)}
+                    style={{ cursor: 'pointer', background: '#FBDFEC', border: 'none', borderRadius: 999, padding: '7px 16px', fontSize: 11, fontWeight: 700, color: '#8d3f70' }}
+                  >
+                    동의해서 성장시키기
+                  </button>
+                )}
+                {showEndorse && m.acked && <div style={{ fontSize: 10, fontWeight: 700, color: '#3a5f48' }}>✅ 상대가 동의함</div>}
               </div>
             );
           }
@@ -212,18 +261,30 @@ export function SessionTab({
           </div>
         )}
 
+        {muted && (
+          <div style={{ background: '#FFF3D6', borderRadius: 20, padding: '13px 16px', marginBottom: 9, fontSize: 12.5, lineHeight: 1.55, color: '#63510f', fontWeight: 500, animation: 'jz-up .25s ease' }}>
+            ⚠️ 2차 경고 · {mutedSecondsLeft}초간 발언이 제한됩니다
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: 7, marginBottom: 9 }}>
           <button
             onClick={onRaiseHand}
-            style={{ cursor: 'pointer', background: '#F3F1F5', border: 'none', borderRadius: 999, padding: '13px 16px', fontSize: 12, fontWeight: 700, color: '#17171a' }}
+            style={{ cursor: 'pointer', background: '#F3F1F5', border: 'none', borderRadius: 999, padding: '13px 14px', fontSize: 12, fontWeight: 700, color: '#17171a' }}
           >
             ✋ {handLeft}/2
           </button>
           <button
             onClick={onDeclareChange}
-            style={{ cursor: 'pointer', flex: 1, background: '#FBDFEC', border: 'none', borderRadius: 999, padding: '13px 16px', fontSize: 12, fontWeight: 700, color: '#8d3f70' }}
+            style={{ cursor: 'pointer', flex: 1, background: '#FBDFEC', border: 'none', borderRadius: 999, padding: '13px 14px', fontSize: 12, fontWeight: 700, color: '#8d3f70' }}
           >
             🔁 생각이 바뀜
+          </button>
+          <button
+            onClick={onOpenStillman}
+            style={{ cursor: 'pointer', background: '#F3F1F5', border: 'none', borderRadius: 999, padding: '13px 14px', fontSize: 12, fontWeight: 700, color: '#17171a' }}
+          >
+            🫱 스틸맨
           </button>
         </div>
 
@@ -234,7 +295,15 @@ export function SessionTab({
             onKeyDown={(e) => {
               if (e.key === 'Enter') onSend();
             }}
-            placeholder={closed ? '세션이 종료됐습니다' : isMyTurn ? '발언대에서 말하기' : '상대 차례를 기다리는 중…'}
+            placeholder={
+              closed
+                ? '세션이 종료됐습니다'
+                : muted
+                  ? `${mutedSecondsLeft}초 후 다시 발언할 수 있어요`
+                  : isMyTurn
+                    ? '발언대에서 말하기'
+                    : '상대 차례를 기다리는 중…'
+            }
             disabled={!canType}
             style={{
               flex: 1,

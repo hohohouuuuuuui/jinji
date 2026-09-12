@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
 import { ButterflyPixel } from '../icons/ButterflyPixel';
 import { CaterpillarPixel } from '../icons/CaterpillarPixel';
-import { SHELF_STATS } from '../data';
 import { supabase } from '../lib/supabase';
 import { getGrowth } from '../lib/growth';
 import type { LogRow } from '../lib/db-types';
 
 interface ShelfTabProps {
   changedCount: number;
+  listenedCount: number;
+  briefedCount: number;
+  stillmanCount: number;
   nickname: string;
+}
+
+function pct(count: number, cap = 20) {
+  return Math.min(100, Math.round((count / cap) * 100));
 }
 
 function formatLogDate(iso: string) {
@@ -22,9 +28,16 @@ function formatLogDate(iso: string) {
     .replace('/', '.');
 }
 
-export function ShelfTab({ changedCount, nickname }: ShelfTabProps) {
+export function ShelfTab({ changedCount, listenedCount, briefedCount, stillmanCount, nickname }: ShelfTabProps) {
   const [logs, setLogs] = useState<LogRow[] | null>(null);
   const growth = getGrowth(changedCount);
+
+  const stats = [
+    { emoji: '👂', label: '끝까지 들음', value: listenedCount, pct: pct(listenedCount), color: '#F586AE' },
+    { emoji: '🔁', label: '생각이 바뀜', value: changedCount, pct: pct(changedCount, 10), color: '#8ED4F0' },
+    { emoji: '🫱', label: '스틸맨', value: stillmanCount, pct: pct(stillmanCount, 10), color: '#F6CF5C' },
+    { emoji: '👀', label: '브리핑 완독', value: briefedCount, pct: pct(briefedCount), color: '#8FD8A4' },
+  ];
 
   useEffect(() => {
     let cancelled = false;
@@ -76,8 +89,8 @@ export function ShelfTab({ changedCount, nickname }: ShelfTabProps) {
       </div>
 
       <div style={{ marginTop: 14, padding: '2px 2px 0' }}>
-        {SHELF_STATS.map((stat, i) => {
-          const isLast = i === SHELF_STATS.length - 1;
+        {stats.map((stat, i) => {
+          const isLast = i === stats.length - 1;
           return (
             <div
               key={stat.label}
@@ -95,7 +108,7 @@ export function ShelfTab({ changedCount, nickname }: ShelfTabProps) {
                 <span style={{ display: 'block', width: `${stat.pct}%`, height: '100%', borderRadius: 999, background: stat.color }} />
               </span>
               <span style={{ fontFamily: "'DotGothic16',monospace", fontSize: 16, color: '#17171a', width: 26, textAlign: 'right', flex: 'none' }}>
-                {stat.label === '생각이 바뀜' ? changedCount : stat.value}
+                {stat.value}
               </span>
             </div>
           );

@@ -24,6 +24,12 @@ export interface RoomRow {
   hand_left_b: number;
   changed_a: number;
   changed_b: number;
+  violations_a: number;
+  violations_b: number;
+  muted_until_a: string | null;
+  muted_until_b: string | null;
+  dispute_used_a: boolean;
+  dispute_used_b: boolean;
   created_at: string;
 }
 
@@ -45,8 +51,13 @@ export interface LogRow {
 export interface ProfileRow {
   nickname: string;
   changed_count: number;
+  listened_count: number;
+  briefed_count: number;
+  stillman_count: number;
   updated_at: string;
 }
+
+export type MessageKind = 'chat' | 'change_declare' | 'session_closed' | 'ai_warning' | 'stillman';
 
 export interface MessageRow {
   id: number;
@@ -54,7 +65,9 @@ export interface MessageRow {
   seat: Seat | 'SYS';
   sender: string;
   text: string;
+  kind: MessageKind;
   acked: boolean;
+  disputed: boolean;
   moderation: ModerationResult | null;
   created_at: string;
 }

@@ -6,14 +6,18 @@ import { BriefingModal } from './components/BriefingModal';
 import { ChangeModal } from './components/ChangeModal';
 import { NicknameGate } from './components/NicknameGate';
 import { WaitingModal } from './components/WaitingModal';
+import { OnboardingModal } from './components/OnboardingModal';
+import { StillmanModal } from './components/StillmanModal';
 import { HomeTab } from './tabs/HomeTab';
 import { SessionTab } from './tabs/SessionTab';
 import { SparTab } from './tabs/SparTab';
 import { ShelfTab } from './tabs/ShelfTab';
 import { useRoom } from './lib/useRoom';
 import { useProfile } from './lib/useProfile';
+import { supabase } from './lib/supabase';
 import { MODERATION_TOAST } from './lib/moderation';
 import type { Msg, Tab, ToastState } from './types';
+import type { MessageRow, Seat } from './lib/db-types';
 
 const NICKNAME_KEY = 'jinji.nickname';
 const ACK_LIMIT = 3;
@@ -23,6 +27,30 @@ function fmt(n: number) {
   const m = Math.floor(n / 60);
   const s = n % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function toMsgs(rows: MessageRow[], mySeat: Seat, myNickname: string): Msg[] {
+  return rows.map((m) => ({
+    id: m.id,
+    who: m.seat === 'SYS' ? 'sys' : m.seat === mySeat ? 'me' : 'other',
+    text: m.text,
+    kind: m.kind,
+    done: m.seat !== 'SYS',
+    acked: m.acked,
+    disputed: m.disputed,
+    flagged: !!m.moderation?.flagged,
+    sender: m.sender,
+    canEndorse: m.kind === 'change_declare' && !m.acked && m.sender !== myNickname,
+  }));
+}
+
+function isMuted(until: string | null | undefined): boolean {
+  return !!until && new Date(until).getTime() > Date.now();
+}
+
+function mutedSecondsLeft(until: string | null | undefined): number {
+  if (!until) return 0;
+  return Math.max(0, Math.ceil((new Date(until).getTime() - Date.now()) / 1000));
 }
 
 export default function App() {
@@ -44,11 +72,20 @@ export default function App() {
   const [sparChatDraft, setSparChatDraft] = useState('');
   const [sparSessionSec, setSparSessionSec] = useState(1080);
 
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [stillmanOpen, setStillmanOpen] = useState(false);
+  const [stillmanContext, setStillmanContext] = useState<'main' | 'spar'>('main');
+  const [stillmanText, setStillmanText] = useState('');
+  const [stillmanFeedback, setStillmanFeedback] = useState<string | null>(null);
+  const [stillmanGood, setStillmanGood] = useState(false);
+  const [stillmanSubmitting, setStillmanSubmitting] = useState(false);
+
   const roomApi = useRoom(nickname);
   const { phase, room, mySeat, messages } = roomApi;
 
   const sparRoomApi = useRoom(nickname);
-  const { changedCount, bumpChanged } = useProfile(nickname);
+  const { changedCount, listenedCount, briefedCount, stillmanCount, bumpListened, bumpBriefed, bumpStillman } =
+    useProfile(nickname);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logRef = useRef<HTMLDivElement | null>(null);
@@ -109,9 +146,15 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(null), 5000);
   }
 
-  function handleNicknameSubmit(name: string) {
+  async function handleNicknameSubmit(name: string) {
     localStorage.setItem(NICKNAME_KEY, name);
     setNickname(name);
+    // 3장 온보딩: 진짜 대화를 한 번도 해본 적 없는 닉네임이면 스파링 체험을 제안한다.
+    const { count } = await supabase
+      .from('logs')
+      .select('id', { count: 'exact', head: true })
+      .eq('nickname', name);
+    if (!count) setShowOnboarding(true);
   }
 
   async function handleAck(messageId: number) {
@@ -147,18 +190,60 @@ export default function App() {
 
   async function handleLeaveSession() {
     await roomApi.finishAndLog();
+    await bumpListened();
     setTab('shelf');
   }
 
   async function confirmChange() {
     setChangeOpen(false);
+    // 7-1 어뷰징 방지: 자기 선언만으로는 레벨이 오르지 않는다 — 상대가 동의(endorse)해야
+    // 실제 프로필에 반영된다. 여기서는 방·기록용 카운터와 선언 메시지만 남긴다.
     if (changeContext === 'spar') {
       await sparRoomApi.declareChange();
     } else {
       await roomApi.declareChange();
-      await bumpChanged();
     }
-    showToast('good', '기록됨 · 다음 티어 변태 조건 충족');
+    showToast('good', '선언됨 · 상대가 동의하면 레벨에 반영됩니다');
+  }
+
+  async function handleDispute(messageId: number) {
+    await roomApi.dispute(messageId);
+    showToast('good', '이의제기 접수 · 경고가 취소됐습니다');
+  }
+
+  async function handleSparDispute(messageId: number) {
+    await sparRoomApi.dispute(messageId);
+    showToast('good', '이의제기 접수 · 경고가 취소됐습니다');
+  }
+
+  async function handleEndorseChange(messageId: number) {
+    const m = messages.find((x) => x.id === messageId);
+    if (!m) return;
+    await roomApi.endorseMindChange(messageId, m.sender);
+    showToast('good', '동의함 · 상대의 진지벌레가 성장했습니다');
+  }
+
+  function openStillman(context: 'main' | 'spar') {
+    setStillmanContext(context);
+    setStillmanText('');
+    setStillmanFeedback(null);
+    setStillmanGood(false);
+    setStillmanOpen(true);
+  }
+
+  async function submitStillman() {
+    const text = stillmanText.trim();
+    if (!text) return;
+    setStillmanSubmitting(true);
+    const api = stillmanContext === 'spar' ? sparRoomApi : roomApi;
+    const result = await api.submitStillman(text);
+    setStillmanSubmitting(false);
+    setStillmanGood(result.good);
+    setStillmanFeedback(result.feedback || (result.good ? '인정되었습니다!' : '조금 더 정확하게 다시 요약해보세요.'));
+    if (result.good) {
+      if (stillmanContext === 'main') await bumpStillman();
+      setTimeout(() => setStillmanOpen(false), 1400);
+    }
   }
 
   function handleSparTopicChange(v: string) {
@@ -231,30 +316,22 @@ export default function App() {
     setSparTopicInput('');
   }
 
-  const msgs: Msg[] = messages.map((m) => ({
-    id: m.id,
-    who: m.seat === 'SYS' ? 'sys' : m.seat === mySeat ? 'me' : 'other',
-    text: m.text,
-    done: m.seat !== 'SYS',
-    acked: m.acked,
-  }));
-
-  const sparMsgs: Msg[] = sparRoomApi.messages.map((m) => ({
-    id: m.id,
-    who: m.seat === 'SYS' ? 'sys' : m.seat === 'A' ? 'me' : 'other',
-    text: m.text,
-    done: m.seat !== 'SYS',
-    acked: m.acked,
-  }));
+  const msgs: Msg[] = mySeat && nickname ? toMsgs(messages, mySeat, nickname) : [];
+  const sparMsgs: Msg[] = nickname ? toMsgs(sparRoomApi.messages, 'A', nickname) : [];
 
   const ackLeft = (mySeat === 'A' ? room?.acks_left_a : room?.acks_left_b) ?? ACK_LIMIT;
   const handLeft = (mySeat === 'A' ? room?.hand_left_a : room?.hand_left_b) ?? HAND_LIMIT;
   const otherSeatLabel = (mySeat === 'A' ? room?.seat_b : room?.seat_a) ?? '상대';
   const isMyTurn = room?.turn === mySeat;
+  const myMutedUntil = room ? (mySeat === 'A' ? room.muted_until_a : room.muted_until_b) : null;
+  const otherMutedUntil = room ? (mySeat === 'A' ? room.muted_until_b : room.muted_until_a) : null;
+  const muted = isMuted(myMutedUntil);
+  const otherMuted = isMuted(otherMutedUntil);
 
   const sparRoom = sparRoomApi.room;
   const sparClosed = sparRoom?.status === 'closed';
   const sparIsMyTurn = sparRoom?.turn === 'A' && !sparClosed;
+  const sparMuted = isMuted(sparRoom?.muted_until_a);
 
   return (
     <PhoneFrame>
@@ -301,6 +378,13 @@ export default function App() {
                 draft={draft}
                 onDraftChange={setDraft}
                 onSend={handleSend}
+                onDispute={handleDispute}
+                showEndorse
+                onEndorseChange={handleEndorseChange}
+                onOpenStillman={() => openStillman('main')}
+                muted={muted}
+                mutedSecondsLeft={mutedSecondsLeft(myMutedUntil)}
+                otherMuted={otherMuted}
               />
             )}
 
@@ -331,6 +415,12 @@ export default function App() {
                   onSend={handleSparSend}
                   kindLabel="리허설"
                   closed={sparClosed}
+                  onDispute={handleSparDispute}
+                  showEndorse={false}
+                  onOpenStillman={() => openStillman('spar')}
+                  muted={sparMuted}
+                  mutedSecondsLeft={mutedSecondsLeft(sparRoom?.muted_until_a)}
+                  otherMuted={false}
                 />
               ) : (
                 <SparTab
@@ -342,7 +432,15 @@ export default function App() {
                 />
               ))}
 
-            {tab === 'shelf' && <ShelfTab changedCount={changedCount} nickname={nickname} />}
+            {tab === 'shelf' && (
+              <ShelfTab
+                changedCount={changedCount}
+                listenedCount={listenedCount}
+                briefedCount={briefedCount}
+                stillmanCount={stillmanCount}
+                nickname={nickname}
+              />
+            )}
           </div>
 
           <BottomNav tab={tab} onChange={setTab} />
@@ -361,15 +459,36 @@ export default function App() {
             briefing={room?.briefing ?? null}
             onClose={() => setBriefingOpen(false)}
             onToggleRead={() => setBriefRead((r) => !r)}
-            onEnter={() => {
+            onEnter={async () => {
               if (briefRead && room?.briefing) {
                 setBriefingOpen(false);
+                await bumpBriefed();
                 setTab('session');
               }
             }}
           />
 
           <ChangeModal open={changeOpen} onCancel={() => setChangeOpen(false)} onConfirm={confirmChange} />
+
+          <OnboardingModal
+            open={showOnboarding}
+            onTry={() => {
+              setShowOnboarding(false);
+              setTab('spar');
+            }}
+            onSkip={() => setShowOnboarding(false)}
+          />
+
+          <StillmanModal
+            open={stillmanOpen}
+            text={stillmanText}
+            onTextChange={setStillmanText}
+            onSubmit={submitStillman}
+            onClose={() => setStillmanOpen(false)}
+            submitting={stillmanSubmitting}
+            feedback={stillmanFeedback}
+            good={stillmanGood}
+          />
         </>
       )}
 

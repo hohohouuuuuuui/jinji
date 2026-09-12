@@ -20,6 +20,12 @@ create table if not exists rooms (
   hand_left_b smallint not null default 2,
   changed_a smallint not null default 0,
   changed_b smallint not null default 0,
+  violations_a smallint not null default 0,
+  violations_b smallint not null default 0,
+  muted_until_a timestamptz,
+  muted_until_b timestamptz,
+  dispute_used_a boolean not null default false,
+  dispute_used_b boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -29,7 +35,9 @@ create table if not exists messages (
   seat text not null check (seat in ('A', 'B', 'SYS')),
   sender text not null,
   text text not null,
+  kind text not null default 'chat',
   acked boolean not null default false,
+  disputed boolean not null default false,
   moderation jsonb,
   created_at timestamptz not null default now()
 );
@@ -46,6 +54,9 @@ create table if not exists logs (
 create table if not exists profiles (
   nickname text primary key,
   changed_count int not null default 0,
+  listened_count int not null default 0,
+  briefed_count int not null default 0,
+  stillman_count int not null default 0,
   updated_at timestamptz not null default now()
 );
 
