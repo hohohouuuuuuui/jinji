@@ -166,11 +166,13 @@ export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTop
               style={{
                 display: 'flex',
                 gap: 10,
-                padding: isLast ? '16px 0 18px' : '16px 0 15px',
+                paddingTop: 16,
+                paddingBottom: isLast ? 18 : 15,
+                paddingLeft: row.featured ? 20 : 0,
+                paddingRight: row.featured ? 20 : 0,
                 borderBottom: isLast ? 'none' : '1px solid #EFEDF2',
-                ...(row.featured
-                  ? { background: '#FEF7FA', margin: '0 -20px', paddingLeft: 20, paddingRight: 20 }
-                  : {}),
+                background: row.featured ? '#FEF7FA' : 'transparent',
+                margin: row.featured ? '0 -20px' : 0,
               }}
             >
               <div style={{ width: 38, flex: 'none' }}>
