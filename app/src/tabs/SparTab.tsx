@@ -5,9 +5,10 @@ interface SparTabProps {
   onTopicInputChange: (v: string) => void;
   onStart: () => void;
   starting: boolean;
+  topicError?: string | null;
 }
 
-export function SparTab({ topicInput, onTopicInputChange, onStart, starting }: SparTabProps) {
+export function SparTab({ topicInput, onTopicInputChange, onStart, starting, topicError }: SparTabProps) {
   const canStart = topicInput.trim().length > 0 && !starting;
 
   return (
@@ -33,7 +34,7 @@ export function SparTab({ topicInput, onTopicInputChange, onStart, starting }: S
             width: '100%',
             marginTop: 12,
             background: '#fff',
-            border: 'none',
+            border: topicError ? '1.5px solid #c0392b' : 'none',
             borderRadius: 999,
             padding: '14px 18px',
             fontSize: 14,
@@ -41,6 +42,11 @@ export function SparTab({ topicInput, onTopicInputChange, onStart, starting }: S
             outline: 'none',
           }}
         />
+        {topicError && (
+          <div style={{ marginTop: 10, fontSize: 12, lineHeight: 1.55, color: '#c0392b', fontWeight: 500 }}>
+            {topicError}
+          </div>
+        )}
         <button
           onClick={onStart}
           disabled={!canStart}

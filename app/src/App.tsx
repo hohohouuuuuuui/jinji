@@ -39,6 +39,8 @@ export default function App() {
   const [changeContext, setChangeContext] = useState<'main' | 'spar'>('main');
 
   const [sparTopicInput, setSparTopicInput] = useState('');
+  const [sparTopicError, setSparTopicError] = useState<string | null>(null);
+  const [sparValidating, setSparValidating] = useState(false);
   const [sparChatDraft, setSparChatDraft] = useState('');
   const [sparSessionSec, setSparSessionSec] = useState(1080);
 
@@ -158,9 +160,35 @@ export default function App() {
     showToast('good', '기록됨 · 다음 티어 변태 조건 충족');
   }
 
+  function handleSparTopicChange(v: string) {
+    setSparTopicInput(v);
+    if (sparTopicError) setSparTopicError(null);
+  }
+
   async function startSpar() {
     const topic = sparTopicInput.trim();
     if (!topic) return;
+    setSparValidating(true);
+    setSparTopicError(null);
+    try {
+      const res = await fetch('/api/validate-topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic }),
+      });
+      const result = (await res.json()) as { valid: boolean; message: string };
+      if (!result.valid) {
+        setSparTopicError(
+          result.message || '대결 또는 토론이 가능한 주제를 입력해주세요. (예: "OO은 필요한가")',
+        );
+        return;
+      }
+    } catch (err) {
+      console.error('topic validation failed', err);
+      // Fail open: don't block starting just because validation errored.
+    } finally {
+      setSparValidating(false);
+    }
     await sparRoomApi.join('spar', `리허설 · ${topic}`, true, true);
   }
 
@@ -196,8 +224,9 @@ export default function App() {
     showToast('good', '발언권 요청 · 다음 턴에 앞당겨집니다');
   }
 
-  async function handleSparLeave() {
-    await sparRoomApi.finishAndLog();
+  function handleSparLeave() {
+    // Rehearsal is just practice — no participation-log entry, unlike a real session.
+    sparRoomApi.leave();
     setSparTopicInput('');
   }
 
@@ -294,6 +323,7 @@ export default function App() {
                     setChangeOpen(true);
                   }}
                   onLeave={handleSparLeave}
+                  leaveLabel="나가기"
                   draft={sparChatDraft}
                   onDraftChange={setSparChatDraft}
                   onSend={handleSparSend}
@@ -303,9 +333,10 @@ export default function App() {
               ) : (
                 <SparTab
                   topicInput={sparTopicInput}
-                  onTopicInputChange={setSparTopicInput}
+                  onTopicInputChange={handleSparTopicChange}
                   onStart={startSpar}
-                  starting={sparRoomApi.phase === 'matching'}
+                  starting={sparValidating || sparRoomApi.phase === 'matching'}
+                  topicError={sparTopicError}
                 />
               ))}
 

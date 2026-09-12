@@ -5,7 +5,7 @@ React + Vite implementation of `project/Jinji Prototype v3.dc.html`: 4 tabs (시
 **"진지한 대화" (1:1) 트랙과 "리허설룸"(AI 1:1 스파링)은 실제로 동작합니다.**
 
 - **진지한 대화**: 닉네임으로 입장 → 같은 주제에 실시간 매칭 → AI가 생성한 사전 브리핑 → 실시간 채팅(턴 교대, 인정 버튼, 손들기, 생각이 바뀜 선언, AI 조롱/인신공격 모더레이션) → 나가면 참가기록에 실제로 기록
-- **리허설룸**: 매칭 대기 없이, 원하는 주제를 직접 입력해 AI와 1:1로 바로 대화·토론 연습. **AI도 사람과 동일한 모더레이션을 받고**, 3회 위반하면 세션이 자동 종료됩니다. 몇 번이든 다시 시작 가능하고, 여기서 나온 대화도 참가기록에 남습니다.
+- **리허설룸**: 매칭 대기 없이, 원하는 주제를 직접 입력해 AI와 1:1로 바로 대화·토론 연습. 입력한 주제가 "결혼", "연애"처럼 찬반이 갈리지 않는 단어형이면 AI가 구체화를 요청하는 안내를 보여줍니다. **AI도 사람과 동일한 모더레이션을 받고**, 3회 위반하면 세션이 자동 종료됩니다. 몇 번이든 다시 시작 가능. (연습이라 참가기록에는 남지 않습니다 — "진지한 대화"만 기록됩니다.)
 - 시간표 상단 필터 칩(1/2/3번 방)으로 목록을 좁혀볼 수 있고, 상태바/시간표 날짜는 실제 한국 시간과 동기화됩니다.
 - 시간표의 2:2 토론·1:1 격돌·진지한 결혼 항목은 아직 목업입니다.
 
@@ -13,7 +13,9 @@ React + Vite implementation of `project/Jinji Prototype v3.dc.html`: 4 tabs (시
 
 - **프론트엔드**: Vite + React (정적 빌드, Vercel에 그대로 배포)
 - **실시간 매칭 · 채팅 · 상태 동기화 · 참가기록**: Supabase (Postgres + Realtime), 인증 없이 닉네임만 사용
-- **AI 기능** (`api/briefing.ts`, `api/moderate.ts`, `api/opponent.ts`, Vercel Serverless Functions): Google Gemini (`gemini-3.6-flash`)로 사전 브리핑 생성, 발언 4축(비속어/존대이탈/인신공격/조롱) 모더레이션, 리허설룸의 AI 상대 응답(+ AI 자신의 발언도 같은 모더레이션 적용). API 키는 서버 함수 안에서만 쓰이고 브라우저에 노출되지 않습니다.
+- **AI 기능** (`api/briefing.ts`, `api/moderate.ts`, `api/opponent.ts`, `api/validate-topic.ts`, Vercel Serverless Functions): Google Gemini (`gemini-3.6-flash`)로 사전 브리핑 생성, 발언 4축(비속어/존대이탈/인신공격/조롱) 모더레이션, 리허설룸의 AI 상대 응답(+ AI 자신의 발언도 같은 모더레이션 적용), 리허설 주제가 찬반이 갈리는 토론 주제인지 검증. API 키는 서버 함수 안에서만 쓰이고 브라우저에 노출되지 않습니다.
+
+> ⚠️ **무료 티어 Gemini 키는 분당 5회 요청 한도**가 있습니다. 세션 하나에서 브리핑·모더레이션·상대 응답·주제 검증이 각각 API를 호출하므로, 해커톤 시연/심사 중 429 오류가 날 수 있습니다. 결제를 연결한 유료 티어 키로 바꾸는 걸 권장합니다.
 
 ## 로컬 실행
 
@@ -55,13 +57,13 @@ npm run dev
    - `GEMINI_API_KEY`
 5. Deploy
 
-`api/briefing.ts`, `api/moderate.ts`, `api/opponent.ts`는 Root Directory가 `app`으로 설정되어 있으면 Vercel이 자동으로 Serverless Functions로 인식합니다 (`app/api/*.ts`).
+`app/api/*.ts` 아래 모든 파일은 Root Directory가 `app`으로 설정되어 있으면 Vercel이 자동으로 Serverless Functions로 인식합니다.
 
 ## 데모 시나리오
 
 **2인 (진지한 대화)** — 브라우저 탭(또는 기기) 2개에서 각자 다른 닉네임으로 입장 → 둘 다 시간표 1번 행 "입장 신청하기" 클릭(같은 주제라서 자동 매칭) → AI 브리핑 → 턴 교대 발언 → "그건 맞네" 인정 · "생각이 바뀜" 선언 · 조롱성 표현 보내보기(보낸 사람에게만 비공개 경고 토스트) → "나가기 · 참가기록 남기기"로 종료 → 참가기록 탭에서 방금 기록 확인
 
-**1인 (리허설룸)** — 리허설 탭에서 원하는 주제 입력 → "AI와 시작하기"로 매칭 대기 없이 바로 시작 → 자유롭게 대화·토론, AI가 실시간으로 반박 생성 → (드물게) AI가 규칙을 어기면 채팅에 "⚠️ AI 발언 경고 N/3"이 뜨고 3회째에 세션 자동 종료
+**1인 (리허설룸)** — 리허설 탭에서 "결혼"처럼 단어만 입력해보면 구체화 요청 안내가 뜸 → "결혼은 필수인가"처럼 질문형으로 다시 입력 → "AI와 시작하기"로 매칭 대기 없이 바로 시작 → 자유롭게 대화·토론, AI가 실시간으로 반박 생성 → (드물게) AI가 규칙을 어기면 채팅에 "⚠️ AI 발언 경고 N/3"이 뜨고 3회째에 세션 자동 종료 → "나가기"로 종료해도 참가기록에는 남지 않음
 
 ## 구조
 
@@ -70,7 +72,7 @@ npm run dev
 - `src/lib/supabase.ts`, `src/lib/db-types.ts` — Supabase 클라이언트 · 테이블 타입
 - `src/lib/kst.ts` — 실제 한국 시간/날짜 포맷 유틸
 - `src/lib/moderation.ts` — 모더레이션 축(4가지) → 한국어 라벨/토스트 문구 매핑
-- `api/_gemini.ts`, `api/briefing.ts`, `api/moderate.ts`, `api/opponent.ts` — Gemini 호출 Vercel 함수
+- `api/_gemini.ts`, `api/briefing.ts`, `api/moderate.ts`, `api/opponent.ts`, `api/validate-topic.ts` — Gemini 호출 Vercel 함수
 - `supabase/schema.sql` — 처음 설치용 전체 스키마, `supabase/migration_2.sql`·`migration_3.sql` — 이미 설치한 DB에 추가분만 반영
 - `src/tabs/` — 네 개 탭 화면 (`SessionTab`은 진지한 대화·리허설룸 공용), `src/components/` — 폰 프레임 · 상태바 · 하단 내비 · 모달
 - `src/icons/` — 내비 아이콘, 픽셀아트 애벌레/나비 캐릭터

@@ -23,6 +23,7 @@ interface SessionTabProps {
   onSend: () => void;
   kindLabel?: string;
   closed?: boolean;
+  leaveLabel?: string;
 }
 
 export function SessionTab({
@@ -46,6 +47,7 @@ export function SessionTab({
   onSend,
   kindLabel = '진지한 대화',
   closed = false,
+  leaveLabel = '나가기 · 참가기록 남기기',
 }: SessionTabProps) {
   const canType = isMyTurn && !closed;
   return (
@@ -134,7 +136,7 @@ export function SessionTab({
           onClick={onLeave}
           style={{ cursor: 'pointer', background: 'none', border: 'none', fontSize: 11, fontWeight: 700, color: '#a05a7a', padding: '4px 2px' }}
         >
-          나가기 · 참가기록 남기기
+          {leaveLabel}
         </button>
       </div>
 
