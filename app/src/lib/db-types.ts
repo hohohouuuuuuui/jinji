@@ -15,6 +15,7 @@ export interface RoomRow {
   seat_a: string | null;
   seat_b: string | null;
   turn: Seat;
+  vs_ai: boolean;
   briefing: Briefing | null;
   acks_left_a: number;
   acks_left_b: number;
@@ -22,6 +23,21 @@ export interface RoomRow {
   hand_left_b: number;
   changed_a: number;
   changed_b: number;
+  created_at: string;
+}
+
+export interface LogBadge {
+  label: string;
+  bg: string;
+  color: string;
+}
+
+export interface LogRow {
+  id: number;
+  nickname: string;
+  topic_title: string;
+  quote: string;
+  badges: LogBadge[];
   created_at: string;
 }
 

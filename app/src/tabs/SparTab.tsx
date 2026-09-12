@@ -7,9 +7,18 @@ interface SparTabProps {
   onSparDraftChange: (v: string) => void;
   onSparAnswer: () => void;
   onGoHome: () => void;
+  onRestart: () => void;
 }
 
-export function SparTab({ sparStep, sparFb, sparDraft, onSparDraftChange, onSparAnswer, onGoHome }: SparTabProps) {
+export function SparTab({
+  sparStep,
+  sparFb,
+  sparDraft,
+  onSparDraftChange,
+  onSparAnswer,
+  onGoHome,
+  onRestart,
+}: SparTabProps) {
   const done = sparStep >= SPAR_STEPS.length;
   const question = done ? '리허설 종료' : SPAR_STEPS[sparStep].q;
   const stepLabel = done ? '완료' : `${sparStep + 1}/2`;
@@ -61,12 +70,20 @@ export function SparTab({ sparStep, sparFb, sparDraft, onSparDraftChange, onSpar
       {done && (
         <div style={{ marginTop: 12, background: '#17171a', borderRadius: 26, padding: 22, animation: 'jz-pop .3s ease' }}>
           <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 20, color: '#F7B3D4' }}>입장 자격 획득</div>
-          <button
-            onClick={onGoHome}
-            style={{ marginTop: 14, width: '100%', cursor: 'pointer', background: '#F586AE', color: '#fff', border: 'none', borderRadius: 999, padding: 14, fontSize: 14, fontWeight: 700 }}
-          >
-            시간표로
-          </button>
+          <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+            <button
+              onClick={onRestart}
+              style={{ flex: 1, cursor: 'pointer', background: '#26262b', color: '#F7B3D4', border: 'none', borderRadius: 999, padding: 14, fontSize: 14, fontWeight: 700 }}
+            >
+              다시 연습하기
+            </button>
+            <button
+              onClick={onGoHome}
+              style={{ flex: 1, cursor: 'pointer', background: '#F586AE', color: '#fff', border: 'none', borderRadius: 999, padding: 14, fontSize: 14, fontWeight: 700 }}
+            >
+              시간표로
+            </button>
+          </div>
         </div>
       )}
 

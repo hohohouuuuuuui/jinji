@@ -1,6 +1,15 @@
+import { useEffect, useState } from 'react';
 import { BatteryIcon, SignalIcon } from '../icons/NavIcons';
+import { formatKSTClock } from '../lib/kst';
 
 export function StatusBar() {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
   return (
     <div
       style={{
@@ -15,7 +24,7 @@ export function StatusBar() {
         color: '#111',
       }}
     >
-      <span>20:00</span>
+      <span>{formatKSTClock(now)}</span>
       <span style={{ display: 'flex', gap: 5, alignItems: 'center', opacity: 0.8 }}>
         <SignalIcon />
         <BatteryIcon />

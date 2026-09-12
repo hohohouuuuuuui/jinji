@@ -17,6 +17,7 @@ interface SessionTabProps {
   handLeft: number;
   onRaiseHand: () => void;
   onDeclareChange: () => void;
+  onLeave: () => void;
   draft: string;
   onDraftChange: (v: string) => void;
   onSend: () => void;
@@ -37,6 +38,7 @@ export function SessionTab({
   handLeft,
   onRaiseHand,
   onDeclareChange,
+  onLeave,
   draft,
   onDraftChange,
   onSend,
@@ -120,6 +122,15 @@ export function SessionTab({
             />
           ))}
         </span>
+      </div>
+
+      <div style={{ flex: 'none', display: 'flex', justifyContent: 'flex-end', padding: '0 20px 4px' }}>
+        <button
+          onClick={onLeave}
+          style={{ cursor: 'pointer', background: 'none', border: 'none', fontSize: 11, fontWeight: 700, color: '#a05a7a', padding: '4px 2px' }}
+        >
+          나가기 · 참가기록 남기기
+        </button>
       </div>
 
       <div style={{ flex: 'none', display: 'flex', gap: 6, overflowX: 'auto', padding: '0 20px 10px' }}>

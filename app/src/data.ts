@@ -15,7 +15,7 @@ export const SPAR_STEPS: SparStep[] = [
 ];
 
 export interface ScheduleRoom {
-  id: 1 | 2 | 3 | 4;
+  id: 1 | 2 | 3 | 4 | 5;
   color: string;
   locked?: boolean;
 }
@@ -31,6 +31,7 @@ export interface ScheduleRowData {
   seats: { top: string; topColor?: string; bottom: string };
   cta?: string;
   topicId?: string;
+  vsAI?: boolean;
   lockedNote?: string;
   featured?: boolean;
 }
@@ -73,6 +74,20 @@ export const SCHEDULE: ScheduleRowData[] = [
     seats: { top: '마감', topColor: '#b0568f', bottom: '/2명' },
   },
   {
+    room: { id: 5, color: '#8A6BD6' },
+    time: '상시',
+    status: '즉시 시작',
+    title: 'AI 논객과 즉석 격돌',
+    tags: [
+      { label: '1:1 격돌', bg: '#EFE9FB', color: '#5b3fa3' },
+      { label: 'AI 상대', bg: '#F3F1F5', color: '#4a4750' },
+    ],
+    seats: { top: '∞', bottom: '상시' },
+    cta: 'AI와 시작하기',
+    topicId: 'vs-ai',
+    vsAI: true,
+  },
+  {
     room: { id: 4, color: '#17171a', locked: true },
     time: '21:00',
     day: 'THU',
@@ -85,45 +100,6 @@ export const SCHEDULE: ScheduleRowData[] = [
 ];
 
 export const FILTER_CHIPS = ['전체', '1번 방 토론', '2번 방 대화', '3번 방 격돌'];
-
-export interface LogEntry {
-  room: { id: number; color: string };
-  date: string;
-  serial: string;
-  title: string;
-  quote: string;
-  badges: { label: string; bg: string; color: string }[];
-}
-
-export const PARTICIPATION_LOG: LogEntry[] = [
-  {
-    room: { id: 1, color: '#F586AE' },
-    date: '09.02',
-    serial: 'No.0398',
-    title: '생성물의 주인',
-    quote: '"나는 결과라고 말해왔지만, 오늘 노동 쪽으로 옮겼다."',
-    badges: [
-      { label: '🔁 생각 바뀜', bg: '#FBDFEC', color: '#8d3f70' },
-      { label: '🤍 인정 2', bg: '#F3F1F5', color: '#4a4750' },
-    ],
-  },
-  {
-    room: { id: 2, color: '#8ED4F0' },
-    date: '08.26',
-    serial: 'No.0371',
-    title: '외로움의 구조',
-    quote: '"외로움은 사람 수의 문제가 아니라 문장 길이의 문제였다."',
-    badges: [{ label: '👂 끝까지 들음', bg: '#E5F5E9', color: '#3a5f48' }],
-  },
-  {
-    room: { id: 3, color: '#17171a' },
-    date: '08.19',
-    serial: 'No.0342',
-    title: '공정이라는 말',
-    quote: '"공정을 말할 때 우리는 서로 다른 출발선을 세고 있었다."',
-    badges: [{ label: '관전 214', bg: '#F3F1F5', color: '#4a4750' }],
-  },
-];
 
 export interface StatBar {
   emoji: string;

@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
-import type { MessageRow, ModerationResult, RoomRow, Seat } from './db-types';
+import type { LogBadge, MessageRow, ModerationResult, RoomRow, Seat } from './db-types';
 
 export type MatchPhase = 'idle' | 'matching' | 'waiting' | 'active' | 'error';
+
+const ACK_LIMIT = 3;
+const AI_OPPONENT_NAME = 'AI 논객';
 
 interface UseRoomResult {
   phase: MatchPhase;
@@ -10,12 +13,13 @@ interface UseRoomResult {
   mySeat: Seat | null;
   messages: MessageRow[];
   error: string | null;
-  join: (topicId: string, topicTitle: string) => Promise<void>;
+  join: (topicId: string, topicTitle: string, vsAI?: boolean) => Promise<void>;
   leave: () => void;
   send: (text: string) => Promise<ModerationResult | null>;
   ack: (messageId: number) => Promise<void>;
   raiseHand: () => Promise<void>;
   declareChange: () => Promise<void>;
+  finishAndLog: () => Promise<void>;
 }
 
 async function callApi<T>(path: string, body: unknown): Promise<T> {
@@ -79,11 +83,36 @@ export function useRoom(nickname: string | null): UseRoomResult {
   }, []);
 
   const join = useCallback(
-    async (topicId: string, topicTitle: string) => {
+    async (topicId: string, topicTitle: string, vsAI = false) => {
       if (!nickname) return;
       setPhase('matching');
       setError(null);
       try {
+        if (vsAI) {
+          const { data: created, error: createErr } = await supabase
+            .from('rooms')
+            .insert({
+              topic_id: topicId,
+              topic_title: topicTitle,
+              seat_a: nickname,
+              seat_b: AI_OPPONENT_NAME,
+              status: 'active',
+              vs_ai: true,
+            })
+            .select()
+            .single();
+
+          if (createErr || !created) throw createErr ?? new Error('room creation failed');
+
+          setRoom(created as RoomRow);
+          setMySeat('A');
+          setPhase('active');
+          setMessages([]);
+          subscribe(created.id);
+          await generateBriefingIfNeeded(created as RoomRow);
+          return;
+        }
+
         const { data: waitingRoom } = await supabase
           .from('rooms')
           .select('*')
@@ -186,9 +215,26 @@ export function useRoom(nickname: string | null): UseRoomResult {
       const nextTurn: Seat = mySeat === 'A' ? 'B' : 'A';
       await supabase.from('rooms').update({ turn: nextTurn }).eq('id', room.id);
 
+      if (room.vs_ai && mySeat === 'A') {
+        const history = messages
+          .map((m) => ({ seat: m.seat, text: m.text }))
+          .concat([{ seat: 'A', text }]);
+        callApi<{ text: string }>('/api/opponent', { topic: room.topic_title, history })
+          .then(async (reply) => {
+            await supabase.from('messages').insert({
+              room_id: room.id,
+              seat: 'B',
+              sender: AI_OPPONENT_NAME,
+              text: reply.text,
+            });
+            await supabase.from('rooms').update({ turn: 'A' }).eq('id', room.id);
+          })
+          .catch((err) => console.error('opponent reply failed', err));
+      }
+
       return moderation;
     },
-    [room, mySeat, nickname],
+    [room, mySeat, nickname, messages],
   );
 
   const ack = useCallback(
@@ -233,5 +279,42 @@ export function useRoom(nickname: string | null): UseRoomResult {
       .eq('id', room.id);
   }, [room, mySeat, nickname]);
 
-  return { phase, room, mySeat, messages, error, join, leave, send, ack, raiseHand, declareChange };
+  const finishAndLog = useCallback(async () => {
+    if (!room || !mySeat || !nickname) {
+      leave();
+      return;
+    }
+    const changed = mySeat === 'A' ? room.changed_a : room.changed_b;
+    const receivedAcks = ACK_LIMIT - (mySeat === 'A' ? room.acks_left_b : room.acks_left_a);
+
+    const badges: LogBadge[] = [];
+    if (changed > 0) {
+      badges.push({
+        label: `🔁 생각 바뀜${changed > 1 ? ` ${changed}` : ''}`,
+        bg: '#FBDFEC',
+        color: '#8d3f70',
+      });
+    }
+    if (receivedAcks > 0) {
+      badges.push({ label: `🤍 인정 ${receivedAcks}`, bg: '#F3F1F5', color: '#4a4750' });
+    }
+    if (badges.length === 0) {
+      badges.push({ label: '참가 완료', bg: '#F3F1F5', color: '#4a4750' });
+    }
+
+    const myMessages = messages.filter((m) => m.seat === mySeat);
+    const lastMine = myMessages[myMessages.length - 1];
+    const quote = lastMine ? `"${lastMine.text}"` : `"${room.topic_title}"에 참가했다.`;
+
+    await supabase.from('logs').insert({
+      nickname,
+      topic_title: room.topic_title,
+      quote,
+      badges,
+    });
+
+    leave();
+  }, [room, mySeat, nickname, messages, leave]);
+
+  return { phase, room, mySeat, messages, error, join, leave, send, ack, raiseHand, declareChange, finishAndLog };
 }

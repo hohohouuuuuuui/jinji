@@ -11,6 +11,7 @@ create table if not exists rooms (
   seat_a text,
   seat_b text,
   turn text not null default 'A' check (turn in ('A', 'B')),
+  vs_ai boolean not null default false,
   briefing jsonb,
   acks_left_a smallint not null default 3,
   acks_left_b smallint not null default 3,
@@ -32,14 +33,25 @@ create table if not exists messages (
   created_at timestamptz not null default now()
 );
 
+create table if not exists logs (
+  id bigint generated always as identity primary key,
+  nickname text not null,
+  topic_title text not null,
+  quote text not null,
+  badges jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists messages_room_id_idx on messages(room_id, created_at);
 create index if not exists rooms_waiting_idx on rooms(topic_id, status, created_at);
+create index if not exists logs_nickname_idx on logs(nickname, created_at desc);
 
 -- Hackathon-scope RLS: anonymous nickname auth (no Supabase Auth), so we allow
 -- the anon key to read/write freely. Do NOT reuse this policy for anything
 -- beyond a demo — there is no per-user authorization here.
 alter table rooms enable row level security;
 alter table messages enable row level security;
+alter table logs enable row level security;
 
 drop policy if exists "rooms anon all" on rooms;
 create policy "rooms anon all" on rooms for all using (true) with check (true);
@@ -47,7 +59,11 @@ create policy "rooms anon all" on rooms for all using (true) with check (true);
 drop policy if exists "messages anon all" on messages;
 create policy "messages anon all" on messages for all using (true) with check (true);
 
--- Enable Realtime for both tables (Supabase Dashboard → Database → Replication
--- also works instead of this if you prefer the UI):
+drop policy if exists "logs anon all" on logs;
+create policy "logs anon all" on logs for all using (true) with check (true);
+
+-- Enable Realtime for all three tables (Supabase Dashboard → Database →
+-- Replication also works instead of this if you prefer the UI):
 alter publication supabase_realtime add table rooms;
 alter publication supabase_realtime add table messages;
+alter publication supabase_realtime add table logs;

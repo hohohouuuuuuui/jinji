@@ -1,11 +1,54 @@
+import { useEffect, useState } from 'react';
 import { ButterflyPixel } from '../icons/ButterflyPixel';
-import { PARTICIPATION_LOG, SHELF_STATS } from '../data';
+import { SHELF_STATS } from '../data';
+import { supabase } from '../lib/supabase';
+import type { LogRow } from '../lib/db-types';
 
 interface ShelfTabProps {
   changedCount: number;
+  nickname: string;
 }
 
-export function ShelfTab({ changedCount }: ShelfTabProps) {
+function formatLogDate(iso: string) {
+  const d = new Date(iso);
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Seoul',
+    month: '2-digit',
+    day: '2-digit',
+  })
+    .format(d)
+    .replace('/', '.');
+}
+
+export function ShelfTab({ changedCount, nickname }: ShelfTabProps) {
+  const [logs, setLogs] = useState<LogRow[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('logs')
+      .select('*')
+      .eq('nickname', nickname)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (!cancelled) setLogs((data as LogRow[]) ?? []);
+      });
+
+    const channel = supabase
+      .channel(`logs:${nickname}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'logs', filter: `nickname=eq.${nickname}` },
+        (payload) => setLogs((prev) => [payload.new as LogRow, ...(prev ?? [])]),
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      channel.unsubscribe();
+    };
+  }, [nickname]);
+
   return (
     <div style={{ padding: '2px 20px 24px', animation: 'jz-fade .25s ease' }}>
       <div style={{ background: '#E6F5FC', borderRadius: 26, padding: 18, textAlign: 'center' }}>
@@ -63,13 +106,24 @@ export function ShelfTab({ changedCount }: ShelfTabProps) {
           </div>
           <h2 style={{ margin: '4px 0 0', fontSize: 25, fontWeight: 900, letterSpacing: -1.2, color: '#17171a' }}>참가 기록</h2>
         </div>
-        <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 11, color: '#4a4750' }}>27회</span>
+        <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 11, color: '#4a4750' }}>{logs?.length ?? 0}회</span>
       </div>
 
+      {logs === null && (
+        <div style={{ padding: '30px 0', textAlign: 'center', fontSize: 12.5, color: '#78747e' }}>불러오는 중…</div>
+      )}
+      {logs && logs.length === 0 && (
+        <div style={{ padding: '30px 0', textAlign: 'center', fontSize: 12.5, color: '#78747e', lineHeight: 1.6 }}>
+          아직 참가 기록이 없어요
+          <br />
+          시간표에서 대화를 시작해보세요
+        </div>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
-        {PARTICIPATION_LOG.map((entry) => (
+        {logs?.map((entry, i) => (
           <div
-            key={entry.serial}
+            key={entry.id}
             style={{ position: 'relative', display: 'flex', background: '#FFFDF6', border: '1.5px solid #17171a', borderRadius: 14, overflow: 'hidden' }}
           >
             <div
@@ -85,15 +139,15 @@ export function ShelfTab({ changedCount }: ShelfTabProps) {
                 padding: '12px 0',
               }}
             >
-              <span style={{ width: 26, height: 26, borderRadius: 8, background: entry.room.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontFamily: "'DotGothic16',monospace", fontSize: 15, color: '#fff' }}>{entry.room.id}</span>
+              <span style={{ width: 26, height: 26, borderRadius: 8, background: '#17171a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontFamily: "'DotGothic16',monospace", fontSize: 15, color: '#fff' }}>{logs.length - i}</span>
               </span>
-              <span style={{ fontFamily: "'DotGothic16',monospace", fontSize: 13, color: '#17171a' }}>{entry.date}</span>
+              <span style={{ fontFamily: "'DotGothic16',monospace", fontSize: 13, color: '#17171a' }}>{formatLogDate(entry.created_at)}</span>
             </div>
             <div style={{ flex: 1, minWidth: 0, padding: '11px 14px 12px' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', paddingBottom: 6, borderBottom: '1px solid #17171a' }}>
                 <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: 1.3, color: '#4a4750' }}>
-                  {entry.serial}
+                  No.{String(entry.id).padStart(4, '0')}
                 </span>
                 <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 8.5, fontWeight: 700, letterSpacing: 1.3, color: '#17171a' }}>
                   참가 완료
@@ -101,7 +155,7 @@ export function ShelfTab({ changedCount }: ShelfTabProps) {
               </div>
               <div style={{ height: 2 }} />
               <div style={{ borderTop: '1px solid #17171a', paddingTop: 9 }}>
-                <div style={{ fontSize: 14.5, fontWeight: 900, letterSpacing: -0.4, color: '#17171a' }}>{entry.title}</div>
+                <div style={{ fontSize: 14.5, fontWeight: 900, letterSpacing: -0.4, color: '#17171a' }}>{entry.topic_title}</div>
                 <div style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.55, color: '#4a4750', marginTop: 6 }}>{entry.quote}</div>
                 <div style={{ display: 'flex', gap: 5, marginTop: 9 }}>
                   {entry.badges.map((badge) => (
@@ -120,11 +174,6 @@ export function ShelfTab({ changedCount }: ShelfTabProps) {
           </div>
         ))}
       </div>
-      <button
-        style={{ width: '100%', marginTop: 16, cursor: 'pointer', background: '#F3F1F5', border: 'none', borderRadius: 999, padding: 15, fontSize: 13, fontWeight: 700, color: '#17171a' }}
-      >
-        지난 24개 더 보기
-      </button>
     </div>
   );
 }

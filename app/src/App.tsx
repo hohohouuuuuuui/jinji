@@ -134,6 +134,11 @@ export default function App() {
     }
   }
 
+  async function handleLeaveSession() {
+    await roomApi.finishAndLog();
+    setTab('shelf');
+  }
+
   async function confirmChange() {
     setChangeOpen(false);
     await roomApi.declareChange();
@@ -144,6 +149,12 @@ export default function App() {
   function sparAnswer() {
     setSparFb(SPAR_STEPS[Math.min(sparStep, SPAR_STEPS.length - 1)].fb);
     setSparStep((s) => s + 1);
+    setSparDraft('');
+  }
+
+  function sparRestart() {
+    setSparStep(0);
+    setSparFb('');
     setSparDraft('');
   }
 
@@ -174,9 +185,9 @@ export default function App() {
                 countdownLabel={fmt(countdown)}
                 matchingTopicId={joiningTopicId}
                 matchError={phase === 'error' ? roomApi.error : null}
-                onEnterRoom={(topicId, topicTitle) => {
+                onEnterRoom={(topicId, topicTitle, vsAI) => {
                   setJoiningTopicId(topicId);
-                  roomApi.join(topicId, topicTitle);
+                  roomApi.join(topicId, topicTitle, vsAI);
                 }}
               />
             )}
@@ -197,6 +208,7 @@ export default function App() {
                 handLeft={handLeft}
                 onRaiseHand={handleRaiseHand}
                 onDeclareChange={() => setChangeOpen(true)}
+                onLeave={handleLeaveSession}
                 draft={draft}
                 onDraftChange={setDraft}
                 onSend={handleSend}
@@ -211,10 +223,11 @@ export default function App() {
                 onSparDraftChange={setSparDraft}
                 onSparAnswer={sparAnswer}
                 onGoHome={() => setTab('home')}
+                onRestart={sparRestart}
               />
             )}
 
-            {tab === 'shelf' && <ShelfTab changedCount={changed} />}
+            {tab === 'shelf' && <ShelfTab changedCount={changed} nickname={nickname} />}
           </div>
 
           <BottomNav tab={tab} onChange={setTab} />

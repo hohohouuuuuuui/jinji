@@ -1,14 +1,18 @@
+import { useState } from 'react';
 import { CaterpillarPixel } from '../icons/CaterpillarPixel';
 import { FILTER_CHIPS, SCHEDULE } from '../data';
+import { formatKSTDateLabel } from '../lib/kst';
 
 interface HomeTabProps {
   countdownLabel: string;
-  onEnterRoom: (topicId: string, topicTitle: string) => void;
+  onEnterRoom: (topicId: string, topicTitle: string, vsAI?: boolean) => void;
   matchingTopicId: string | null;
   matchError: string | null;
 }
 
 export function HomeTab({ countdownLabel, onEnterRoom, matchingTopicId, matchError }: HomeTabProps) {
+  const [filter, setFilter] = useState<number | 'all'>('all');
+  const visibleRows = filter === 'all' ? SCHEDULE : SCHEDULE.filter((row) => row.room.id === filter);
   return (
     <div style={{ animation: 'jz-fade .25s ease' }}>
       <div
@@ -46,7 +50,7 @@ export function HomeTab({ countdownLabel, onEnterRoom, matchingTopicId, matchErr
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 11 }}>
           <div>
             <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 15, color: '#8f8b93' }}>
-              2026.09.08 화
+              {formatKSTDateLabel(new Date())}
             </div>
             <div style={{ fontSize: 21, fontWeight: 900, letterSpacing: -0.9, color: '#fff', marginTop: 2 }}>
               오늘 4개 진행 예정
@@ -99,22 +103,29 @@ export function HomeTab({ countdownLabel, onEnterRoom, matchingTopicId, matchErr
       </div>
 
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '16px 20px 12px' }}>
-        {FILTER_CHIPS.map((chip, i) => (
-          <span
-            key={chip}
-            style={{
-              flex: 'none',
-              fontSize: 11.5,
-              fontWeight: 700,
-              padding: '8px 14px',
-              borderRadius: 999,
-              background: i === 0 ? '#17171a' : '#F3F1F5',
-              color: i === 0 ? '#fff' : '#4a4750',
-            }}
-          >
-            {chip}
-          </span>
-        ))}
+        {FILTER_CHIPS.map((chip, i) => {
+          const value: number | 'all' = i === 0 ? 'all' : i;
+          const active = filter === value;
+          return (
+            <button
+              key={chip}
+              onClick={() => setFilter(value)}
+              style={{
+                flex: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 11.5,
+                fontWeight: 700,
+                padding: '8px 14px',
+                borderRadius: 999,
+                background: active ? '#17171a' : '#F3F1F5',
+                color: active ? '#fff' : '#4a4750',
+              }}
+            >
+              {chip}
+            </button>
+          );
+        })}
       </div>
 
       <div
@@ -132,8 +143,13 @@ export function HomeTab({ countdownLabel, onEnterRoom, matchingTopicId, matchErr
       </div>
 
       <div style={{ padding: '0 20px' }}>
-        {SCHEDULE.map((row, idx) => {
-          const isLast = idx === SCHEDULE.length - 1;
+        {visibleRows.length === 0 && (
+          <div style={{ padding: '24px 0', textAlign: 'center', fontSize: 12.5, color: '#78747e' }}>
+            해당 방에 예정된 항목이 없어요
+          </div>
+        )}
+        {visibleRows.map((row, idx) => {
+          const isLast = idx === visibleRows.length - 1;
           const locked = row.room.locked;
           return (
             <div
@@ -251,7 +267,7 @@ export function HomeTab({ countdownLabel, onEnterRoom, matchingTopicId, matchErr
                 )}
                 {row.cta && row.topicId && (
                   <button
-                    onClick={() => onEnterRoom(row.topicId!, row.title)}
+                    onClick={() => onEnterRoom(row.topicId!, row.title, row.vsAI)}
                     disabled={matchingTopicId === row.topicId}
                     style={{
                       width: '100%',
