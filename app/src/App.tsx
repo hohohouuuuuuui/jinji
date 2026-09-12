@@ -10,9 +10,8 @@ import { HomeTab } from './tabs/HomeTab';
 import { SessionTab } from './tabs/SessionTab';
 import { SparTab } from './tabs/SparTab';
 import { ShelfTab } from './tabs/ShelfTab';
-import { SPAR_STEPS } from './data';
 import { useRoom } from './lib/useRoom';
-import type { ModerationAxis } from './lib/db-types';
+import { MODERATION_TOAST } from './lib/moderation';
 import type { Msg, Tab, ToastState } from './types';
 
 const NICKNAME_KEY = 'jinji.nickname';
@@ -25,14 +24,6 @@ function fmt(n: number) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-const MODERATION_TOAST: Record<ModerationAxis, string | null> = {
-  none: null,
-  profanity: '비속어가 감지됐어요 · 표현을 다듬어볼까요?',
-  disrespect: '존댓말에서 벗어난 표현이 감지됐어요 · 1차 경고',
-  personal_attack: '주장이 아니라 사람을 겨눈 것 같아요 · 인신공격 감지',
-  mockery: '태도가 아니라 생각을 겨누고 있나요? · 조롱 감지 1차',
-};
-
 export default function App() {
   const [nickname, setNickname] = useState<string | null>(() => localStorage.getItem(NICKNAME_KEY));
   const [tab, setTab] = useState<Tab>('home');
@@ -43,26 +34,32 @@ export default function App() {
   const [sessionSec, setSessionSec] = useState(1080);
   const [changed, setChanged] = useState(0);
   const [draft, setDraft] = useState('');
-  const [sparDraft, setSparDraft] = useState('');
-  const [sparStep, setSparStep] = useState(0);
-  const [sparFb, setSparFb] = useState('');
   const [toast, setToast] = useState<ToastState | null>(null);
   const [joiningTopicId, setJoiningTopicId] = useState<string | null>(null);
+  const [changeContext, setChangeContext] = useState<'main' | 'spar'>('main');
+
+  const [sparTopicInput, setSparTopicInput] = useState('');
+  const [sparChatDraft, setSparChatDraft] = useState('');
+  const [sparSessionSec, setSparSessionSec] = useState(1080);
 
   const roomApi = useRoom(nickname);
   const { phase, room, mySeat, messages } = roomApi;
 
+  const sparRoomApi = useRoom(nickname);
+
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logRef = useRef<HTMLDivElement | null>(null);
+  const sparLogRef = useRef<HTMLDivElement | null>(null);
   const wasActive = useRef(false);
 
   useEffect(() => {
     const t = setInterval(() => {
       setCountdown((c) => Math.max(0, c - 1));
       setSessionSec((s) => (tab === 'session' ? Math.max(0, s - 1) : s));
+      setSparSessionSec((s) => (tab === 'spar' && sparRoomApi.phase === 'active' ? Math.max(0, s - 1) : s));
     }, 1000);
     return () => clearInterval(t);
-  }, [tab]);
+  }, [tab, sparRoomApi.phase]);
 
   useEffect(() => {
     return () => {
@@ -75,7 +72,12 @@ export default function App() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length, tab]);
 
-  // Open the briefing the moment a match completes (either side).
+  useEffect(() => {
+    const el = sparLogRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [sparRoomApi.messages.length, tab]);
+
+  // Open the briefing the moment a real match completes (either side).
   useEffect(() => {
     if (phase === 'active' && !wasActive.current) {
       wasActive.current = true;
@@ -91,6 +93,12 @@ export default function App() {
       setJoiningTopicId(null);
     }
   }, [phase]);
+
+  useEffect(() => {
+    if (sparRoomApi.phase === 'active') {
+      setSparSessionSec(1080);
+    }
+  }, [sparRoomApi.phase]);
 
   function showToast(tone: ToastState['tone'], text: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -141,21 +149,56 @@ export default function App() {
 
   async function confirmChange() {
     setChangeOpen(false);
-    await roomApi.declareChange();
-    setChanged((c) => c + 1);
+    if (changeContext === 'spar') {
+      await sparRoomApi.declareChange();
+    } else {
+      await roomApi.declareChange();
+      setChanged((c) => c + 1);
+    }
     showToast('good', '기록됨 · 다음 티어 변태 조건 충족');
   }
 
-  function sparAnswer() {
-    setSparFb(SPAR_STEPS[Math.min(sparStep, SPAR_STEPS.length - 1)].fb);
-    setSparStep((s) => s + 1);
-    setSparDraft('');
+  async function startSpar() {
+    const topic = sparTopicInput.trim();
+    if (!topic) return;
+    await sparRoomApi.join('spar', `리허설 · ${topic}`, true, true);
   }
 
-  function sparRestart() {
-    setSparStep(0);
-    setSparFb('');
-    setSparDraft('');
+  async function handleSparSend() {
+    const text = sparChatDraft.trim();
+    const sparRoom = sparRoomApi.room;
+    if (!text || !sparRoom || sparRoom.turn !== 'A' || sparRoom.status === 'closed') return;
+    setSparChatDraft('');
+    const moderation = await sparRoomApi.send(text);
+    if (moderation?.flagged) {
+      const toastText = MODERATION_TOAST[moderation.axis];
+      if (toastText) showToast('warn', toastText);
+    }
+  }
+
+  async function handleSparAck(messageId: number) {
+    const left = sparRoomApi.room?.acks_left_a;
+    if (left !== undefined && left <= 0) {
+      showToast('good', `인정권을 모두 썼습니다 · ${ACK_LIMIT}회`);
+      return;
+    }
+    await sparRoomApi.ack(messageId);
+    showToast('good', '상호 인정 기록 · 양측 성장 +1');
+  }
+
+  async function handleSparRaiseHand() {
+    const left = sparRoomApi.room?.hand_left_a;
+    if (left !== undefined && left <= 0) {
+      showToast('good', '손들기를 모두 썼습니다');
+      return;
+    }
+    await sparRoomApi.raiseHand();
+    showToast('good', '발언권 요청 · 다음 턴에 앞당겨집니다');
+  }
+
+  async function handleSparLeave() {
+    await sparRoomApi.finishAndLog();
+    setSparTopicInput('');
   }
 
   const msgs: Msg[] = messages.map((m) => ({
@@ -166,10 +209,22 @@ export default function App() {
     acked: m.acked,
   }));
 
+  const sparMsgs: Msg[] = sparRoomApi.messages.map((m) => ({
+    id: m.id,
+    who: m.seat === 'SYS' ? 'sys' : m.seat === 'A' ? 'me' : 'other',
+    text: m.text,
+    done: m.seat !== 'SYS',
+    acked: m.acked,
+  }));
+
   const ackLeft = (mySeat === 'A' ? room?.acks_left_a : room?.acks_left_b) ?? ACK_LIMIT;
   const handLeft = (mySeat === 'A' ? room?.hand_left_a : room?.hand_left_b) ?? HAND_LIMIT;
   const otherSeatLabel = (mySeat === 'A' ? room?.seat_b : room?.seat_a) ?? '상대';
   const isMyTurn = room?.turn === mySeat;
+
+  const sparRoom = sparRoomApi.room;
+  const sparClosed = sparRoom?.status === 'closed';
+  const sparIsMyTurn = sparRoom?.turn === 'A' && !sparClosed;
 
   return (
     <PhoneFrame>
@@ -185,9 +240,9 @@ export default function App() {
                 countdownLabel={fmt(countdown)}
                 matchingTopicId={joiningTopicId}
                 matchError={phase === 'error' ? roomApi.error : null}
-                onEnterRoom={(topicId, topicTitle, vsAI) => {
+                onEnterRoom={(topicId, topicTitle) => {
                   setJoiningTopicId(topicId);
-                  roomApi.join(topicId, topicTitle, vsAI);
+                  roomApi.join(topicId, topicTitle);
                 }}
               />
             )}
@@ -207,7 +262,10 @@ export default function App() {
                 toast={toast}
                 handLeft={handLeft}
                 onRaiseHand={handleRaiseHand}
-                onDeclareChange={() => setChangeOpen(true)}
+                onDeclareChange={() => {
+                  setChangeContext('main');
+                  setChangeOpen(true);
+                }}
                 onLeave={handleLeaveSession}
                 draft={draft}
                 onDraftChange={setDraft}
@@ -215,17 +273,41 @@ export default function App() {
               />
             )}
 
-            {tab === 'spar' && (
-              <SparTab
-                sparStep={sparStep}
-                sparFb={sparFb}
-                sparDraft={sparDraft}
-                onSparDraftChange={setSparDraft}
-                onSparAnswer={sparAnswer}
-                onGoHome={() => setTab('home')}
-                onRestart={sparRestart}
-              />
-            )}
+            {tab === 'spar' &&
+              (sparRoomApi.phase === 'active' && sparRoom && sparRoomApi.mySeat ? (
+                <SessionTab
+                  topicTitle={sparRoom.topic_title}
+                  sessionLabel={fmt(sparSessionSec)}
+                  isMyTurn={sparIsMyTurn}
+                  mySeatLabel={nickname}
+                  otherSeatLabel={sparRoom.seat_b ?? 'AI'}
+                  ackLeft={sparRoom.acks_left_a}
+                  ackLimit={ACK_LIMIT}
+                  msgs={sparMsgs}
+                  onAck={handleSparAck}
+                  logRef={sparLogRef}
+                  toast={toast}
+                  handLeft={sparRoom.hand_left_a}
+                  onRaiseHand={handleSparRaiseHand}
+                  onDeclareChange={() => {
+                    setChangeContext('spar');
+                    setChangeOpen(true);
+                  }}
+                  onLeave={handleSparLeave}
+                  draft={sparChatDraft}
+                  onDraftChange={setSparChatDraft}
+                  onSend={handleSparSend}
+                  kindLabel="리허설"
+                  closed={sparClosed}
+                />
+              ) : (
+                <SparTab
+                  topicInput={sparTopicInput}
+                  onTopicInputChange={setSparTopicInput}
+                  onStart={startSpar}
+                  starting={sparRoomApi.phase === 'matching'}
+                />
+              ))}
 
             {tab === 'shelf' && <ShelfTab changedCount={changed} nickname={nickname} />}
           </div>

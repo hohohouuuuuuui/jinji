@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
+import { AXIS_LABEL_KO } from './moderation';
 import type { LogBadge, MessageRow, ModerationResult, RoomRow, Seat } from './db-types';
 
 export type MatchPhase = 'idle' | 'matching' | 'waiting' | 'active' | 'error';
@@ -13,7 +14,7 @@ interface UseRoomResult {
   mySeat: Seat | null;
   messages: MessageRow[];
   error: string | null;
-  join: (topicId: string, topicTitle: string, vsAI?: boolean) => Promise<void>;
+  join: (topicId: string, topicTitle: string, vsAI?: boolean, skipBriefing?: boolean) => Promise<void>;
   leave: () => void;
   send: (text: string) => Promise<ModerationResult | null>;
   ack: (messageId: number) => Promise<void>;
@@ -83,7 +84,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
   }, []);
 
   const join = useCallback(
-    async (topicId: string, topicTitle: string, vsAI = false) => {
+    async (topicId: string, topicTitle: string, vsAI = false, skipBriefing = false) => {
       if (!nickname) return;
       setPhase('matching');
       setError(null);
@@ -109,7 +110,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
           setPhase('active');
           setMessages([]);
           subscribe(created.id);
-          await generateBriefingIfNeeded(created as RoomRow);
+          if (!skipBriefing) await generateBriefingIfNeeded(created as RoomRow);
           return;
         }
 
@@ -196,7 +197,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
 
   const send = useCallback(
     async (text: string) => {
-      if (!room || !mySeat || !nickname) return null;
+      if (!room || !mySeat || !nickname || room.status === 'closed') return null;
       let moderation: ModerationResult | null = null;
       try {
         moderation = await callApi<ModerationResult>('/api/moderate', { text });
@@ -215,7 +216,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
       const nextTurn: Seat = mySeat === 'A' ? 'B' : 'A';
       await supabase.from('rooms').update({ turn: nextTurn }).eq('id', room.id);
 
-      if (room.vs_ai && mySeat === 'A') {
+      if (room.vs_ai && mySeat === 'A' && room.status === 'active') {
         const history = messages
           .map((m) => ({ seat: m.seat, text: m.text }))
           .concat([{ seat: 'A', text }]);
@@ -227,6 +228,38 @@ export function useRoom(nickname: string | null): UseRoomResult {
               sender: AI_OPPONENT_NAME,
               text: reply.text,
             });
+
+            // Hold the AI to the same moderation as a human: 3 flagged
+            // replies and the session ends, same as it would for a person.
+            let aiModeration: ModerationResult | null = null;
+            try {
+              aiModeration = await callApi<ModerationResult>('/api/moderate', { text: reply.text });
+            } catch (err) {
+              console.error('AI self-moderation call failed', err);
+            }
+
+            if (aiModeration?.flagged) {
+              const strikes = room.ai_strikes + 1;
+              await supabase.from('messages').insert({
+                room_id: room.id,
+                seat: 'SYS',
+                sender: 'system',
+                text: `⚠️ AI 발언 경고 ${strikes}/3 · ${AXIS_LABEL_KO[aiModeration.axis]}`,
+              });
+              if (strikes >= 3) {
+                await supabase.from('messages').insert({
+                  room_id: room.id,
+                  seat: 'SYS',
+                  sender: 'system',
+                  text: 'AI가 규칙을 3회 위반해 세션이 종료되었습니다.',
+                });
+                await supabase.from('rooms').update({ ai_strikes: strikes, status: 'closed' }).eq('id', room.id);
+                return;
+              }
+              await supabase.from('rooms').update({ ai_strikes: strikes, turn: 'A' }).eq('id', room.id);
+              return;
+            }
+
             await supabase.from('rooms').update({ turn: 'A' }).eq('id', room.id);
           })
           .catch((err) => console.error('opponent reply failed', err));

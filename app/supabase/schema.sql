@@ -12,6 +12,7 @@ create table if not exists rooms (
   seat_b text,
   turn text not null default 'A' check (turn in ('A', 'B')),
   vs_ai boolean not null default false,
+  ai_strikes smallint not null default 0,
   briefing jsonb,
   acks_left_a smallint not null default 3,
   acks_left_b smallint not null default 3,

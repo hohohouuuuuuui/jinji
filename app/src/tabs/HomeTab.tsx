@@ -5,7 +5,7 @@ import { formatKSTDateLabel } from '../lib/kst';
 
 interface HomeTabProps {
   countdownLabel: string;
-  onEnterRoom: (topicId: string, topicTitle: string, vsAI?: boolean) => void;
+  onEnterRoom: (topicId: string, topicTitle: string) => void;
   matchingTopicId: string | null;
   matchError: string | null;
 }
@@ -267,7 +267,7 @@ export function HomeTab({ countdownLabel, onEnterRoom, matchingTopicId, matchErr
                 )}
                 {row.cta && row.topicId && (
                   <button
-                    onClick={() => onEnterRoom(row.topicId!, row.title, row.vsAI)}
+                    onClick={() => onEnterRoom(row.topicId!, row.title)}
                     disabled={matchingTopicId === row.topicId}
                     style={{
                       width: '100%',

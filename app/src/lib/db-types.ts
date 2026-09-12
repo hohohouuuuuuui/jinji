@@ -16,6 +16,7 @@ export interface RoomRow {
   seat_b: string | null;
   turn: Seat;
   vs_ai: boolean;
+  ai_strikes: number;
   briefing: Briefing | null;
   acks_left_a: number;
   acks_left_b: number;

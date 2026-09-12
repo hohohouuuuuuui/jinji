@@ -1,21 +1,5 @@
-export interface SparStep {
-  q: string;
-  fb: string;
-}
-
-export const SPAR_STEPS: SparStep[] = [
-  {
-    q: '연습 발언을 하나 써보세요. 아무 문장이나 좋아요. 다 쓰면 "종료"를 눌러보세요.',
-    fb: '방금 누른 "종료"가 내 발언 차례를 끝내는 신호예요. 이 버튼을 누르기 전까지는 상대가 끼어들지 않아요 — 이게 진지한 대화의 기본 규칙입니다.',
-  },
-  {
-    q: '이번엔 상대가 "그걸 그렇게까지 진지하게 받아들여? ㅋㅋ" 라고 답했다고 해볼게요. 아무 문장이나 써서 "종료"를 눌러보세요.',
-    fb: '그런 조롱·비꼼은 AI가 자동으로 감지해요. 상대에게만 조용히 "1차 경고"가 뜨고 저는 알림받지 않아요 — 공개적으로 망신 주지 않기 위해서예요.',
-  },
-];
-
 export interface ScheduleRoom {
-  id: 1 | 2 | 3 | 4 | 5;
+  id: 1 | 2 | 3 | 4;
   color: string;
   locked?: boolean;
 }
@@ -31,7 +15,6 @@ export interface ScheduleRowData {
   seats: { top: string; topColor?: string; bottom: string };
   cta?: string;
   topicId?: string;
-  vsAI?: boolean;
   lockedNote?: string;
   featured?: boolean;
 }
@@ -72,20 +55,6 @@ export const SCHEDULE: ScheduleRowData[] = [
       { label: '관전 214', bg: '#F3F1F5', color: '#4a4750' },
     ],
     seats: { top: '마감', topColor: '#b0568f', bottom: '/2명' },
-  },
-  {
-    room: { id: 5, color: '#8A6BD6' },
-    time: '상시',
-    status: '즉시 시작',
-    title: 'AI 논객과 즉석 격돌',
-    tags: [
-      { label: '1:1 격돌', bg: '#EFE9FB', color: '#5b3fa3' },
-      { label: 'AI 상대', bg: '#F3F1F5', color: '#4a4750' },
-    ],
-    seats: { top: '∞', bottom: '상시' },
-    cta: 'AI와 시작하기',
-    topicId: 'vs-ai',
-    vsAI: true,
   },
   {
     room: { id: 4, color: '#17171a', locked: true },

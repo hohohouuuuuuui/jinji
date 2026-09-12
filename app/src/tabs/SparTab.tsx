@@ -1,27 +1,14 @@
-import { RULES, SPAR_STEPS } from '../data';
+import { RULES } from '../data';
 
 interface SparTabProps {
-  sparStep: number;
-  sparFb: string;
-  sparDraft: string;
-  onSparDraftChange: (v: string) => void;
-  onSparAnswer: () => void;
-  onGoHome: () => void;
-  onRestart: () => void;
+  topicInput: string;
+  onTopicInputChange: (v: string) => void;
+  onStart: () => void;
+  starting: boolean;
 }
 
-export function SparTab({
-  sparStep,
-  sparFb,
-  sparDraft,
-  onSparDraftChange,
-  onSparAnswer,
-  onGoHome,
-  onRestart,
-}: SparTabProps) {
-  const done = sparStep >= SPAR_STEPS.length;
-  const question = done ? '리허설 종료' : SPAR_STEPS[sparStep].q;
-  const stepLabel = done ? '완료' : `${sparStep + 1}/2`;
+export function SparTab({ topicInput, onTopicInputChange, onStart, starting }: SparTabProps) {
+  const canStart = topicInput.trim().length > 0 && !starting;
 
   return (
     <div style={{ padding: '2px 20px 24px', animation: 'jz-fade .25s ease' }}>
@@ -29,63 +16,57 @@ export function SparTab({
         REHEARSAL ROOM
       </div>
       <h2 style={{ margin: '5px 0 4px', fontSize: 25, fontWeight: 900, letterSpacing: -1.2, color: '#17171a' }}>리허설룸</h2>
-      <p style={{ margin: '0 0 18px', fontSize: 12.5, color: '#4a4750' }}>첫 참가 전 2턴 연습</p>
-
-      <div style={{ display: 'flex', gap: 5, marginBottom: 16 }}>
-        <div style={{ height: 7, flex: 1, borderRadius: 999, background: '#F586AE' }} />
-        <div style={{ height: 7, flex: 1, borderRadius: 999, background: '#EFEDF2' }} />
-      </div>
+      <p style={{ margin: '0 0 18px', fontSize: 12.5, color: '#4a4750', lineHeight: 1.6 }}>
+        원하는 주제를 직접 입력하면, AI와 1:1로 실전처럼 대화·토론해볼 수 있어요. 매칭 대기 없이 바로 시작하고, 몇 번이든 다시 할 수 있어요.
+      </p>
 
       <div style={{ background: '#F3F1F5', borderRadius: 26, padding: 22 }}>
-        <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 14, color: '#4a4750' }}>
-          AI 리허설 파트너 · {stepLabel}
-        </div>
-        <div style={{ fontSize: 17, fontWeight: 900, lineHeight: 1.5, letterSpacing: -0.5, color: '#17171a', marginTop: 10 }}>
-          {question}
-        </div>
-        {sparFb && (
-          <div style={{ marginTop: 14, background: '#fff', borderRadius: 20, padding: '13px 16px', fontSize: 12.5, lineHeight: 1.6, fontWeight: 500, color: '#4a4750', animation: 'jz-up .25s ease' }}>
-            {sparFb}
-          </div>
-        )}
+        <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 14, color: '#4a4750' }}>연습하고 싶은 주제</div>
+        <input
+          value={topicInput}
+          onChange={(e) => onTopicInputChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onStart();
+          }}
+          placeholder="예: 반려동물 보유세, 도입해야 하는가"
+          style={{
+            width: '100%',
+            marginTop: 12,
+            background: '#fff',
+            border: 'none',
+            borderRadius: 999,
+            padding: '14px 18px',
+            fontSize: 14,
+            color: '#17171a',
+            outline: 'none',
+          }}
+        />
+        <button
+          onClick={onStart}
+          disabled={!canStart}
+          style={{
+            width: '100%',
+            marginTop: 12,
+            cursor: canStart ? 'pointer' : 'not-allowed',
+            background: canStart ? '#17171a' : '#E4E1E8',
+            color: canStart ? '#fff' : '#a9a5af',
+            border: 'none',
+            borderRadius: 999,
+            padding: 15,
+            fontSize: 14,
+            fontWeight: 700,
+          }}
+        >
+          {starting ? '시작하는 중…' : 'AI와 시작하기'}
+        </button>
       </div>
 
-      {!done && (
-        <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-          <input
-            value={sparDraft}
-            onChange={(e) => onSparDraftChange(e.target.value)}
-            placeholder="한 문장으로"
-            style={{ flex: 1, minWidth: 0, background: '#F3F1F5', border: 'none', borderRadius: 999, padding: '14px 18px', fontSize: 14, color: '#17171a', outline: 'none' }}
-          />
-          <button
-            onClick={onSparAnswer}
-            style={{ cursor: 'pointer', flex: 'none', background: '#17171a', color: '#fff', border: 'none', borderRadius: 999, padding: '14px 19px', fontSize: 13, fontWeight: 700 }}
-          >
-            종료
-          </button>
+      <div style={{ marginTop: 14, background: '#17171a', borderRadius: 20, padding: '16px 18px' }}>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: '#F7B3D4' }}>AI도 같은 규칙을 지켜요</div>
+        <div style={{ fontSize: 12, lineHeight: 1.6, color: '#c9c6cd', marginTop: 6 }}>
+          상대가 사람이든 AI든 조롱·인신공격은 감지됩니다. AI가 규칙을 3번 어기면 그 세션은 자동으로 종료돼요 — 판정이 한쪽에만 유리하지 않다는 걸 직접 확인해보세요.
         </div>
-      )}
-
-      {done && (
-        <div style={{ marginTop: 12, background: '#17171a', borderRadius: 26, padding: 22, animation: 'jz-pop .3s ease' }}>
-          <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 20, color: '#F7B3D4' }}>입장 자격 획득</div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-            <button
-              onClick={onRestart}
-              style={{ flex: 1, cursor: 'pointer', background: '#26262b', color: '#F7B3D4', border: 'none', borderRadius: 999, padding: 14, fontSize: 14, fontWeight: 700 }}
-            >
-              다시 연습하기
-            </button>
-            <button
-              onClick={onGoHome}
-              style={{ flex: 1, cursor: 'pointer', background: '#F586AE', color: '#fff', border: 'none', borderRadius: 999, padding: 14, fontSize: 14, fontWeight: 700 }}
-            >
-              시간표로
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
 
       <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: 1.2, color: '#4a4750', marginTop: 28 }}>
         참가 규정

@@ -21,6 +21,8 @@ interface SessionTabProps {
   draft: string;
   onDraftChange: (v: string) => void;
   onSend: () => void;
+  kindLabel?: string;
+  closed?: boolean;
 }
 
 export function SessionTab({
@@ -42,14 +44,17 @@ export function SessionTab({
   draft,
   onDraftChange,
   onSend,
+  kindLabel = '진지한 대화',
+  closed = false,
 }: SessionTabProps) {
+  const canType = isMyTurn && !closed;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', animation: 'jz-fade .25s ease' }}>
       <div style={{ flex: 'none', margin: '0 16px', background: '#17171a', borderRadius: 22, padding: '13px 16px 14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F586AE', animation: 'jz-blink 3s infinite' }} />
           <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: 1.4, color: '#F7B3D4' }}>
-            진행 중 · 진지한 대화
+            {closed ? '종료됨' : '진행 중'} · {kindLabel}
           </span>
           <span style={{ marginLeft: 'auto', fontFamily: "'Space Mono',monospace", fontSize: 8.5, fontWeight: 700, letterSpacing: 1.2, color: '#8f8b93' }}>
             남은시간
@@ -227,8 +232,8 @@ export function SessionTab({
             onKeyDown={(e) => {
               if (e.key === 'Enter') onSend();
             }}
-            placeholder={isMyTurn ? '발언대에서 말하기' : '상대 차례를 기다리는 중…'}
-            disabled={!isMyTurn}
+            placeholder={closed ? '세션이 종료됐습니다' : isMyTurn ? '발언대에서 말하기' : '상대 차례를 기다리는 중…'}
+            disabled={!canType}
             style={{
               flex: 1,
               minWidth: 0,
@@ -239,17 +244,17 @@ export function SessionTab({
               fontSize: 14,
               color: '#17171a',
               outline: 'none',
-              opacity: isMyTurn ? 1 : 0.6,
+              opacity: canType ? 1 : 0.6,
             }}
           />
           <button
             onClick={onSend}
-            disabled={!isMyTurn}
+            disabled={!canType}
             style={{
-              cursor: isMyTurn ? 'pointer' : 'not-allowed',
+              cursor: canType ? 'pointer' : 'not-allowed',
               flex: 'none',
-              background: isMyTurn ? '#17171a' : '#EFEDF2',
-              color: isMyTurn ? '#fff' : '#a9a5af',
+              background: canType ? '#17171a' : '#EFEDF2',
+              color: canType ? '#fff' : '#a9a5af',
               border: 'none',
               borderRadius: 999,
               padding: '14px 19px',
