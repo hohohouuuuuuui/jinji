@@ -43,6 +43,12 @@ create table if not exists logs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists profiles (
+  nickname text primary key,
+  changed_count int not null default 0,
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists messages_room_id_idx on messages(room_id, created_at);
 create index if not exists rooms_waiting_idx on rooms(topic_id, status, created_at);
 create index if not exists logs_nickname_idx on logs(nickname, created_at desc);
@@ -53,6 +59,7 @@ create index if not exists logs_nickname_idx on logs(nickname, created_at desc);
 alter table rooms enable row level security;
 alter table messages enable row level security;
 alter table logs enable row level security;
+alter table profiles enable row level security;
 
 drop policy if exists "rooms anon all" on rooms;
 create policy "rooms anon all" on rooms for all using (true) with check (true);
@@ -63,8 +70,12 @@ create policy "messages anon all" on messages for all using (true) with check (t
 drop policy if exists "logs anon all" on logs;
 create policy "logs anon all" on logs for all using (true) with check (true);
 
--- Enable Realtime for all three tables (Supabase Dashboard → Database →
+drop policy if exists "profiles anon all" on profiles;
+create policy "profiles anon all" on profiles for all using (true) with check (true);
+
+-- Enable Realtime for all tables (Supabase Dashboard → Database →
 -- Replication also works instead of this if you prefer the UI):
 alter publication supabase_realtime add table rooms;
 alter publication supabase_realtime add table messages;
 alter publication supabase_realtime add table logs;
+alter publication supabase_realtime add table profiles;

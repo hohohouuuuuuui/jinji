@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ButterflyPixel } from '../icons/ButterflyPixel';
+import { CaterpillarPixel } from '../icons/CaterpillarPixel';
 import { SHELF_STATS } from '../data';
 import { supabase } from '../lib/supabase';
+import { getGrowth } from '../lib/growth';
 import type { LogRow } from '../lib/db-types';
 
 interface ShelfTabProps {
@@ -22,6 +24,7 @@ function formatLogDate(iso: string) {
 
 export function ShelfTab({ changedCount, nickname }: ShelfTabProps) {
   const [logs, setLogs] = useState<LogRow[] | null>(null);
+  const growth = getGrowth(changedCount);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,24 +55,24 @@ export function ShelfTab({ changedCount, nickname }: ShelfTabProps) {
   return (
     <div style={{ padding: '2px 20px 24px', animation: 'jz-fade .25s ease' }}>
       <div style={{ background: '#E6F5FC', borderRadius: 26, padding: 18, textAlign: 'center' }}>
-        <ButterflyPixel />
+        {growth.stage === 'larva' ? <CaterpillarPixel width={240} height={148} /> : <ButterflyPixel />}
         <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 20, color: '#17171a', marginTop: 4 }}>
-          각성한 논객 LV.56
+          {growth.tierLabel} LV.{changedCount}
         </div>
-        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#1f5a75', marginTop: 5 }}>
-          생각이 바뀜 누적 8회 · 반론 각성
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 10 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, padding: '6px 13px', borderRadius: 999, background: '#fff', color: '#8d3f70' }}>
-            철학 날개
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 700, padding: '6px 13px', borderRadius: 999, background: '#fff', color: '#1f5a75' }}>
-            기술 날개
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 700, padding: '6px 13px', borderRadius: 999, background: '#FBE9AE', color: '#63510f' }}>
-            🔥 각성
-          </span>
-        </div>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#1f5a75', marginTop: 5 }}>{growth.subLabel}</div>
+        {growth.stage === 'butterfly' && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 10 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '6px 13px', borderRadius: 999, background: '#fff', color: '#8d3f70' }}>
+              철학 날개
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '6px 13px', borderRadius: 999, background: '#fff', color: '#1f5a75' }}>
+              기술 날개
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '6px 13px', borderRadius: 999, background: '#FBE9AE', color: '#63510f' }}>
+              🔥 각성
+            </span>
+          </div>
+        )}
       </div>
 
       <div style={{ marginTop: 14, padding: '2px 2px 0' }}>

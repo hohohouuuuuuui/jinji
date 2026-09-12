@@ -1,18 +1,22 @@
 import { useState } from 'react';
 import { CaterpillarPixel } from '../icons/CaterpillarPixel';
+import { ButterflyPixel } from '../icons/ButterflyPixel';
 import { FILTER_CHIPS, SCHEDULE } from '../data';
 import { formatKSTDateLabel } from '../lib/kst';
+import { getGrowth } from '../lib/growth';
 
 interface HomeTabProps {
   countdownLabel: string;
+  changedCount: number;
   onEnterRoom: (topicId: string, topicTitle: string) => void;
   matchingTopicId: string | null;
   matchError: string | null;
 }
 
-export function HomeTab({ countdownLabel, onEnterRoom, matchingTopicId, matchError }: HomeTabProps) {
+export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTopicId, matchError }: HomeTabProps) {
   const [filter, setFilter] = useState<number | 'all'>('all');
   const visibleRows = filter === 'all' ? SCHEDULE : SCHEDULE.filter((row) => row.room.id === filter);
+  const growth = getGrowth(changedCount);
   return (
     <div style={{ animation: 'jz-fade .25s ease' }}>
       <div
@@ -72,11 +76,11 @@ export function HomeTab({ countdownLabel, onEnterRoom, matchingTopicId, matchErr
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 20px 0' }}>
-        <CaterpillarPixel />
+        {growth.stage === 'larva' ? <CaterpillarPixel /> : <ButterflyPixel width={100} height={84} />}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <span style={{ fontFamily: "'DotGothic16',monospace", fontSize: 15, color: '#17171a' }}>
-              성장 애벌레 LV.2
+              {growth.tierLabel} LV.{changedCount}
             </span>
             <span
               style={{
@@ -88,14 +92,19 @@ export function HomeTab({ countdownLabel, onEnterRoom, matchingTopicId, matchErr
                 color: '#8d3f70',
               }}
             >
-              🔁 5
+              🔁 {changedCount}
             </span>
           </div>
           <div style={{ display: 'flex', gap: 3, marginTop: 8 }}>
-            {[true, true, false, false].map((on, i) => (
+            {Array.from({ length: growth.dotsTotal }).map((_, i) => (
               <div
                 key={i}
-                style={{ height: 5, flex: 1, borderRadius: 999, background: on ? '#F586AE' : '#EFEDF2' }}
+                style={{
+                  height: 5,
+                  flex: 1,
+                  borderRadius: 999,
+                  background: i < growth.dotsFilled ? '#F586AE' : '#EFEDF2',
+                }}
               />
             ))}
           </div>

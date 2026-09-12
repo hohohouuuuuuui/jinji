@@ -6,6 +6,7 @@ React + Vite implementation of `project/Jinji Prototype v3.dc.html`: 4 tabs (시
 
 - **진지한 대화**: 닉네임으로 입장 → 같은 주제에 실시간 매칭 → AI가 생성한 사전 브리핑 → 실시간 채팅(턴 교대, 인정 버튼, 손들기, 생각이 바뀜 선언, AI 조롱/인신공격 모더레이션) → 나가면 참가기록에 실제로 기록
 - **리허설룸**: 매칭 대기 없이, 원하는 주제를 직접 입력해 AI와 1:1로 바로 대화·토론 연습. 입력한 주제가 "결혼", "연애"처럼 찬반이 갈리지 않는 단어형이면 AI가 구체화를 요청하는 안내를 보여줍니다. **AI도 사람과 동일한 모더레이션을 받고**, 3회 위반하면 세션이 자동 종료됩니다. 몇 번이든 다시 시작 가능. (연습이라 참가기록에는 남지 않습니다 — "진지한 대화"만 기록됩니다.)
+- **진지벌레 레벨/이미지는 닉네임별로 실제 저장**됩니다 (`profiles` 테이블) — 시간표와 참가기록 탭에 항상 같은 레벨·캐릭터가 뜨고, "진지한 대화"에서 "생각이 바뀜"을 선언할 때마다 올라갑니다. 0회면 애벌레, 1회 이상이면 나비(성충 → 초성충 → 전설의 진지충)로 진화합니다.
 - 시간표 상단 필터 칩(1/2/3번 방)으로 목록을 좁혀볼 수 있고, 상태바/시간표 날짜는 실제 한국 시간과 동기화됩니다.
 - 시간표의 2:2 토론·1:1 격돌·진지한 결혼 항목은 아직 목업입니다.
 
@@ -33,7 +34,7 @@ npm run dev
 
 1. https://supabase.com → 새 프로젝트 생성 (무료 티어)
 2. 프로젝트의 **SQL Editor**에서 `supabase/schema.sql` 내용을 그대로 실행 (테이블 생성 + Realtime 활성화까지 포함)
-   - **이미 `schema.sql`을 실행한 적이 있다면** `supabase/migration_2.sql`, `supabase/migration_3.sql`도 순서대로 추가 실행해주세요 (참가기록 테이블, AI 스파링 3진 아웃 카운터 — 재실행해도 안전함)
+   - **이미 `schema.sql`을 실행한 적이 있다면** `supabase/migration_2.sql`, `migration_3.sql`, `migration_4.sql`도 순서대로 추가 실행해주세요 (참가기록 테이블, AI 스파링 3진 아웃 카운터, 사용자별 진지벌레 레벨 — 재실행해도 안전함)
 3. **Project Settings → API**에서 `Project URL`과 `anon public` 키를 복사
    → `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
    - Vercel에 등록할 때 이 두 값은 **Sensitive가 아니라 Plain Text**로 등록해야 합니다 (`VITE_` 접두사는 빌드 시 클라이언트에 그대로 노출되는 값이라 Vercel이 Sensitive 지정을 거부합니다)
@@ -69,11 +70,13 @@ npm run dev
 
 - `src/App.tsx` — 앱 상태(탭, 닉네임, 진지한 대화 룸, 리허설 룸, 타이머, 토스트, 모달) 조립
 - `src/lib/useRoom.ts` — 매칭 · 채팅 · 턴 · 인정권 · 손들기 · 생각이 바뀜 · AI 스파링(+AI 자기-모더레이션) · 참가기록 저장을 Supabase에 연결하는 훅 (진지한 대화와 리허설룸 모두 이 훅의 별도 인스턴스를 씀)
+- `src/lib/useProfile.ts` — 닉네임별 진지벌레 성장(생각이 바뀜 누적 횟수)을 Supabase `profiles` 테이블에서 읽고 올리는 훅
+- `src/lib/growth.ts` — 누적 횟수 → 티어 이름 · 애벌레/나비 단계 · 진행 도트 개수로 변환
 - `src/lib/supabase.ts`, `src/lib/db-types.ts` — Supabase 클라이언트 · 테이블 타입
 - `src/lib/kst.ts` — 실제 한국 시간/날짜 포맷 유틸
 - `src/lib/moderation.ts` — 모더레이션 축(4가지) → 한국어 라벨/토스트 문구 매핑
 - `api/_gemini.ts`, `api/briefing.ts`, `api/moderate.ts`, `api/opponent.ts`, `api/validate-topic.ts` — Gemini 호출 Vercel 함수
-- `supabase/schema.sql` — 처음 설치용 전체 스키마, `supabase/migration_2.sql`·`migration_3.sql` — 이미 설치한 DB에 추가분만 반영
+- `supabase/schema.sql` — 처음 설치용 전체 스키마, `supabase/migration_2.sql`·`migration_3.sql`·`migration_4.sql` — 이미 설치한 DB에 추가분만 반영
 - `src/tabs/` — 네 개 탭 화면 (`SessionTab`은 진지한 대화·리허설룸 공용), `src/components/` — 폰 프레임 · 상태바 · 하단 내비 · 모달
 - `src/icons/` — 내비 아이콘, 픽셀아트 애벌레/나비 캐릭터
 - `src/data.ts` — 아직 목업인 부분(시간표 2:2 토론·1:1 격돌·진지한 결혼 등)

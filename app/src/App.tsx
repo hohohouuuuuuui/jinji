@@ -11,6 +11,7 @@ import { SessionTab } from './tabs/SessionTab';
 import { SparTab } from './tabs/SparTab';
 import { ShelfTab } from './tabs/ShelfTab';
 import { useRoom } from './lib/useRoom';
+import { useProfile } from './lib/useProfile';
 import { MODERATION_TOAST } from './lib/moderation';
 import type { Msg, Tab, ToastState } from './types';
 
@@ -32,7 +33,6 @@ export default function App() {
   const [changeOpen, setChangeOpen] = useState(false);
   const [countdown, setCountdown] = useState(295);
   const [sessionSec, setSessionSec] = useState(1080);
-  const [changed, setChanged] = useState(0);
   const [draft, setDraft] = useState('');
   const [toast, setToast] = useState<ToastState | null>(null);
   const [joiningTopicId, setJoiningTopicId] = useState<string | null>(null);
@@ -48,6 +48,7 @@ export default function App() {
   const { phase, room, mySeat, messages } = roomApi;
 
   const sparRoomApi = useRoom(nickname);
+  const { changedCount, bumpChanged } = useProfile(nickname);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logRef = useRef<HTMLDivElement | null>(null);
@@ -155,7 +156,7 @@ export default function App() {
       await sparRoomApi.declareChange();
     } else {
       await roomApi.declareChange();
-      setChanged((c) => c + 1);
+      await bumpChanged();
     }
     showToast('good', '기록됨 · 다음 티어 변태 조건 충족');
   }
@@ -267,6 +268,7 @@ export default function App() {
             {tab === 'home' && (
               <HomeTab
                 countdownLabel={fmt(countdown)}
+                changedCount={changedCount}
                 matchingTopicId={joiningTopicId}
                 matchError={phase === 'error' ? roomApi.error : null}
                 onEnterRoom={(topicId, topicTitle) => {
@@ -340,7 +342,7 @@ export default function App() {
                 />
               ))}
 
-            {tab === 'shelf' && <ShelfTab changedCount={changed} nickname={nickname} />}
+            {tab === 'shelf' && <ShelfTab changedCount={changedCount} nickname={nickname} />}
           </div>
 
           <BottomNav tab={tab} onChange={setTab} />

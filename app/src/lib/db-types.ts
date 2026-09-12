@@ -42,6 +42,12 @@ export interface LogRow {
   created_at: string;
 }
 
+export interface ProfileRow {
+  nickname: string;
+  changed_count: number;
+  updated_at: string;
+}
+
 export interface MessageRow {
   id: number;
   room_id: string;
