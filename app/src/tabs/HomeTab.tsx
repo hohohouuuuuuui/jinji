@@ -209,7 +209,7 @@ export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTop
                   </div>
                 )}
               </div>
-              <div style={{ width: 58, flex: 'none' }}>
+              <div style={{ flex: 'none', minWidth: 44 }}>
                 {row.day ? (
                   <>
                     <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: 1, color: '#4a4750' }}>
