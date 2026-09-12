@@ -75,3 +75,48 @@ button {
     opacity: 0.25;
   }
 }
+
+.jz-frame-outer {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+.jz-frame-device {
+  width: 390px;
+  height: 844px;
+  border-radius: 52px;
+  background: #111113;
+  padding: 11px;
+  box-shadow: 0 40px 80px -22px rgba(0, 0, 0, 0.45);
+}
+.jz-frame-screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 42px;
+  overflow: hidden;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+@media (max-width: 480px) {
+  .jz-frame-outer {
+    padding: 0;
+  }
+  .jz-frame-device {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    border-radius: 0;
+    background: none;
+    padding: 0;
+    box-shadow: none;
+  }
+  .jz-frame-screen {
+    border-radius: 0;
+  }
+}
