@@ -3,10 +3,12 @@ import { FILTER_CHIPS, SCHEDULE } from '../data';
 
 interface HomeTabProps {
   countdownLabel: string;
-  onOpenBriefing: () => void;
+  onEnterRoom: (topicId: string, topicTitle: string) => void;
+  matchingTopicId: string | null;
+  matchError: string | null;
 }
 
-export function HomeTab({ countdownLabel, onOpenBriefing }: HomeTabProps) {
+export function HomeTab({ countdownLabel, onEnterRoom, matchingTopicId, matchError }: HomeTabProps) {
   return (
     <div style={{ animation: 'jz-fade .25s ease' }}>
       <div
@@ -247,24 +249,30 @@ export function HomeTab({ countdownLabel, onOpenBriefing }: HomeTabProps) {
                 {row.lockedNote && (
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#3f3c45', marginTop: 7 }}>{row.lockedNote}</div>
                 )}
-                {row.cta && (
+                {row.cta && row.topicId && (
                   <button
-                    onClick={onOpenBriefing}
+                    onClick={() => onEnterRoom(row.topicId!, row.title)}
+                    disabled={matchingTopicId === row.topicId}
                     style={{
                       width: '100%',
                       marginTop: 11,
                       border: 'none',
-                      cursor: 'pointer',
-                      background: '#17171a',
-                      color: '#fff',
+                      cursor: matchingTopicId === row.topicId ? 'not-allowed' : 'pointer',
+                      background: matchingTopicId === row.topicId ? '#EFEDF2' : '#17171a',
+                      color: matchingTopicId === row.topicId ? '#a9a5af' : '#fff',
                       fontSize: 13.5,
                       fontWeight: 700,
                       padding: 13,
                       borderRadius: 999,
                     }}
                   >
-                    {row.cta}
+                    {matchingTopicId === row.topicId ? '매칭 중…' : row.cta}
                   </button>
+                )}
+                {row.topicId && matchError && (
+                  <div style={{ marginTop: 8, fontSize: 11, fontWeight: 700, color: '#c0392b' }}>
+                    매칭에 실패했어요: {matchError}
+                  </div>
                 )}
               </div>
               {!locked && (

@@ -1,21 +1,3 @@
-import type { Msg } from './types';
-
-export const OTHER_REPLIES = [
-  '권리는 지시한 사람이 아니라, 학습된 데이터를 만든 사람들에게 나눠져야 합니다.',
-  '다만 상업적 이용과 개인적 이용을 구분하지 않은 건 과했습니다. 정정합니다.',
-  '기준을 결과의 예측 가능성으로 두면 어떻습니까.',
-];
-
-export const INITIAL_MSGS: Msg[] = [
-  { who: 'other', text: OTHER_REPLIES[0], acked: false },
-  {
-    who: 'me',
-    text: '나눔의 기준을 노동으로 두면 검증 불가능한 지분 계산이 남습니다.',
-    done: true,
-  },
-  { who: 'other', text: OTHER_REPLIES[1], acked: false },
-];
-
 export interface SparStep {
   q: string;
   fb: string;
@@ -48,6 +30,7 @@ export interface ScheduleRowData {
   tags: { label: string; bg: string; color: string }[];
   seats: { top: string; topColor?: string; bottom: string };
   cta?: string;
+  topicId?: string;
   lockedNote?: string;
   featured?: boolean;
 }
@@ -59,11 +42,12 @@ export const SCHEDULE: ScheduleRowData[] = [
     status: '',
     title: 'AI 생성물에 저작권을 인정해야 하는가',
     tags: [
-      { label: '2:2 토론', bg: '#fff', color: '#8d3f70' },
-      { label: 'AI 심판', bg: '#fff', color: '#4a4750' },
+      { label: '1:1 대화', bg: '#fff', color: '#8d3f70' },
+      { label: 'AI 브리핑', bg: '#fff', color: '#4a4750' },
     ],
     seats: { top: '1', bottom: '/4명' },
     cta: '입장 신청하기',
+    topicId: 'ai-copyright',
     featured: true,
   },
   {
@@ -155,25 +139,6 @@ export const SHELF_STATS: StatBar[] = [
   { emoji: '🫱', label: '스틸맨', value: 12, pct: 30, color: '#F6CF5C' },
   { emoji: '👀', label: '브리핑 완독', value: 40, pct: 100, color: '#8FD8A4' },
 ];
-
-export const BRIEFING = {
-  room: '1번 방 · 20:05 · 입장 전 브리핑',
-  title: 'AI 생성물의 저작권',
-  tags: [
-    { label: '발언 2번', bg: '#26262b', color: '#F7B3D4' },
-    { label: '2:2 토론', bg: '#26262b', color: '#c9c6cd' },
-  ],
-  terms: ['저작인격권', '창작적 기여', '공정이용', '학습 데이터', '2차적 저작물'],
-  issues: [
-    '프롬프트는 창작적 기여인가',
-    '학습은 공정이용인가',
-    '권리 주체는 이용자인가 제공자인가',
-  ],
-  objections: [
-    { text: '"카메라 셔터와 프롬프트는 다르다."', bg: '#FBDFEC', color: '#8d3f70' },
-    { text: '"수천 명의 노동이 무보상으로 흡수된다."', bg: '#E6F5FC', color: '#1f5a75' },
-  ],
-};
 
 export const ISSUE_CHIPS = ['쟁점 1 창작적 기여', '2 공정이용', '3 권리 주체'];
 

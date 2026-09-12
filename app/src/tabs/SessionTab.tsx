@@ -3,25 +3,31 @@ import type { Msg, ToastState } from '../types';
 import { ISSUE_CHIPS } from '../data';
 
 interface SessionTabProps {
+  topicTitle: string;
   sessionLabel: string;
+  isMyTurn: boolean;
+  mySeatLabel: string;
+  otherSeatLabel: string;
   ackLeft: number;
   ackLimit: number;
   msgs: Msg[];
-  onAck: (index: number) => void;
+  onAck: (id: number) => void;
   logRef: RefObject<HTMLDivElement | null>;
   toast: ToastState | null;
   handLeft: number;
   onRaiseHand: () => void;
   onDeclareChange: () => void;
-  onMockTest: () => void;
-  showMockButton: boolean;
   draft: string;
   onDraftChange: (v: string) => void;
   onSend: () => void;
 }
 
 export function SessionTab({
+  topicTitle,
   sessionLabel,
+  isMyTurn,
+  mySeatLabel,
+  otherSeatLabel,
   ackLeft,
   ackLimit,
   msgs,
@@ -31,8 +37,6 @@ export function SessionTab({
   handLeft,
   onRaiseHand,
   onDeclareChange,
-  onMockTest,
-  showMockButton,
   draft,
   onDraftChange,
   onSend,
@@ -43,29 +47,43 @@ export function SessionTab({
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F586AE', animation: 'jz-blink 3s infinite' }} />
           <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: 1.4, color: '#F7B3D4' }}>
-            진행 중 · 1번 방
+            진행 중 · 진지한 대화
           </span>
           <span style={{ marginLeft: 'auto', fontFamily: "'Space Mono',monospace", fontSize: 8.5, fontWeight: 700, letterSpacing: 1.2, color: '#8f8b93' }}>
-            자리
+            남은시간
           </span>
           <span style={{ fontFamily: "'DotGothic16',monospace", fontSize: 16, lineHeight: 1, color: '#fff' }}>{sessionLabel}</span>
         </div>
-        <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: -0.5, color: '#fff', marginTop: 9 }}>
-          AI 생성물의 저작권
-        </div>
+        <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: -0.5, color: '#fff', marginTop: 9 }}>{topicTitle}</div>
 
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginTop: 13 }}>
-          <div style={{ flex: 1, background: '#26262b', borderRadius: 14, padding: '9px 10px', border: '1.5px solid #F586AE' }}>
-            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 8, fontWeight: 700, letterSpacing: 1, color: '#F7B3D4' }}>
-              발언 중 · 나
+          <div
+            style={{
+              flex: 1,
+              background: '#26262b',
+              borderRadius: 14,
+              padding: '9px 10px',
+              border: isMyTurn ? '1.5px solid #F586AE' : '1.5px solid transparent',
+            }}
+          >
+            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 8, fontWeight: 700, letterSpacing: 1, color: isMyTurn ? '#F7B3D4' : '#78747e' }}>
+              {isMyTurn ? '발언 중 · 나' : '나'}
             </div>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#fff', marginTop: 3 }}>성장 애벌레</div>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#fff', marginTop: 3 }}>{mySeatLabel}</div>
           </div>
-          <div style={{ flex: 1, background: '#26262b', borderRadius: 14, padding: '9px 10px' }}>
-            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 8, fontWeight: 700, letterSpacing: 1, color: '#78747e' }}>
-              상대
+          <div
+            style={{
+              flex: 1,
+              background: '#26262b',
+              borderRadius: 14,
+              padding: '9px 10px',
+              border: !isMyTurn ? '1.5px solid #F586AE' : '1.5px solid transparent',
+            }}
+          >
+            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 8, fontWeight: 700, letterSpacing: 1, color: !isMyTurn ? '#F7B3D4' : '#78747e' }}>
+              {!isMyTurn ? '발언 중 · 상대' : '상대'}
             </div>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#c9c6cd', marginTop: 3 }}>상대 번데기</div>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#c9c6cd', marginTop: 3 }}>{otherSeatLabel}</div>
           </div>
         </div>
       </div>
@@ -80,11 +98,12 @@ export function SessionTab({
             fontWeight: 700,
             padding: '6px 12px',
             borderRadius: 999,
-            background: '#FBDFEC',
-            color: '#8d3f70',
+            background: isMyTurn ? '#FBDFEC' : '#F3F1F5',
+            color: isMyTurn ? '#8d3f70' : '#4a4750',
           }}
         >
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F586AE' }} />내 차례
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: isMyTurn ? '#F586AE' : '#b8b4bd' }} />
+          {isMyTurn ? '내 차례' : '상대 차례'}
         </span>
         <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: 10.5, fontWeight: 700, color: '#4a4750' }}>인정권</span>
@@ -119,10 +138,10 @@ export function SessionTab({
         data-log="1"
         style={{ flex: 1, overflowY: 'auto', padding: '4px 18px 10px', display: 'flex', flexDirection: 'column', gap: 14 }}
       >
-        {msgs.map((m, i) => {
+        {msgs.map((m) => {
           if (m.who === 'other') {
             return (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, animation: 'jz-up .3s ease' }}>
+              <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, animation: 'jz-up .3s ease' }}>
                 <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 8.5, fontWeight: 700, letterSpacing: 1, color: '#78747e', paddingLeft: 4 }}>
                   상대
                 </div>
@@ -131,7 +150,7 @@ export function SessionTab({
                 </div>
                 {!m.acked && (
                   <button
-                    onClick={() => onAck(i)}
+                    onClick={() => onAck(m.id)}
                     style={{ cursor: 'pointer', background: '#fff', border: '2px solid #17171a', borderRadius: 999, padding: '8px 15px', fontSize: 12, fontWeight: 700, color: '#17171a' }}
                   >
                     그건 맞네 🤍
@@ -147,7 +166,7 @@ export function SessionTab({
           }
           if (m.who === 'me') {
             return (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, animation: 'jz-up .3s ease' }}>
+              <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, animation: 'jz-up .3s ease' }}>
                 <div style={{ maxWidth: '84%', background: '#F7B3D4', borderRadius: 22, padding: '13px 17px', fontSize: 14, lineHeight: 1.6, color: '#3d1029' }}>
                   {m.text}
                 </div>
@@ -156,7 +175,7 @@ export function SessionTab({
             );
           }
           return (
-            <div key={i} style={{ alignSelf: 'center', background: '#17171a', borderRadius: 999, padding: '9px 18px', fontSize: 11.5, fontWeight: 700, color: '#F7B3D4', animation: 'jz-pop .3s ease' }}>
+            <div key={m.id} style={{ alignSelf: 'center', background: '#17171a', borderRadius: 999, padding: '9px 18px', fontSize: 11.5, fontWeight: 700, color: '#F7B3D4', animation: 'jz-pop .3s ease' }}>
               {m.text}
             </div>
           );
@@ -166,7 +185,7 @@ export function SessionTab({
       <div style={{ flex: 'none', padding: '8px 16px 14px', borderTop: '1px solid #EFEDF2' }}>
         {toast && toast.tone === 'warn' && (
           <div style={{ background: '#FFF3D6', borderRadius: 20, padding: '13px 16px', marginBottom: 9, fontSize: 12.5, lineHeight: 1.55, color: '#63510f', fontWeight: 500, animation: 'jz-up .25s ease' }}>
-            태도가 아니라 생각을 겨누고 있나요? · 조롱 감지 1차
+            {toast.text}
           </div>
         )}
         {toast && toast.tone === 'good' && (
@@ -180,7 +199,7 @@ export function SessionTab({
             onClick={onRaiseHand}
             style={{ cursor: 'pointer', background: '#F3F1F5', border: 'none', borderRadius: 999, padding: '13px 16px', fontSize: 12, fontWeight: 700, color: '#17171a' }}
           >
-            ✋ {handLeft}/3
+            ✋ {handLeft}/2
           </button>
           <button
             onClick={onDeclareChange}
@@ -188,26 +207,44 @@ export function SessionTab({
           >
             🔁 생각이 바뀜
           </button>
-          {showMockButton && (
-            <button
-              onClick={onMockTest}
-              style={{ cursor: 'pointer', background: '#fff', border: '1.5px dashed #cbc7d1', borderRadius: 999, padding: '13px 15px', fontSize: 12, fontWeight: 500, color: '#4a4750' }}
-            >
-              조롱
-            </button>
-          )}
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             value={draft}
             onChange={(e) => onDraftChange(e.target.value)}
-            placeholder="발언대에서 말하기"
-            style={{ flex: 1, minWidth: 0, background: '#F3F1F5', border: 'none', borderRadius: 999, padding: '14px 18px', fontSize: 14, color: '#17171a', outline: 'none' }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onSend();
+            }}
+            placeholder={isMyTurn ? '발언대에서 말하기' : '상대 차례를 기다리는 중…'}
+            disabled={!isMyTurn}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              background: '#F3F1F5',
+              border: 'none',
+              borderRadius: 999,
+              padding: '14px 18px',
+              fontSize: 14,
+              color: '#17171a',
+              outline: 'none',
+              opacity: isMyTurn ? 1 : 0.6,
+            }}
           />
           <button
             onClick={onSend}
-            style={{ cursor: 'pointer', flex: 'none', background: '#17171a', color: '#fff', border: 'none', borderRadius: 999, padding: '14px 19px', fontSize: 13, fontWeight: 700 }}
+            disabled={!isMyTurn}
+            style={{
+              cursor: isMyTurn ? 'pointer' : 'not-allowed',
+              flex: 'none',
+              background: isMyTurn ? '#17171a' : '#EFEDF2',
+              color: isMyTurn ? '#fff' : '#a9a5af',
+              border: 'none',
+              borderRadius: 999,
+              padding: '14px 19px',
+              fontSize: 13,
+              fontWeight: 700,
+            }}
           >
             종료
           </button>

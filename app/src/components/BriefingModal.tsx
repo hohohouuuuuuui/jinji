@@ -1,14 +1,26 @@
-import { BRIEFING } from '../data';
+import type { Briefing } from '../lib/db-types';
 
 interface BriefingModalProps {
   open: boolean;
   read: boolean;
+  roomLabel: string;
+  title: string;
+  briefing: Briefing | null;
   onClose: () => void;
   onToggleRead: () => void;
   onEnter: () => void;
 }
 
-export function BriefingModal({ open, read, onClose, onToggleRead, onEnter }: BriefingModalProps) {
+export function BriefingModal({
+  open,
+  read,
+  roomLabel,
+  title,
+  briefing,
+  onClose,
+  onToggleRead,
+  onEnter,
+}: BriefingModalProps) {
   if (!open) return null;
   return (
     <div
@@ -36,16 +48,9 @@ export function BriefingModal({ open, read, onClose, onToggleRead, onEnter }: Br
         <div style={{ flex: 'none', background: '#17171a', padding: '18px 22px 16px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: 1.5, color: '#F7B3D4' }}>
-              {BRIEFING.room}
+              {roomLabel}
             </div>
-            <div style={{ fontSize: 19, fontWeight: 900, letterSpacing: -0.7, color: '#fff', marginTop: 6 }}>{BRIEFING.title}</div>
-            <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-              {BRIEFING.tags.map((tag) => (
-                <span key={tag.label} style={{ fontSize: 10.5, fontWeight: 700, padding: '5px 10px', borderRadius: 999, background: tag.bg, color: tag.color }}>
-                  {tag.label}
-                </span>
-              ))}
-            </div>
+            <div style={{ fontSize: 19, fontWeight: 900, letterSpacing: -0.7, color: '#fff', marginTop: 6 }}>{title}</div>
           </div>
           <button
             onClick={onClose}
@@ -56,38 +61,57 @@ export function BriefingModal({ open, read, onClose, onToggleRead, onEnter }: Br
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '18px 22px 20px' }}>
-          <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: 1.2, color: '#4a4750' }}>
-            용어 {BRIEFING.terms.length}
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-            {BRIEFING.terms.map((term) => (
-              <span key={term} style={{ fontSize: 12, fontWeight: 700, padding: '9px 15px', borderRadius: 999, background: '#F3F1F5', color: '#17171a' }}>
-                {term}
-              </span>
-            ))}
-          </div>
-
-          <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: 1.2, color: '#4a4750', marginTop: 26 }}>
-            쟁점 {BRIEFING.issues.length}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
-            {BRIEFING.issues.map((issue) => (
-              <div key={issue} style={{ background: '#F3F1F5', borderRadius: 20, padding: '15px 17px', fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: '#17171a' }}>
-                {issue}
+          {!briefing ? (
+            <div style={{ padding: '40px 0', textAlign: 'center', fontSize: 13, color: '#78747e' }}>
+              AI가 브리핑을 준비하고 있어요…
+            </div>
+          ) : (
+            <>
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: 1.2, color: '#4a4750' }}>
+                용어 {briefing.terms.length}
               </div>
-            ))}
-          </div>
-
-          <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: 1.2, color: '#4a4750', marginTop: 26 }}>
-            반대 {BRIEFING.objections.length}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
-            {BRIEFING.objections.map((obj) => (
-              <div key={obj.text} style={{ background: obj.bg, borderRadius: 20, padding: '15px 17px', fontSize: 14, fontWeight: 500, lineHeight: 1.6, color: obj.color }}>
-                {obj.text}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                {briefing.terms.map((term) => (
+                  <span key={term} style={{ fontSize: 12, fontWeight: 700, padding: '9px 15px', borderRadius: 999, background: '#F3F1F5', color: '#17171a' }}>
+                    {term}
+                  </span>
+                ))}
               </div>
-            ))}
-          </div>
+
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: 1.2, color: '#4a4750', marginTop: 26 }}>
+                쟁점 {briefing.issues.length}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+                {briefing.issues.map((issue) => (
+                  <div key={issue} style={{ background: '#F3F1F5', borderRadius: 20, padding: '15px 17px', fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: '#17171a' }}>
+                    {issue}
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: 1.2, color: '#4a4750', marginTop: 26 }}>
+                반대 {briefing.objections.length}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+                {briefing.objections.map((obj, i) => (
+                  <div
+                    key={obj}
+                    style={{
+                      background: i % 2 === 0 ? '#FBDFEC' : '#E6F5FC',
+                      color: i % 2 === 0 ? '#8d3f70' : '#1f5a75',
+                      borderRadius: 20,
+                      padding: '15px 17px',
+                      fontSize: 14,
+                      fontWeight: 500,
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {obj}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
           <button
             onClick={onToggleRead}
@@ -107,7 +131,7 @@ export function BriefingModal({ open, read, onClose, onToggleRead, onEnter }: Br
         <div style={{ flex: 'none', padding: '10px 22px 26px' }}>
           <button
             onClick={onEnter}
-            disabled={!read}
+            disabled={!read || !briefing}
             style={{
               width: '100%',
               border: 'none',
@@ -115,12 +139,12 @@ export function BriefingModal({ open, read, onClose, onToggleRead, onEnter }: Br
               padding: 17,
               fontSize: 14,
               fontWeight: 700,
-              background: read ? '#17171a' : '#EFEDF2',
-              color: read ? '#ffffff' : '#a9a5af',
-              cursor: read ? 'pointer' : 'not-allowed',
+              background: read && briefing ? '#17171a' : '#EFEDF2',
+              color: read && briefing ? '#ffffff' : '#a9a5af',
+              cursor: read && briefing ? 'pointer' : 'not-allowed',
             }}
           >
-            1번 방 입장
+            {roomLabel.split(' · ')[0]} 입장
           </button>
         </div>
       </div>
