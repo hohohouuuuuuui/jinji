@@ -61,9 +61,6 @@ export function WaitingModal({ open, topicTitle, onClose }: WaitingModalProps) {
         <div style={{ fontSize: 11, color: '#78747e', marginTop: 4 }}>
           같은 방에 다른 사람이 입장하면 자동으로 시작돼요
         </div>
-        <div style={{ fontSize: 10.5, color: '#a9a5af', marginTop: 10 }}>
-          신청을 취소하려면 시간표에서 "입장 신청 완료" 버튼을 다시 눌러주세요
-        </div>
       </div>
     </div>
   );
