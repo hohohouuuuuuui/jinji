@@ -4,16 +4,34 @@ import { ButterflyPixel } from '../icons/ButterflyPixel';
 import { FILTER_CHIPS, SCHEDULE } from '../data';
 import { formatKSTDateLabel } from '../lib/kst';
 import { getGrowth } from '../lib/growth';
+import type { ScheduleRowData } from '../data';
+
+function displaySeatTop(row: ScheduleRowData, seatBumps: Record<string, number>) {
+  const bump = row.topicId ? seatBumps[row.topicId] ?? 0 : 0;
+  const base = Number(row.seats.top);
+  if (!bump || Number.isNaN(base)) return row.seats.top;
+  return String(base + bump);
+}
 
 interface HomeTabProps {
   countdownLabel: string;
   changedCount: number;
   onEnterRoom: (topicId: string, topicTitle: string) => void;
+  onCancelApply: (topicId: string) => void;
   matchingTopicId: string | null;
   matchError: string | null;
+  seatBumps: Record<string, number>;
 }
 
-export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTopicId, matchError }: HomeTabProps) {
+export function HomeTab({
+  countdownLabel,
+  changedCount,
+  onEnterRoom,
+  onCancelApply,
+  matchingTopicId,
+  matchError,
+  seatBumps,
+}: HomeTabProps) {
   const [filter, setFilter] = useState<number | 'all'>('all');
   const visibleRows = filter === 'all' ? SCHEDULE : SCHEDULE.filter((row) => row.room.id === filter);
   const growth = getGrowth(changedCount);
@@ -279,25 +297,26 @@ export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTop
                 )}
                 {row.cta && row.topicId && (
                   <button
-                    onClick={() => onEnterRoom(row.topicId!, row.title)}
-                    disabled={matchingTopicId === row.topicId}
+                    onClick={() =>
+                      matchingTopicId === row.topicId ? onCancelApply(row.topicId!) : onEnterRoom(row.topicId!, row.title)
+                    }
                     style={{
                       width: '100%',
                       marginTop: 11,
-                      cursor: matchingTopicId === row.topicId ? 'not-allowed' : 'pointer',
-                      background: matchingTopicId === row.topicId ? 'rgba(23,23,26,0.05)' : 'rgba(245,134,174,0.14)',
-                      border: matchingTopicId === row.topicId ? '1px solid rgba(23,23,26,0.08)' : '1px solid rgba(245,134,174,0.4)',
+                      cursor: 'pointer',
+                      background: matchingTopicId === row.topicId ? 'rgba(245,134,174,0.18)' : 'rgba(245,134,174,0.07)',
+                      border: matchingTopicId === row.topicId ? '1px solid rgba(245,134,174,0.45)' : '1px solid rgba(245,134,174,0.22)',
                       backdropFilter: 'blur(8px)',
                       WebkitBackdropFilter: 'blur(8px)',
-                      color: matchingTopicId === row.topicId ? '#a9a5af' : '#8d3f70',
+                      color: '#b0568f',
                       fontSize: 13.5,
                       fontWeight: 700,
                       padding: 13,
                       borderRadius: 999,
-                      boxShadow: '0 2px 10px rgba(23,23,26,0.05)',
+                      boxShadow: '0 2px 10px rgba(23,23,26,0.04)',
                     }}
                   >
-                    {matchingTopicId === row.topicId ? '매칭 중…' : row.cta}
+                    {matchingTopicId === row.topicId ? '입장 신청 완료' : row.cta}
                   </button>
                 )}
                 {row.topicId && matchError && (
@@ -309,7 +328,7 @@ export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTop
               {!locked && (
                 <div style={{ flex: 'none', textAlign: 'right' }}>
                   <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 17, color: row.seats.topColor ?? '#17171a' }}>
-                    {row.seats.top}
+                    {displaySeatTop(row, seatBumps)}
                   </div>
                   <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 9, color: '#4a4750' }}>{row.seats.bottom}</div>
                 </div>

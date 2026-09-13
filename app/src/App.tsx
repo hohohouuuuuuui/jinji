@@ -64,6 +64,7 @@ export default function App() {
   const [draft, setDraft] = useState('');
   const [toast, setToast] = useState<ToastState | null>(null);
   const [joiningTopicId, setJoiningTopicId] = useState<string | null>(null);
+  const [seatBumps, setSeatBumps] = useState<Record<string, number>>({});
   const [changeContext, setChangeContext] = useState<'main' | 'spar'>('main');
 
   const [sparTopicInput, setSparTopicInput] = useState('');
@@ -130,8 +131,13 @@ export default function App() {
       setJoiningTopicId(null);
     }
     if (phase === 'active' || phase === 'error') {
+      if (phase === 'error' && joiningTopicId) {
+        const failedTopicId = joiningTopicId;
+        setSeatBumps((prev) => ({ ...prev, [failedTopicId]: Math.max(0, (prev[failedTopicId] ?? 0) - 1) }));
+      }
       setJoiningTopicId(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
   useEffect(() => {
@@ -144,6 +150,12 @@ export default function App() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ tone, text });
     toastTimer.current = setTimeout(() => setToast(null), 5000);
+  }
+
+  function handleCancelApply(topicId: string) {
+    setSeatBumps((prev) => ({ ...prev, [topicId]: Math.max(0, (prev[topicId] ?? 0) - 1) }));
+    setJoiningTopicId(null);
+    roomApi.cancelJoin();
   }
 
   async function handleNicknameSubmit(name: string) {
@@ -348,10 +360,13 @@ export default function App() {
                 changedCount={changedCount}
                 matchingTopicId={joiningTopicId}
                 matchError={phase === 'error' ? roomApi.error : null}
+                seatBumps={seatBumps}
                 onEnterRoom={(topicId, topicTitle) => {
                   setJoiningTopicId(topicId);
+                  setSeatBumps((prev) => ({ ...prev, [topicId]: (prev[topicId] ?? 0) + 1 }));
                   roomApi.join(topicId, topicTitle);
                 }}
+                onCancelApply={handleCancelApply}
               />
             )}
 
@@ -448,7 +463,7 @@ export default function App() {
           <WaitingModal
             open={phase === 'waiting'}
             topicTitle={room?.topic_title ?? ''}
-            onCancel={() => roomApi.leave()}
+            onCancel={() => joiningTopicId && handleCancelApply(joiningTopicId)}
           />
 
           <BriefingModal

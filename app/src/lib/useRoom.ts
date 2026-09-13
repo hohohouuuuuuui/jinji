@@ -23,6 +23,7 @@ interface UseRoomResult {
   error: string | null;
   join: (topicId: string, topicTitle: string, vsAI?: boolean, skipBriefing?: boolean) => Promise<void>;
   leave: () => void;
+  cancelJoin: () => Promise<void>;
   send: (text: string) => Promise<ModerationResult | null>;
   ack: (messageId: number) => Promise<void>;
   raiseHand: () => Promise<void>;
@@ -50,6 +51,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const cancelledRef = useRef(false);
 
   const subscribe = useCallback((roomId: string) => {
     channelRef.current?.unsubscribe();
@@ -169,6 +171,12 @@ export function useRoom(nickname: string | null): UseRoomResult {
           throw createErr ?? new Error('room creation failed');
         }
 
+        if (cancelledRef.current) {
+          cancelledRef.current = false;
+          await supabase.from('rooms').delete().eq('id', created.id).eq('status', 'waiting');
+          return;
+        }
+
         setRoom(created as RoomRow);
         setMySeat('A');
         setPhase('waiting');
@@ -204,6 +212,19 @@ export function useRoom(nickname: string | null): UseRoomResult {
     setMessages([]);
     setPhase('idle');
   }, []);
+
+  // Cancel a pending application before a match is found: remove the
+  // waiting room we created so nobody matches into an abandoned seat.
+  // If join() is still mid-flight (no room yet), flag it so it cleans
+  // up the row itself the moment it's created instead of leaving it stuck.
+  const cancelJoin = useCallback(async () => {
+    if (room && mySeat === 'A' && room.status === 'waiting') {
+      await supabase.from('rooms').delete().eq('id', room.id).eq('status', 'waiting');
+    } else if (phase === 'matching') {
+      cancelledRef.current = true;
+    }
+    leave();
+  }, [room, mySeat, phase, leave]);
 
   const send = useCallback(
     async (text: string) => {
@@ -476,6 +497,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
     error,
     join,
     leave,
+    cancelJoin,
     send,
     ack,
     raiseHand,
