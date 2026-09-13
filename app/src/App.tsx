@@ -65,7 +65,6 @@ export default function App() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [joiningTopicId, setJoiningTopicId] = useState<string | null>(null);
   const [waitingModalDismissed, setWaitingModalDismissed] = useState(false);
-  const [seatBumps, setSeatBumps] = useState<Record<string, number>>({});
   const [changeContext, setChangeContext] = useState<'main' | 'spar'>('main');
 
   const [sparTopicInput, setSparTopicInput] = useState('');
@@ -133,14 +132,9 @@ export default function App() {
       setWaitingModalDismissed(false);
     }
     if (phase === 'active' || phase === 'error') {
-      if (phase === 'error' && joiningTopicId) {
-        const failedTopicId = joiningTopicId;
-        setSeatBumps((prev) => ({ ...prev, [failedTopicId]: Math.max(0, (prev[failedTopicId] ?? 0) - 1) }));
-      }
       setJoiningTopicId(null);
       setWaitingModalDismissed(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
   useEffect(() => {
@@ -155,8 +149,7 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(null), 5000);
   }
 
-  function handleCancelApply(topicId: string) {
-    setSeatBumps((prev) => ({ ...prev, [topicId]: Math.max(0, (prev[topicId] ?? 0) - 1) }));
+  function handleCancelApply() {
     setJoiningTopicId(null);
     roomApi.cancelJoin();
   }
@@ -363,11 +356,9 @@ export default function App() {
                 changedCount={changedCount}
                 matchingTopicId={joiningTopicId}
                 matchError={phase === 'error' ? roomApi.error : null}
-                seatBumps={seatBumps}
                 onEnterRoom={(topicId, topicTitle) => {
                   setJoiningTopicId(topicId);
                   setWaitingModalDismissed(false);
-                  setSeatBumps((prev) => ({ ...prev, [topicId]: (prev[topicId] ?? 0) + 1 }));
                   roomApi.join(topicId, topicTitle);
                 }}
                 onCancelApply={handleCancelApply}

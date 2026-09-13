@@ -12,7 +12,7 @@ export interface ScheduleRowData {
   statusColor?: string;
   title: string;
   tags: { label: string; bg: string; color: string }[];
-  seats: { top: string; topColor?: string; bottom: string };
+  seats: { top: string; bottom: string };
   cta?: string;
   topicId?: string;
   lockedNote?: string;
@@ -59,7 +59,7 @@ export const SCHEDULE: ScheduleRowData[] = [
       { label: '1:1 대화', bg: '#fff', color: '#8d3f70' },
       { label: 'AI 브리핑', bg: '#fff', color: '#4a4750' },
     ],
-    seats: { top: '1', bottom: '/4명' },
+    seats: { top: '0', bottom: '/4명' },
     cta: '입장 신청하기',
     topicId: 'ai-copyright',
     featured: true,
@@ -86,7 +86,7 @@ export const SCHEDULE: ScheduleRowData[] = [
       { label: '1:1 대화', bg: '#E6F5FC', color: '#1f5a75' },
       { label: '3일 진행', bg: '#F3F1F5', color: '#4a4750' },
     ],
-    seats: { top: '1', bottom: '/2명' },
+    seats: { top: '0', bottom: '/2명' },
     cta: '입장 신청하기',
     topicId: 'regret-choice',
   },
@@ -99,7 +99,9 @@ export const SCHEDULE: ScheduleRowData[] = [
       { label: '1:1 격돌', bg: '#F3F1F5', color: '#4a4750' },
       { label: '관전 214', bg: '#F3F1F5', color: '#4a4750' },
     ],
-    seats: { top: '마감', topColor: '#b0568f', bottom: '/2명' },
+    seats: { top: '0', bottom: '/2명' },
+    cta: '입장 신청하기',
+    topicId: 'meritocracy',
   },
   {
     room: ROOM2,

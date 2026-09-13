@@ -4,13 +4,11 @@ import { ButterflyPixel } from '../icons/ButterflyPixel';
 import { FILTER_CHIPS, SCHEDULE } from '../data';
 import { formatKSTDateLabel } from '../lib/kst';
 import { getGrowth } from '../lib/growth';
-import type { ScheduleRowData } from '../data';
+import { useTopicSeatCounts } from '../lib/useTopicSeatCounts';
 
-function displaySeatTop(row: ScheduleRowData, seatBumps: Record<string, number>) {
-  const bump = row.topicId ? seatBumps[row.topicId] ?? 0 : 0;
-  const base = Number(row.seats.top);
-  if (!bump || Number.isNaN(base)) return row.seats.top;
-  return String(base + bump);
+function parseCapacity(bottom: string): number {
+  const digits = bottom.match(/\d+/);
+  return digits ? Number(digits[0]) : Infinity;
 }
 
 interface HomeTabProps {
@@ -20,7 +18,6 @@ interface HomeTabProps {
   onCancelApply: (topicId: string) => void;
   matchingTopicId: string | null;
   matchError: string | null;
-  seatBumps: Record<string, number>;
 }
 
 export function HomeTab({
@@ -30,12 +27,13 @@ export function HomeTab({
   onCancelApply,
   matchingTopicId,
   matchError,
-  seatBumps,
 }: HomeTabProps) {
   const [filter, setFilter] = useState<number | 'all'>('all');
   const visibleRows = filter === 'all' ? SCHEDULE : SCHEDULE.filter((row) => row.room.id === filter);
   const growth = getGrowth(changedCount);
   const openCount = SCHEDULE.filter((row) => !row.room.locked).length;
+  const topicIds = SCHEDULE.filter((row) => row.topicId).map((row) => row.topicId!);
+  const seatCounts = useTopicSeatCounts(topicIds);
   return (
     <div style={{ animation: 'jz-fade .25s ease' }}>
       <div
@@ -179,6 +177,10 @@ export function HomeTab({
         {visibleRows.map((row, idx) => {
           const isLast = idx === visibleRows.length - 1;
           const locked = row.room.locked;
+          const isApplying = matchingTopicId === row.topicId;
+          const seatCount = row.topicId ? seatCounts[row.topicId] ?? 0 : 0;
+          const capacity = parseCapacity(row.seats.bottom);
+          const isFull = !isApplying && seatCount >= capacity;
           return (
             <div
               key={`${row.room.id}-${row.time}-${row.title}`}
@@ -297,18 +299,17 @@ export function HomeTab({
                 )}
                 {row.cta && row.topicId && (
                   <button
-                    onClick={() =>
-                      matchingTopicId === row.topicId ? onCancelApply(row.topicId!) : onEnterRoom(row.topicId!, row.title)
-                    }
+                    onClick={() => (isApplying ? onCancelApply(row.topicId!) : onEnterRoom(row.topicId!, row.title))}
+                    disabled={isFull}
                     style={{
                       width: '100%',
                       marginTop: 11,
-                      cursor: 'pointer',
-                      background: matchingTopicId === row.topicId ? 'rgba(245,134,174,0.18)' : 'rgba(245,134,174,0.07)',
-                      border: matchingTopicId === row.topicId ? '1px solid rgba(245,134,174,0.45)' : '1px solid rgba(245,134,174,0.22)',
+                      cursor: isFull ? 'not-allowed' : 'pointer',
+                      background: isFull ? 'rgba(23,23,26,0.05)' : isApplying ? 'rgba(245,134,174,0.18)' : 'rgba(245,134,174,0.07)',
+                      border: isFull ? '1px solid rgba(23,23,26,0.08)' : isApplying ? '1px solid rgba(245,134,174,0.45)' : '1px solid rgba(245,134,174,0.22)',
                       backdropFilter: 'blur(8px)',
                       WebkitBackdropFilter: 'blur(8px)',
-                      color: '#b0568f',
+                      color: isFull ? '#a9a5af' : '#b0568f',
                       fontSize: 13.5,
                       fontWeight: 700,
                       padding: 13,
@@ -316,7 +317,7 @@ export function HomeTab({
                       boxShadow: '0 2px 10px rgba(23,23,26,0.04)',
                     }}
                   >
-                    {matchingTopicId === row.topicId ? '입장 신청 완료' : row.cta}
+                    {isFull ? '마감' : isApplying ? '입장 신청 완료' : row.cta}
                   </button>
                 )}
                 {row.topicId && matchError && (
@@ -327,8 +328,8 @@ export function HomeTab({
               </div>
               {!locked && (
                 <div style={{ flex: 'none', textAlign: 'right' }}>
-                  <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 17, color: row.seats.topColor ?? '#17171a' }}>
-                    {displaySeatTop(row, seatBumps)}
+                  <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 17, color: isFull ? '#b0568f' : '#17171a' }}>
+                    {row.topicId ? (isFull ? '마감' : String(seatCount)) : row.seats.top}
                   </div>
                   <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 9, color: '#4a4750' }}>{row.seats.bottom}</div>
                 </div>
