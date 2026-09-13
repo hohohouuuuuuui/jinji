@@ -1,10 +1,10 @@
 interface WaitingModalProps {
   open: boolean;
   topicTitle: string;
-  onCancel: () => void;
+  onClose: () => void;
 }
 
-export function WaitingModal({ open, topicTitle, onCancel }: WaitingModalProps) {
+export function WaitingModal({ open, topicTitle, onClose }: WaitingModalProps) {
   if (!open) return null;
   return (
     <div
@@ -19,7 +19,31 @@ export function WaitingModal({ open, topicTitle, onCancel }: WaitingModalProps) 
         animation: 'jz-fade .2s ease',
       }}
     >
-      <div style={{ background: '#fff', borderRadius: 26, padding: '30px 22px', width: '100%', textAlign: 'center', animation: 'jz-pop .3s ease' }}>
+      <div style={{ position: 'relative', background: '#fff', borderRadius: 26, padding: '30px 22px', width: '100%', textAlign: 'center', animation: 'jz-pop .3s ease' }}>
+        <button
+          onClick={onClose}
+          aria-label="닫기"
+          style={{
+            position: 'absolute',
+            top: 14,
+            right: 14,
+            width: 26,
+            height: 26,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            background: '#F3F1F5',
+            border: 'none',
+            borderRadius: '50%',
+            fontSize: 13,
+            fontWeight: 700,
+            color: '#4a4750',
+            lineHeight: 1,
+          }}
+        >
+          ✕
+        </button>
         <div
           style={{
             width: 14,
@@ -37,12 +61,9 @@ export function WaitingModal({ open, topicTitle, onCancel }: WaitingModalProps) 
         <div style={{ fontSize: 11, color: '#78747e', marginTop: 4 }}>
           같은 방에 다른 사람이 입장하면 자동으로 시작돼요
         </div>
-        <button
-          onClick={onCancel}
-          style={{ marginTop: 20, width: '100%', cursor: 'pointer', background: '#F3F1F5', border: 'none', borderRadius: 999, padding: 15, fontSize: 13, fontWeight: 700, color: '#4a4750' }}
-        >
-          취소
-        </button>
+        <div style={{ fontSize: 10.5, color: '#a9a5af', marginTop: 10 }}>
+          신청을 취소하려면 시간표에서 "입장 신청 완료" 버튼을 다시 눌러주세요
+        </div>
       </div>
     </div>
   );

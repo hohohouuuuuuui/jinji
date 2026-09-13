@@ -64,6 +64,7 @@ export default function App() {
   const [draft, setDraft] = useState('');
   const [toast, setToast] = useState<ToastState | null>(null);
   const [joiningTopicId, setJoiningTopicId] = useState<string | null>(null);
+  const [waitingModalDismissed, setWaitingModalDismissed] = useState(false);
   const [seatBumps, setSeatBumps] = useState<Record<string, number>>({});
   const [changeContext, setChangeContext] = useState<'main' | 'spar'>('main');
 
@@ -129,6 +130,7 @@ export default function App() {
     if (phase === 'idle') {
       wasActive.current = false;
       setJoiningTopicId(null);
+      setWaitingModalDismissed(false);
     }
     if (phase === 'active' || phase === 'error') {
       if (phase === 'error' && joiningTopicId) {
@@ -136,6 +138,7 @@ export default function App() {
         setSeatBumps((prev) => ({ ...prev, [failedTopicId]: Math.max(0, (prev[failedTopicId] ?? 0) - 1) }));
       }
       setJoiningTopicId(null);
+      setWaitingModalDismissed(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
@@ -363,6 +366,7 @@ export default function App() {
                 seatBumps={seatBumps}
                 onEnterRoom={(topicId, topicTitle) => {
                   setJoiningTopicId(topicId);
+                  setWaitingModalDismissed(false);
                   setSeatBumps((prev) => ({ ...prev, [topicId]: (prev[topicId] ?? 0) + 1 }));
                   roomApi.join(topicId, topicTitle);
                 }}
@@ -461,9 +465,9 @@ export default function App() {
           <BottomNav tab={tab} onChange={setTab} />
 
           <WaitingModal
-            open={phase === 'waiting'}
+            open={phase === 'waiting' && !waitingModalDismissed}
             topicTitle={room?.topic_title ?? ''}
-            onCancel={() => joiningTopicId && handleCancelApply(joiningTopicId)}
+            onClose={() => setWaitingModalDismissed(true)}
           />
 
           <BriefingModal
