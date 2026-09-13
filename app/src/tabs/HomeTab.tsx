@@ -284,14 +284,17 @@ export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTop
                     style={{
                       width: '100%',
                       marginTop: 11,
-                      border: 'none',
                       cursor: matchingTopicId === row.topicId ? 'not-allowed' : 'pointer',
-                      background: matchingTopicId === row.topicId ? '#EFEDF2' : '#17171a',
-                      color: matchingTopicId === row.topicId ? '#a9a5af' : '#fff',
+                      background: matchingTopicId === row.topicId ? 'rgba(23,23,26,0.05)' : 'rgba(245,134,174,0.14)',
+                      border: matchingTopicId === row.topicId ? '1px solid rgba(23,23,26,0.08)' : '1px solid rgba(245,134,174,0.4)',
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
+                      color: matchingTopicId === row.topicId ? '#a9a5af' : '#8d3f70',
                       fontSize: 13.5,
                       fontWeight: 700,
                       padding: 13,
                       borderRadius: 999,
+                      boxShadow: '0 2px 10px rgba(23,23,26,0.05)',
                     }}
                   >
                     {matchingTopicId === row.topicId ? '매칭 중…' : row.cta}
