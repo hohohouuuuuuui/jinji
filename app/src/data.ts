@@ -26,6 +26,19 @@ const ROOM3 = { id: 3 as const, color: '#17171a' };
 export const SCHEDULE: ScheduleRowData[] = [
   {
     room: ROOM1,
+    time: '15:00',
+    status: '신청중',
+    title: '재택근무가 사무실 근무보다 생산적인가',
+    tags: [
+      { label: '1:1 대화', bg: '#fff', color: '#8d3f70' },
+      { label: 'AI 브리핑', bg: '#fff', color: '#4a4750' },
+    ],
+    seats: { top: '0', bottom: '/4명' },
+    cta: '입장 신청하기',
+    topicId: 'wfh-productivity',
+  },
+  {
+    room: ROOM1,
     time: '18:00',
     status: '신청중',
     title: '숏폼 알고리즘, 이대로 둬도 괜찮은가',
