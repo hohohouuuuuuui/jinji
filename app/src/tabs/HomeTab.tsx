@@ -17,6 +17,7 @@ export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTop
   const [filter, setFilter] = useState<number | 'all'>('all');
   const visibleRows = filter === 'all' ? SCHEDULE : SCHEDULE.filter((row) => row.room.id === filter);
   const growth = getGrowth(changedCount);
+  const openCount = SCHEDULE.filter((row) => !row.room.locked).length;
   return (
     <div style={{ animation: 'jz-fade .25s ease' }}>
       <div
@@ -57,7 +58,7 @@ export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTop
               {formatKSTDateLabel(new Date())}
             </div>
             <div style={{ fontSize: 21, fontWeight: 900, letterSpacing: -0.9, color: '#fff', marginTop: 2 }}>
-              오늘 4개 진행 예정
+              오늘 {openCount}개 진행 예정
             </div>
           </div>
           <span
@@ -162,7 +163,7 @@ export function HomeTab({ countdownLabel, changedCount, onEnterRoom, matchingTop
           const locked = row.room.locked;
           return (
             <div
-              key={row.room.id}
+              key={`${row.room.id}-${row.time}-${row.title}`}
               style={{
                 display: 'flex',
                 gap: 10,

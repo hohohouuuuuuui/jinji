@@ -160,16 +160,18 @@ export function SessionTab({
         </button>
       </div>
 
-      <div style={{ flex: 'none', display: 'flex', gap: 6, overflowX: 'auto', padding: '0 20px 10px' }}>
-        {ISSUE_CHIPS.map((chip) => (
-          <span
-            key={chip}
-            style={{ flex: 'none', fontSize: 11, fontWeight: 700, padding: '6px 12px', borderRadius: 999, background: '#F3F1F5', color: '#4a4750' }}
-          >
-            {chip}
-          </span>
-        ))}
-      </div>
+      {topicTitle === 'AI 생성물에 저작권을 인정해야 하는가' && (
+        <div style={{ flex: 'none', display: 'flex', gap: 6, overflowX: 'auto', padding: '0 20px 10px' }}>
+          {ISSUE_CHIPS.map((chip) => (
+            <span
+              key={chip}
+              style={{ flex: 'none', fontSize: 11, fontWeight: 700, padding: '6px 12px', borderRadius: 999, background: '#F3F1F5', color: '#4a4750' }}
+            >
+              {chip}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div
         ref={logRef}
