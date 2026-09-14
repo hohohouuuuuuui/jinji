@@ -229,6 +229,12 @@ export default function App() {
   }
 
   async function handleLeaveSession() {
+    // 방장은 참가기록을 남기지 않는다 — "종료"로 마친 뒤엔 그냥 나가기만 하면 된다.
+    if (room?.host_nickname === nickname) {
+      roomApi.leave();
+      setSessionView('list');
+      return;
+    }
     await roomApi.finishAndLog();
     await bumpListened();
     setTab('shelf');
@@ -379,6 +385,8 @@ export default function App() {
         ? { topicTitle: myOwnCustomRoom.topic_title, status: myOwnCustomRoom.status }
         : null;
 
+  const closed = room?.status === 'closed';
+
   const sparRoom = sparRoomApi.room;
   const sparClosed = sparRoom?.status === 'closed';
   const sparIsMyTurn = sparRoom?.turn === 'A' && !sparClosed;
@@ -443,6 +451,7 @@ export default function App() {
                 handLimit={room.hand_limit}
                 isHost={room.host_nickname === nickname}
                 onEndSession={handleEndSessionAsHost}
+                closed={closed}
                 onRaiseHand={handleRaiseHand}
                 onDeclareChange={() => {
                   setChangeContext('main');

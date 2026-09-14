@@ -166,12 +166,22 @@ export function SessionTab({
             🛑 토론 종료 · 방장
           </button>
         )}
-        <button
-          onClick={onLeave}
-          style={{ cursor: 'pointer', background: 'none', border: 'none', fontSize: 11, fontWeight: 700, color: '#a05a7a', padding: '4px 2px' }}
-        >
-          {leaveLabel}
-        </button>
+        {isHost && closed && (
+          <button
+            onClick={onLeave}
+            style={{ cursor: 'pointer', background: 'none', border: 'none', fontSize: 11, fontWeight: 700, color: '#a05a7a', padding: '4px 2px' }}
+          >
+            나가기
+          </button>
+        )}
+        {!isHost && (
+          <button
+            onClick={onLeave}
+            style={{ cursor: 'pointer', background: 'none', border: 'none', fontSize: 11, fontWeight: 700, color: '#a05a7a', padding: '4px 2px' }}
+          >
+            {leaveLabel}
+          </button>
+        )}
       </div>
 
       {topicTitle === 'AI 생성물에 저작권을 인정해야 하는가' && (
