@@ -5,6 +5,7 @@ import { FILTER_CHIPS, SCHEDULE } from '../data';
 import { formatKSTDateLabel } from '../lib/kst';
 import { getGrowth } from '../lib/growth';
 import { useTopicSeatCounts } from '../lib/useTopicSeatCounts';
+import type { CustomRoomSummary } from '../lib/useCustomRooms';
 
 function parseCapacity(bottom: string): number {
   const digits = bottom.match(/\d+/);
@@ -14,19 +15,25 @@ function parseCapacity(bottom: string): number {
 interface HomeTabProps {
   countdownLabel: string;
   changedCount: number;
+  nickname: string;
   onEnterRoom: (topicId: string, topicTitle: string) => void;
   onCancelApply: (topicId: string) => void;
   matchingTopicId: string | null;
   matchError: string | null;
+  onOpenCreateRoom: () => void;
+  customRooms: CustomRoomSummary[];
 }
 
 export function HomeTab({
   countdownLabel,
   changedCount,
+  nickname,
   onEnterRoom,
   onCancelApply,
   matchingTopicId,
   matchError,
+  onOpenCreateRoom,
+  customRooms,
 }: HomeTabProps) {
   const [filter, setFilter] = useState<number | 'all'>('all');
   const visibleRows = filter === 'all' ? SCHEDULE : SCHEDULE.filter((row) => row.room.id === filter);
@@ -152,6 +159,83 @@ export function HomeTab({
             </button>
           );
         })}
+      </div>
+
+      <div style={{ padding: '0 20px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 14, color: '#17171a' }}>만든 방</div>
+          <button
+            onClick={onOpenCreateRoom}
+            style={{
+              cursor: 'pointer',
+              border: '1px solid rgba(23,23,26,0.14)',
+              background: '#fff',
+              borderRadius: 999,
+              padding: '7px 13px',
+              fontSize: 11.5,
+              fontWeight: 700,
+              color: '#17171a',
+            }}
+          >
+            + 방 만들기
+          </button>
+        </div>
+        {customRooms.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+            {customRooms.map((r) => {
+              const isMine = r.host_nickname === nickname;
+              const isApplying = matchingTopicId === r.topic_id;
+              const full = r.status === 'active';
+              return (
+                <div
+                  key={r.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    background: '#F3F1F5',
+                    borderRadius: 16,
+                    padding: '11px 13px',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#17171a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {r.topic_title}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: '#78747e', marginTop: 3 }}>
+                      방장 {r.host_nickname} · {full ? '진행중' : '모집중'}
+                    </div>
+                  </div>
+                  {isMine ? (
+                    <span style={{ flex: 'none', fontSize: 11, fontWeight: 700, color: '#a9a5af' }}>내 방</span>
+                  ) : full ? (
+                    <span style={{ flex: 'none', fontSize: 11, fontWeight: 700, color: '#a9a5af' }}>마감</span>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        isApplying ? onCancelApply(r.topic_id) : onEnterRoom(r.topic_id, r.topic_title)
+                      }
+                      style={{
+                        flex: 'none',
+                        cursor: 'pointer',
+                        border: 'none',
+                        borderRadius: 999,
+                        padding: '9px 14px',
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                        background: isApplying ? 'rgba(245,134,174,0.22)' : '#17171a',
+                        color: isApplying ? '#8d3f70' : '#fff',
+                      }}
+                    >
+                      {isApplying ? '신청 완료' : '참여하기'}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div

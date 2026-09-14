@@ -11,7 +11,9 @@ React + Vite implementation of `project/Jinji Prototype v3.dc.html`: 4 tabs (시
 - **스틸맨 시도**: 대화 중 언제든 "🫱 스틸맨" 버튼으로 상대 주장을 왜곡 없이 요약해 제출하면 AI가 즉석 판정하고, 인정되면 참가기록의 "스틸맨" 배지 카운트가 올라갑니다.
 - **참가기록의 4개 배지(끝까지 들음 · 생각이 바뀜 · 스틸맨 · 브리핑 완독)는 전부 실제 누적 데이터**입니다 — 더보기 없이, 실제로 그 행동을 할 때마다 하나씩 올라갑니다.
 - 시간표 상단 필터 칩(1/2/3번 방)으로 목록을 좁혀볼 수 있고, 상태바/시간표 날짜는 실제 한국 시간과 동기화됩니다.
-- 시간표의 2:2 토론·1:1 격돌·진지한 결혼 항목은 아직 목업입니다.
+- **자리 인원수는 Supabase 실시간 집계**입니다 — 여러 사람이 같은 방에 신청하면 서로의 화면에 자리 수가 바로 반영되고, 정원(예: "/4명")을 채우면 실제로 "마감"되어 더 이상 신청할 수 없습니다.
+- **방 만들기 · 방장**: 시간표 상단 "+ 방 만들기"로 누구나 직접 방을 만들 수 있습니다. 만든 사람이 방장이 되고, 총 시간(30/60/90/120분)·손들기 횟수·욕설 허용 여부를 직접 정합니다. **욕설을 허용해도 조롱·인신공격 축은 방장 권한으로도 해제할 수 없습니다.** 만들어진 방은 "만든 방" 목록에 실시간으로 뜨고, 다른 사람이 "참여하기"를 누르면 그 자리에서 바로 매칭됩니다(신청 취소는 그 방의 "입장 신청 완료" 버튼을 다시 누르면 됨). 세션 중에는 방장에게만 "🛑 토론 종료" 버튼이 보이고, 누르면 양쪽 모두에게 즉시 세션 종료가 통지됩니다.
+- 시간표의 2:2 토론·진지한 결혼 항목은 아직 목업입니다.
 
 ## 아키텍처
 
@@ -37,7 +39,7 @@ npm run dev
 
 1. https://supabase.com → 새 프로젝트 생성 (무료 티어)
 2. 프로젝트의 **SQL Editor**에서 `supabase/schema.sql` 내용을 그대로 실행 (테이블 생성 + Realtime 활성화까지 포함)
-   - **이미 `schema.sql`을 실행한 적이 있다면** `supabase/migration_2.sql` ~ `migration_5.sql`을 순서대로 추가 실행해주세요 (참가기록 테이블, AI 스파링 3진 아웃 카운터, 사용자별 진지벌레 레벨, **모더레이션 2차/3차·이의제기·생각이 바뀜 상대 승인·스틸맨/브리핑완독/끝까지들음 실데이터화** — 재실행해도 안전함). 특히 `migration_5.sql`은 이번 업데이트(모더레이션 뮤팅/종료, 이의제기, 스틸맨, 배지 실데이터)에 꼭 필요합니다.
+   - **이미 `schema.sql`을 실행한 적이 있다면** `supabase/migration_2.sql` ~ `migration_6.sql`을 순서대로 추가 실행해주세요 (참가기록 테이블, AI 스파링 3진 아웃 카운터, 사용자별 진지벌레 레벨, 모더레이션 2차/3차·이의제기·생각이 바뀜 상대 승인·스틸맨/브리핑완독/끝까지들음 실데이터화, **방 생성·방장·규칙 설정** — 재실행해도 안전함). 특히 `migration_6.sql`은 방 만들기/방장 기능에 꼭 필요합니다.
 3. **Project Settings → API**에서 `Project URL`과 `anon public` 키를 복사
    → `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
    - Vercel에 등록할 때 이 두 값은 **Sensitive가 아니라 Plain Text**로 등록해야 합니다 (`VITE_` 접두사는 빌드 시 클라이언트에 그대로 노출되는 값이라 Vercel이 Sensitive 지정을 거부합니다)
@@ -78,9 +80,11 @@ npm run dev
 - `src/lib/supabase.ts`, `src/lib/db-types.ts` — Supabase 클라이언트 · 테이블 타입
 - `src/lib/kst.ts` — 실제 한국 시간/날짜 포맷 유틸
 - `src/lib/moderation.ts` — 모더레이션 축(4가지) → 한국어 라벨/토스트 문구 매핑
+- `src/lib/useTopicSeatCounts.ts` — 주제별 실시간 자리 집계(대기 1자리·매칭 2자리)를 Supabase에서 읽고 realtime으로 구독하는 훅
+- `src/lib/useCustomRooms.ts` — 사용자가 만든 방(방장·규칙 포함) 목록을 실시간으로 구독하는 훅
 - `api/_gemini.ts`, `api/briefing.ts`, `api/moderate.ts`, `api/opponent.ts`, `api/validate-topic.ts`, `api/stillman.ts` — Gemini 호출 Vercel 함수
-- `supabase/schema.sql` — 처음 설치용 전체 스키마, `supabase/migration_2.sql` ~ `migration_5.sql` — 이미 설치한 DB에 추가분만 반영
-- `src/tabs/` — 네 개 탭 화면 (`SessionTab`은 진지한 대화·리허설룸 공용), `src/components/` — 폰 프레임 · 상태바 · 하단 내비 · 모달(온보딩 · 스틸맨 포함)
+- `supabase/schema.sql` — 처음 설치용 전체 스키마, `supabase/migration_2.sql` ~ `migration_6.sql` — 이미 설치한 DB에 추가분만 반영
+- `src/tabs/` — 네 개 탭 화면 (`SessionTab`은 진지한 대화·리허설룸·방장 세션 공용), `src/components/` — 폰 프레임 · 상태바 · 하단 내비 · 모달(온보딩 · 스틸맨 · 방 만들기 포함)
 - `src/icons/` — 내비 아이콘, 픽셀아트 애벌레/나비 캐릭터
 - `src/data.ts` — 아직 목업인 부분(시간표 2:2 토론·1:1 격돌·진지한 결혼 등)
 - `docs/기획안.md` — 원본 제품 기획안 (전체 12개 섹션, 이 문서를 기준으로 기능 갭 분석 진행)

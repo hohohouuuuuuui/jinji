@@ -15,6 +15,12 @@ export interface StillmanResult {
   feedback: string;
 }
 
+export interface CreateRoomRules {
+  allowProfanity: boolean;
+  durationMinutes: number;
+  handLimit: number;
+}
+
 interface UseRoomResult {
   phase: MatchPhase;
   room: RoomRow | null;
@@ -22,6 +28,8 @@ interface UseRoomResult {
   messages: MessageRow[];
   error: string | null;
   join: (topicId: string, topicTitle: string, vsAI?: boolean, skipBriefing?: boolean) => Promise<void>;
+  createCustomRoom: (topicTitle: string, rules: CreateRoomRules) => Promise<string | null>;
+  endSessionAsHost: () => Promise<void>;
   leave: () => void;
   cancelJoin: () => Promise<void>;
   send: (text: string) => Promise<ModerationResult | null>;
@@ -191,6 +199,72 @@ export function useRoom(nickname: string | null): UseRoomResult {
     [nickname, subscribe, generateBriefingIfNeeded],
   );
 
+  // 방 생성: 방장이 직접 주제와 규칙(욕설 허용 여부·총 시간·손들기 횟수)을
+  // 정해서 대기방을 만든다. 다른 사람이 기존 join()으로 이 topic_id를
+  // 찾아 들어오면 자동으로 매칭된다 — 방 찾기/합류 로직은 그대로 재사용.
+  const createCustomRoom = useCallback(
+    async (topicTitle: string, rules: CreateRoomRules): Promise<string | null> => {
+      if (!nickname) return null;
+      setPhase('matching');
+      setError(null);
+      try {
+        const topicId = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const { data: created, error: createErr } = await supabase
+          .from('rooms')
+          .insert({
+            topic_id: topicId,
+            topic_title: topicTitle,
+            seat_a: nickname,
+            status: 'waiting',
+            host_nickname: nickname,
+            is_custom: true,
+            allow_profanity: rules.allowProfanity,
+            duration_minutes: rules.durationMinutes,
+            hand_limit: rules.handLimit,
+            hand_left_a: rules.handLimit,
+            hand_left_b: rules.handLimit,
+          })
+          .select()
+          .single();
+
+        if (createErr || !created) throw createErr ?? new Error('room creation failed');
+
+        if (cancelledRef.current) {
+          cancelledRef.current = false;
+          await supabase.from('rooms').delete().eq('id', created.id).eq('status', 'waiting');
+          return null;
+        }
+
+        setRoom(created as RoomRow);
+        setMySeat('A');
+        setPhase('waiting');
+        setMessages([]);
+        subscribe(created.id);
+        return topicId;
+      } catch (err) {
+        console.error('createCustomRoom failed', err);
+        setError(err instanceof Error ? err.message : String(err));
+        setPhase('error');
+        return null;
+      }
+    },
+    [nickname, subscribe],
+  );
+
+  // 방장 전용 종료 권한: 참가자 한쪽이 조용히 나가는 것과 달리, 방장이
+  // 끝내면 즉시 양쪽 모두에게 종료가 통지되고 세션이 닫힌다.
+  const endSessionAsHost = useCallback(async () => {
+    if (!room || !nickname || room.host_nickname !== nickname || room.status === 'closed') return;
+    await supabase.from('messages').insert({
+      room_id: room.id,
+      seat: 'SYS',
+      sender: nickname,
+      text: '방장이 토론을 종료했습니다.',
+      kind: 'session_closed',
+    });
+    await supabase.from('rooms').update({ status: 'closed' }).eq('id', room.id);
+  }, [room, nickname]);
+
   // When the waiting side's room flips to 'active' via realtime, move phase forward.
   useEffect(() => {
     if (phase === 'waiting' && room?.status === 'active') {
@@ -237,6 +311,12 @@ export function useRoom(nickname: string | null): UseRoomResult {
         moderation = await callApi<ModerationResult>('/api/moderate', { text });
       } catch (err) {
         console.error('moderation call failed', err);
+      }
+
+      // 방장이 욕설 허용으로 완화했다면 profanity 축만 눈감아준다.
+      // 조롱·인신공격 축은 방장 권한으로도 해제할 수 없다.
+      if (moderation?.flagged && moderation.axis === 'profanity' && room.allow_profanity) {
+        moderation = { ...moderation, flagged: false };
       }
 
       await supabase.from('messages').insert({
@@ -496,6 +576,8 @@ export function useRoom(nickname: string | null): UseRoomResult {
     messages,
     error,
     join,
+    createCustomRoom,
+    endSessionAsHost,
     leave,
     cancelJoin,
     send,

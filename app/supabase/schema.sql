@@ -26,6 +26,11 @@ create table if not exists rooms (
   muted_until_b timestamptz,
   dispute_used_a boolean not null default false,
   dispute_used_b boolean not null default false,
+  host_nickname text,
+  is_custom boolean not null default false,
+  allow_profanity boolean not null default false,
+  duration_minutes smallint not null default 20,
+  hand_limit smallint not null default 2,
   created_at timestamptz not null default now()
 );
 

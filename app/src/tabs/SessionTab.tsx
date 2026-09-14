@@ -15,6 +15,9 @@ interface SessionTabProps {
   logRef: RefObject<HTMLDivElement | null>;
   toast: ToastState | null;
   handLeft: number;
+  handLimit?: number;
+  isHost?: boolean;
+  onEndSession?: () => void;
   onRaiseHand: () => void;
   onDeclareChange: () => void;
   onLeave: () => void;
@@ -46,6 +49,9 @@ export function SessionTab({
   logRef,
   toast,
   handLeft,
+  handLimit = 2,
+  isHost = false,
+  onEndSession,
   onRaiseHand,
   onDeclareChange,
   onLeave,
@@ -151,7 +157,15 @@ export function SessionTab({
         </div>
       )}
 
-      <div style={{ flex: 'none', display: 'flex', justifyContent: 'flex-end', padding: '0 20px 4px' }}>
+      <div style={{ flex: 'none', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, padding: '0 20px 4px' }}>
+        {isHost && !closed && onEndSession && (
+          <button
+            onClick={onEndSession}
+            style={{ cursor: 'pointer', background: 'none', border: 'none', fontSize: 11, fontWeight: 700, color: '#78747e', padding: '4px 2px' }}
+          >
+            🛑 토론 종료 · 방장
+          </button>
+        )}
         <button
           onClick={onLeave}
           style={{ cursor: 'pointer', background: 'none', border: 'none', fontSize: 11, fontWeight: 700, color: '#a05a7a', padding: '4px 2px' }}
@@ -274,7 +288,7 @@ export function SessionTab({
             onClick={onRaiseHand}
             style={{ cursor: 'pointer', background: '#F3F1F5', border: 'none', borderRadius: 999, padding: '13px 14px', fontSize: 12, fontWeight: 700, color: '#17171a' }}
           >
-            ✋ {handLeft}/2
+            ✋ {handLeft}/{handLimit}
           </button>
           <button
             onClick={onDeclareChange}

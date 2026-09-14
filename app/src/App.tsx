@@ -8,11 +8,14 @@ import { NicknameGate } from './components/NicknameGate';
 import { WaitingModal } from './components/WaitingModal';
 import { OnboardingModal } from './components/OnboardingModal';
 import { StillmanModal } from './components/StillmanModal';
+import { CreateRoomModal } from './components/CreateRoomModal';
 import { HomeTab } from './tabs/HomeTab';
 import { SessionTab } from './tabs/SessionTab';
 import { SparTab } from './tabs/SparTab';
 import { ShelfTab } from './tabs/ShelfTab';
 import { useRoom } from './lib/useRoom';
+import type { CreateRoomRules } from './lib/useRoom';
+import { useCustomRooms } from './lib/useCustomRooms';
 import { useProfile } from './lib/useProfile';
 import { supabase } from './lib/supabase';
 import { MODERATION_TOAST } from './lib/moderation';
@@ -65,6 +68,8 @@ export default function App() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [joiningTopicId, setJoiningTopicId] = useState<string | null>(null);
   const [waitingModalDismissed, setWaitingModalDismissed] = useState(false);
+  const [createRoomOpen, setCreateRoomOpen] = useState(false);
+  const [creatingRoom, setCreatingRoom] = useState(false);
   const [changeContext, setChangeContext] = useState<'main' | 'spar'>('main');
 
   const [sparTopicInput, setSparTopicInput] = useState('');
@@ -83,6 +88,7 @@ export default function App() {
 
   const roomApi = useRoom(nickname);
   const { phase, room, mySeat, messages } = roomApi;
+  const [customRooms, refetchCustomRooms] = useCustomRooms();
 
   const sparRoomApi = useRoom(nickname);
   const { changedCount, listenedCount, briefedCount, stillmanCount, bumpListened, bumpBriefed, bumpStillman } =
@@ -123,7 +129,7 @@ export default function App() {
     if (phase === 'active' && !wasActive.current) {
       wasActive.current = true;
       setBriefRead(false);
-      setSessionSec(1080);
+      setSessionSec((room?.duration_minutes ?? 18) * 60);
       setBriefingOpen(true);
     }
     if (phase === 'idle') {
@@ -152,6 +158,23 @@ export default function App() {
   function handleCancelApply() {
     setJoiningTopicId(null);
     roomApi.cancelJoin();
+    refetchCustomRooms();
+  }
+
+  async function handleCreateRoom(topicTitle: string, rules: CreateRoomRules) {
+    setCreatingRoom(true);
+    const topicId = await roomApi.createCustomRoom(topicTitle, rules);
+    setCreatingRoom(false);
+    if (topicId) {
+      setJoiningTopicId(topicId);
+      setWaitingModalDismissed(false);
+      setCreateRoomOpen(false);
+      refetchCustomRooms();
+    }
+  }
+
+  async function handleEndSessionAsHost() {
+    await roomApi.endSessionAsHost();
   }
 
   async function handleNicknameSubmit(name: string) {
@@ -354,14 +377,18 @@ export default function App() {
               <HomeTab
                 countdownLabel={fmt(countdown)}
                 changedCount={changedCount}
+                nickname={nickname}
                 matchingTopicId={joiningTopicId}
                 matchError={phase === 'error' ? roomApi.error : null}
-                onEnterRoom={(topicId, topicTitle) => {
+                onEnterRoom={async (topicId, topicTitle) => {
                   setJoiningTopicId(topicId);
                   setWaitingModalDismissed(false);
-                  roomApi.join(topicId, topicTitle);
+                  await roomApi.join(topicId, topicTitle);
+                  refetchCustomRooms();
                 }}
                 onCancelApply={handleCancelApply}
+                onOpenCreateRoom={() => setCreateRoomOpen(true)}
+                customRooms={customRooms}
               />
             )}
 
@@ -379,6 +406,9 @@ export default function App() {
                 logRef={logRef}
                 toast={toast}
                 handLeft={handLeft}
+                handLimit={room.hand_limit}
+                isHost={room.host_nickname === nickname}
+                onEndSession={handleEndSessionAsHost}
                 onRaiseHand={handleRaiseHand}
                 onDeclareChange={() => {
                   setChangeContext('main');
@@ -459,6 +489,13 @@ export default function App() {
             open={phase === 'waiting' && !waitingModalDismissed}
             topicTitle={room?.topic_title ?? ''}
             onClose={() => setWaitingModalDismissed(true)}
+          />
+
+          <CreateRoomModal
+            open={createRoomOpen}
+            onClose={() => setCreateRoomOpen(false)}
+            onCreate={handleCreateRoom}
+            creating={creatingRoom}
           />
 
           <BriefingModal

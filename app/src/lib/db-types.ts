@@ -30,6 +30,11 @@ export interface RoomRow {
   muted_until_b: string | null;
   dispute_used_a: boolean;
   dispute_used_b: boolean;
+  host_nickname: string | null;
+  is_custom: boolean;
+  allow_profanity: boolean;
+  duration_minutes: number;
+  hand_limit: number;
   created_at: string;
 }
 
