@@ -53,6 +53,51 @@ async function callApi<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// finishAndLog()(참가자)와 endSessionAsHost()(방장) 둘 다 "내 참여를 기록으로
+// 남긴다"는 동작은 똑같다 — 방장도 세션을 끝내는 순간이 곧 자신의 참가 완료
+// 시점이므로 참가기록에 남아야 한다.
+async function writeParticipationLog(room: RoomRow, mySeat: Seat, nickname: string, messages: MessageRow[]) {
+  const changed = mySeat === 'A' ? room.changed_a : room.changed_b;
+  const receivedAcks = ACK_LIMIT - (mySeat === 'A' ? room.acks_left_b : room.acks_left_a);
+
+  const badges: LogBadge[] = [];
+  if (changed > 0) {
+    badges.push({
+      label: `🔁 생각 바뀜${changed > 1 ? ` ${changed}` : ''}`,
+      bg: '#FBDFEC',
+      color: '#8d3f70',
+    });
+  }
+  if (receivedAcks > 0) {
+    badges.push({ label: `🤍 인정 ${receivedAcks}`, bg: '#F3F1F5', color: '#4a4750' });
+  }
+  if (badges.length === 0) {
+    badges.push({ label: '참가 완료', bg: '#F3F1F5', color: '#4a4750' });
+  }
+
+  const myMessageTexts = messages.filter((m) => m.seat === mySeat).map((m) => m.text);
+
+  let quote = myMessageTexts.length
+    ? `"${myMessageTexts[myMessageTexts.length - 1]}"`
+    : `"${room.topic_title}"에 참가했다.`;
+  try {
+    const summarized = await callApi<{ quote: string }>('/api/summarize-quote', {
+      topic: room.topic_title,
+      myMessages: myMessageTexts,
+    });
+    if (summarized.quote) quote = `"${summarized.quote}"`;
+  } catch (err) {
+    console.error('quote summarization failed', err);
+  }
+
+  await supabase.from('logs').insert({
+    nickname,
+    topic_title: room.topic_title,
+    quote,
+    badges,
+  });
+}
+
 export function useRoom(nickname: string | null): UseRoomResult {
   const [phase, setPhase] = useState<MatchPhase>('idle');
   const [room, setRoom] = useState<RoomRow | null>(null);
@@ -300,7 +345,14 @@ export function useRoom(nickname: string | null): UseRoomResult {
       kind: 'session_closed',
     });
     await supabase.from('rooms').update({ status: 'closed' }).eq('id', room.id);
-  }, [room, nickname]);
+    if (mySeat) {
+      await writeParticipationLog(room, mySeat, nickname, messages);
+    }
+    // realtime 왕복을 기다리지 않고 바로 반영한다 — 안 그러면 방장 화면이
+    // 잠깐(혹은 연결이 불안정하면 계속) "진행 중"으로 남아 종료 버튼을 또
+    // 누를 수 있고, 그러면 참가기록이 중복으로 쌓인다.
+    setRoom((prev) => (prev && prev.id === room.id ? { ...prev, status: 'closed' } : prev));
+  }, [room, nickname, mySeat, messages]);
 
   // When the waiting side's room flips to 'active' via realtime, move phase forward.
   useEffect(() => {
@@ -574,46 +626,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
       leave();
       return;
     }
-    const changed = mySeat === 'A' ? room.changed_a : room.changed_b;
-    const receivedAcks = ACK_LIMIT - (mySeat === 'A' ? room.acks_left_b : room.acks_left_a);
-
-    const badges: LogBadge[] = [];
-    if (changed > 0) {
-      badges.push({
-        label: `🔁 생각 바뀜${changed > 1 ? ` ${changed}` : ''}`,
-        bg: '#FBDFEC',
-        color: '#8d3f70',
-      });
-    }
-    if (receivedAcks > 0) {
-      badges.push({ label: `🤍 인정 ${receivedAcks}`, bg: '#F3F1F5', color: '#4a4750' });
-    }
-    if (badges.length === 0) {
-      badges.push({ label: '참가 완료', bg: '#F3F1F5', color: '#4a4750' });
-    }
-
-    const myMessageTexts = messages.filter((m) => m.seat === mySeat).map((m) => m.text);
-
-    let quote = myMessageTexts.length
-      ? `"${myMessageTexts[myMessageTexts.length - 1]}"`
-      : `"${room.topic_title}"에 참가했다.`;
-    try {
-      const summarized = await callApi<{ quote: string }>('/api/summarize-quote', {
-        topic: room.topic_title,
-        myMessages: myMessageTexts,
-      });
-      if (summarized.quote) quote = `"${summarized.quote}"`;
-    } catch (err) {
-      console.error('quote summarization failed', err);
-    }
-
-    await supabase.from('logs').insert({
-      nickname,
-      topic_title: room.topic_title,
-      quote,
-      badges,
-    });
-
+    await writeParticipationLog(room, mySeat, nickname, messages);
     leave();
   }, [room, mySeat, nickname, messages, leave]);
 

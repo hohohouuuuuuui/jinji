@@ -184,6 +184,9 @@ export default function App() {
 
   async function handleEndSessionAsHost() {
     await roomApi.endSessionAsHost();
+    // 실시간 갱신을 기다리지 않고 바로 반영 — 그래야 토론방 목록에서 방금
+    // 종료한 방이 곧장 "진행 중" 목록에서 빠진다.
+    refetchCustomRooms();
   }
 
   async function handleNicknameSubmit(name: string) {
@@ -229,10 +232,13 @@ export default function App() {
   }
 
   async function handleLeaveSession() {
-    // 방장은 참가기록을 남기지 않는다 — "종료"로 마친 뒤엔 그냥 나가기만 하면 된다.
+    // 방장은 "종료" 버튼을 누른 시점에 이미 참가기록을 남겼으므로(endSessionAsHost),
+    // 나가기에서 또 남기지 않는다 — 다만 성장 카운트 반영과 참가기록 탭 이동은
+    // 참가자와 동일하게 해준다.
     if (room?.host_nickname === nickname) {
       roomApi.leave();
-      setSessionView('list');
+      await bumpListened();
+      setTab('shelf');
       return;
     }
     await roomApi.finishAndLog();
@@ -378,8 +384,11 @@ export default function App() {
   // 잃어버렸다면 실시간 목록(customRooms)에서 내가 방장인 방을 찾아 보여준다
   // — 그래야 "내가 만든 방"이 토론방 탭에서 사라지지 않는다.
   const myOwnCustomRoom = customRooms.find((r) => r.host_nickname === nickname);
+  // room.status === 'closed'면 이미 끝난 토론이다 — phase는 로컬 상태라 종료 후에도
+  // 'active'에 머물러 있으므로, 실제 방 상태를 따로 확인해서 "진행 중"으로
+  // 잘못 보이지 않게 한다.
   const myRoom =
-    room && mySeat && (phase === 'active' || phase === 'waiting')
+    room && mySeat && (phase === 'active' || phase === 'waiting') && room.status !== 'closed'
       ? { topicTitle: room.topic_title, status: phase === 'active' ? ('active' as const) : ('waiting' as const) }
       : myOwnCustomRoom
         ? { topicTitle: myOwnCustomRoom.topic_title, status: myOwnCustomRoom.status }
