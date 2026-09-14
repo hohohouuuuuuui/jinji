@@ -205,6 +205,8 @@ export function HomeTab({
             overflowX: 'auto',
             flex: 1,
             minWidth: 0,
+            touchAction: 'pan-x',
+            WebkitOverflowScrolling: 'touch',
             WebkitMaskImage: 'linear-gradient(to right, #000 calc(100% - 18px), transparent 100%)',
             maskImage: 'linear-gradient(to right, #000 calc(100% - 18px), transparent 100%)',
           }}
