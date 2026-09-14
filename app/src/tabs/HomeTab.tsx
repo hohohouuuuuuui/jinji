@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { CaterpillarPixel } from '../icons/CaterpillarPixel';
 import { ButterflyPixel } from '../icons/ButterflyPixel';
 import { FILTER_CHIPS, SCHEDULE } from '../data';
@@ -56,6 +56,35 @@ export function HomeTab({
   customRooms,
 }: HomeTabProps) {
   const [filter, setFilter] = useState<number | 'all'>('all');
+  const [chipsDragging, setChipsDragging] = useState(false);
+  const chipsRef = useRef<HTMLDivElement>(null);
+  const dragState = useRef({ down: false, startX: 0, startScrollLeft: 0, moved: false });
+
+  function onChipsPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    const el = chipsRef.current;
+    if (!el) return;
+    dragState.current = { down: true, startX: e.clientX, startScrollLeft: el.scrollLeft, moved: false };
+    setChipsDragging(true);
+  }
+  function onChipsPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const el = chipsRef.current;
+    const state = dragState.current;
+    if (!el || !state.down) return;
+    const dx = e.clientX - state.startX;
+    if (Math.abs(dx) > 4) state.moved = true;
+    el.scrollLeft = state.startScrollLeft - dx;
+  }
+  function endChipsDrag() {
+    dragState.current.down = false;
+    setChipsDragging(false);
+  }
+  function onChipsClickCapture(e: React.MouseEvent<HTMLDivElement>) {
+    if (dragState.current.moved) {
+      e.preventDefault();
+      e.stopPropagation();
+      dragState.current.moved = false;
+    }
+  }
   const growth = getGrowth(changedCount);
   const openCount = SCHEDULE.filter((row) => !row.room.locked).length + customRooms.length;
   const topicIds = SCHEDULE.filter((row) => row.topicId).map((row) => row.topicId!);
@@ -199,6 +228,13 @@ export function HomeTab({
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '16px 20px 12px' }}>
         <div
+          ref={chipsRef}
+          onPointerDown={onChipsPointerDown}
+          onPointerMove={onChipsPointerMove}
+          onPointerUp={endChipsDrag}
+          onPointerLeave={endChipsDrag}
+          onPointerCancel={endChipsDrag}
+          onClickCapture={onChipsClickCapture}
           style={{
             display: 'flex',
             gap: 5,
@@ -207,6 +243,8 @@ export function HomeTab({
             minWidth: 0,
             touchAction: 'pan-x',
             WebkitOverflowScrolling: 'touch',
+            cursor: chipsDragging ? 'grabbing' : 'grab',
+            userSelect: chipsDragging ? 'none' : undefined,
             WebkitMaskImage: 'linear-gradient(to right, #000 calc(100% - 18px), transparent 100%)',
             maskImage: 'linear-gradient(to right, #000 calc(100% - 18px), transparent 100%)',
           }}
