@@ -30,6 +30,7 @@ interface DisplayRow {
   seatsBottom: string;
   isMine?: boolean;
   seatCount?: number;
+  ended?: boolean;
 }
 
 interface HomeTabProps {
@@ -86,28 +87,32 @@ export function HomeTab({
     }
   }
   const growth = getGrowth(changedCount);
-  const openCount = SCHEDULE.filter((row) => !row.room.locked).length + customRooms.length;
+  const openCount = SCHEDULE.filter((row) => !row.room.locked).length + customRooms.filter((r) => r.status !== 'closed').length;
   const topicIds = SCHEDULE.filter((row) => row.topicId).map((row) => row.topicId!);
   const seatCounts = useTopicSeatCounts(topicIds);
 
-  const customDisplayRows: DisplayRow[] = customRooms.map((r) => ({
-    key: `custom-${r.id}`,
-    roomBadge: '👑',
-    roomColor: '#4a4750',
-    filterId: null,
-    time: formatKSTClock(new Date(r.created_at)),
-    status: r.status === 'active' ? '진행중' : '모집중',
-    title: r.topic_title,
-    tags: [
-      { label: '1:1 대화', bg: '#F3F1F5', color: '#4a4750' },
-      { label: `방장 ${r.host_nickname}`, bg: '#F3F1F5', color: '#4a4750' },
-    ],
-    topicId: r.topic_id,
-    cta: '참여하기',
-    seatsBottom: '/2명',
-    isMine: r.host_nickname === nickname,
-    seatCount: r.status === 'active' ? 2 : 1,
-  }));
+  const customDisplayRows: DisplayRow[] = customRooms.map((r) => {
+    const ended = r.status === 'closed';
+    return {
+      key: `custom-${r.id}`,
+      roomBadge: '👑',
+      roomColor: ended ? '#b8b4bd' : '#4a4750',
+      filterId: null,
+      time: formatKSTClock(new Date(r.created_at)),
+      status: ended ? '종료됨' : r.status === 'active' ? '진행중' : '모집중',
+      title: r.topic_title,
+      tags: [
+        { label: '1:1 대화', bg: '#F3F1F5', color: '#4a4750' },
+        { label: `방장 ${r.host_nickname}`, bg: '#F3F1F5', color: '#4a4750' },
+      ],
+      topicId: r.topic_id,
+      cta: ended ? undefined : '참여하기',
+      seatsBottom: '/2명',
+      isMine: r.host_nickname === nickname,
+      seatCount: r.status === 'active' ? 2 : 1,
+      ended,
+    };
+  });
 
   const scheduleDisplayRows: DisplayRow[] = SCHEDULE.map((row) => ({
     key: `sched-${row.room.id}-${row.time}-${row.title}`,
@@ -306,7 +311,7 @@ export function HomeTab({
           const isApplying = matchingTopicId === row.topicId;
           const seatCount = row.seatCount ?? (row.topicId ? seatCounts[row.topicId] ?? 0 : 0);
           const capacity = parseCapacity(row.seatsBottom);
-          const isFull = !isApplying && seatCount >= capacity;
+          const isFull = !row.ended && !isApplying && seatCount >= capacity;
           return (
             <div
               key={row.key}
@@ -396,7 +401,7 @@ export function HomeTab({
                     fontWeight: 900,
                     letterSpacing: -0.5,
                     lineHeight: 1.35,
-                    color: locked ? '#5a5760' : '#17171a',
+                    color: locked || row.ended ? '#5a5760' : '#17171a',
                   }}
                 >
                   {row.title}
@@ -423,7 +428,11 @@ export function HomeTab({
                 {row.lockedNote && (
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#3f3c45', marginTop: 7 }}>{row.lockedNote}</div>
                 )}
-                {row.isMine ? (
+                {row.ended ? (
+                  <div style={{ marginTop: 11, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#a9a5af' }}>
+                    🔚 종료된 토론이에요
+                  </div>
+                ) : row.isMine ? (
                   <div style={{ marginTop: 11, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#a9a5af' }}>
                     내가 만든 방
                   </div>
@@ -459,7 +468,7 @@ export function HomeTab({
                   </div>
                 )}
               </div>
-              {!locked && (
+              {!locked && !row.ended && (
                 <div style={{ flex: 'none', textAlign: 'right' }}>
                   <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 17, color: isFull ? '#b0568f' : '#17171a' }}>
                     {row.topicId ? (isFull ? '마감' : String(seatCount)) : ''}

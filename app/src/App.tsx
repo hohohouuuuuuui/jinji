@@ -16,6 +16,7 @@ import { ShelfTab } from './tabs/ShelfTab';
 import { useRoom } from './lib/useRoom';
 import type { CreateRoomRules } from './lib/useRoom';
 import { useCustomRooms } from './lib/useCustomRooms';
+import type { CustomRoomSummary } from './lib/useCustomRooms';
 import { useProfile } from './lib/useProfile';
 import { supabase } from './lib/supabase';
 import { MODERATION_TOAST } from './lib/moderation';
@@ -383,7 +384,11 @@ export default function App() {
   // 로컬 세션(room/mySeat)이 이미 붙어있으면 그걸 우선 쓰고, 새로고침 등으로
   // 잃어버렸다면 실시간 목록(customRooms)에서 내가 방장인 방을 찾아 보여준다
   // — 그래야 "내가 만든 방"이 토론방 탭에서 사라지지 않는다.
-  const myOwnCustomRoom = customRooms.find((r) => r.host_nickname === nickname);
+  // customRooms엔 오늘 종료된 방도 (시간표에 보여주려고) 들어있으므로, 여기서는
+  // 아직 열려있는 방만 "내가 참여 중인 방" 후보로 본다.
+  const myOwnCustomRoom = customRooms.find(
+    (r): r is CustomRoomSummary & { status: 'waiting' | 'active' } => r.host_nickname === nickname && r.status !== 'closed',
+  );
   // room.status === 'closed'면 이미 끝난 토론이다 — phase는 로컬 상태라 종료 후에도
   // 'active'에 머물러 있으므로, 실제 방 상태를 따로 확인해서 "진행 중"으로
   // 잘못 보이지 않게 한다.
