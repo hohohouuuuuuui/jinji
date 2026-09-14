@@ -197,18 +197,6 @@ export function HomeTab({
             <span style={{ fontFamily: "'DotGothic16',monospace", fontSize: 15, color: '#17171a' }}>
               {growth.tierLabel} LV.{changedCount}
             </span>
-            <span
-              style={{
-                fontSize: 10.5,
-                fontWeight: 700,
-                padding: '4px 9px',
-                borderRadius: 999,
-                background: '#FBDFEC',
-                color: '#8d3f70',
-              }}
-            >
-              🔁 {changedCount}
-            </span>
           </div>
           <div style={{ display: 'flex', gap: 3, marginTop: 8 }}>
             {Array.from({ length: growth.dotsTotal }).map((_, i) => (
