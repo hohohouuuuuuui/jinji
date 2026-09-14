@@ -295,7 +295,7 @@ export function SessionTab({
             value={draft}
             onChange={(e) => onDraftChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') onSend();
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) onSend();
             }}
             placeholder={
               closed

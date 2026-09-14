@@ -27,7 +27,7 @@ export function SparTab({ topicInput, onTopicInputChange, onStart, starting, top
           value={topicInput}
           onChange={(e) => onTopicInputChange(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') onStart();
+            if (e.key === 'Enter' && !e.nativeEvent.isComposing) onStart();
           }}
           placeholder="예: 반려동물 보유세, 도입해야 하는가"
           style={{
