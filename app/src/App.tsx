@@ -5,7 +5,6 @@ import { BottomNav } from './components/BottomNav';
 import { BriefingModal } from './components/BriefingModal';
 import { ChangeModal } from './components/ChangeModal';
 import { NicknameGate } from './components/NicknameGate';
-import { WaitingModal } from './components/WaitingModal';
 import { OnboardingModal } from './components/OnboardingModal';
 import { StillmanModal } from './components/StillmanModal';
 import { CreateRoomModal } from './components/CreateRoomModal';
@@ -69,7 +68,6 @@ export default function App() {
   const [draft, setDraft] = useState('');
   const [toast, setToast] = useState<ToastState | null>(null);
   const [joiningTopicId, setJoiningTopicId] = useState<string | null>(null);
-  const [waitingModalDismissed, setWaitingModalDismissed] = useState(false);
   const [createRoomOpen, setCreateRoomOpen] = useState(false);
   const [creatingRoom, setCreatingRoom] = useState(false);
   const [changeContext, setChangeContext] = useState<'main' | 'spar'>('main');
@@ -137,12 +135,10 @@ export default function App() {
     if (phase === 'idle') {
       wasActive.current = false;
       setJoiningTopicId(null);
-      setWaitingModalDismissed(false);
       setSessionView('list');
     }
     if (phase === 'active' || phase === 'error') {
       setJoiningTopicId(null);
-      setWaitingModalDismissed(false);
     }
   }, [phase]);
 
@@ -166,7 +162,6 @@ export default function App() {
 
   async function handleEnterRoom(topicId: string, topicTitle: string) {
     setJoiningTopicId(topicId);
-    setWaitingModalDismissed(false);
     await roomApi.join(topicId, topicTitle);
     refetchCustomRooms();
   }
@@ -182,7 +177,6 @@ export default function App() {
     setCreatingRoom(false);
     if (topicId) {
       setJoiningTopicId(topicId);
-      setWaitingModalDismissed(false);
       setCreateRoomOpen(false);
       refetchCustomRooms();
     }
@@ -413,7 +407,6 @@ export default function App() {
                 }
                 onEnterMyRoom={() => {
                   if (phase === 'active') setSessionView('chat');
-                  else setWaitingModalDismissed(false);
                 }}
                 onJoinRoom={handleEnterRoom}
               />
@@ -511,12 +504,6 @@ export default function App() {
           </div>
 
           <BottomNav tab={tab} onChange={handleNavChange} />
-
-          <WaitingModal
-            open={phase === 'waiting' && !waitingModalDismissed}
-            topicTitle={room?.topic_title ?? ''}
-            onClose={() => setWaitingModalDismissed(true)}
-          />
 
           <CreateRoomModal
             open={createRoomOpen}

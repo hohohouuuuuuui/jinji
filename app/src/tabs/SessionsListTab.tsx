@@ -39,25 +39,38 @@ export function SessionsListTab({ nickname, customRooms, myRoom, onEnterMyRoom, 
       <div style={{ marginTop: 24 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#17171a' }}>참여중인 방</div>
         {myRoom ? (
-          <button
-            onClick={onEnterMyRoom}
-            style={{
-              display: 'block',
-              width: '100%',
-              textAlign: 'left',
-              cursor: 'pointer',
-              marginTop: 10,
-              background: '#FEF7FA',
-              border: '1.5px solid #F586AE',
-              borderRadius: 16,
-              padding: '13px 15px',
-            }}
-          >
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#17171a' }}>{myRoom.topicTitle}</div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#b0568f', marginTop: 4 }}>
-              {myRoom.status === 'active' ? '진행 중 · 눌러서 입장' : '상대를 기다리는 중 · 눌러서 확인'}
+          myRoom.status === 'active' ? (
+            <button
+              onClick={onEnterMyRoom}
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+                marginTop: 10,
+                background: '#FEF7FA',
+                border: '1.5px solid #F586AE',
+                borderRadius: 16,
+                padding: '13px 15px',
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#17171a' }}>{myRoom.topicTitle}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#b0568f', marginTop: 4 }}>진행 중 · 눌러서 입장</div>
+            </button>
+          ) : (
+            <div
+              style={{
+                marginTop: 10,
+                background: '#F3F1F5',
+                border: '1.5px solid transparent',
+                borderRadius: 16,
+                padding: '13px 15px',
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#17171a' }}>{myRoom.topicTitle}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#78747e', marginTop: 4 }}>상대를 기다리는 중</div>
             </div>
-          </button>
+          )
         ) : (
           <div style={{ padding: '18px 0', textAlign: 'center', fontSize: 12.5, color: '#78747e' }}>참여 중인 방이 없어요</div>
         )}
