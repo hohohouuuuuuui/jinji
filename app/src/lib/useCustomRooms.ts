@@ -29,15 +29,21 @@ export function useCustomRooms(): [CustomRoomSummary[], () => void] {
       .eq('is_custom', true)
       .in('status', ['waiting', 'active'])
       .order('created_at', { ascending: false });
-    setRooms((data as CustomRoomSummary[]) ?? []);
+    // 방어적 중복 제거: 같은 id가 혹시라도 두 번 오더라도 목록에 한 번만 보이게.
+    const rows = (data as CustomRoomSummary[]) ?? [];
+    const deduped = Array.from(new Map(rows.map((r) => [r.id, r])).values());
+    setRooms(deduped);
   }, []);
 
   useEffect(() => {
     load();
 
+    // is_custom=true인 방 변경에만 반응한다 — 필터 없이 테이블 전체를 구독하면
+    // 이 목록과 무관한 다른 방(자동 매칭, 발언 순서 등)의 변경에도 매번
+    // 다시 불러오면서 목록이 잠깐씩 깜빡이는 원인이 됐다.
     const channel = supabase
       .channel('custom-rooms-list')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: 'is_custom=eq.true' }, () => load())
       .subscribe();
 
     return () => {
