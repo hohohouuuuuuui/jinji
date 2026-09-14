@@ -23,46 +23,8 @@ const ROOM1 = { id: 1 as const, color: '#F586AE' };
 const ROOM2 = { id: 2 as const, color: '#8ED4F0' };
 const ROOM3 = { id: 3 as const, color: '#17171a' };
 
+// AI 자동생성 방은 방 번호(1/2/3)별로 딱 하나씩만 둔다 — 나머지는 방 만들기로 채워진다.
 export const SCHEDULE: ScheduleRowData[] = [
-  {
-    room: ROOM1,
-    time: '15:00',
-    status: '신청중',
-    title: '재택근무가 사무실 근무보다 생산적인가',
-    tags: [
-      { label: '1:1 대화', bg: '#fff', color: '#8d3f70' },
-      { label: 'AI 브리핑', bg: '#fff', color: '#4a4750' },
-    ],
-    seats: { top: '0', bottom: '/4명' },
-    cta: '입장 신청하기',
-    topicId: 'wfh-productivity',
-  },
-  {
-    room: ROOM1,
-    time: '18:00',
-    status: '신청중',
-    title: '숏폼 알고리즘, 이대로 둬도 괜찮은가',
-    tags: [
-      { label: '1:1 대화', bg: '#fff', color: '#8d3f70' },
-      { label: 'AI 브리핑', bg: '#fff', color: '#4a4750' },
-    ],
-    seats: { top: '0', bottom: '/4명' },
-    cta: '입장 신청하기',
-    topicId: 'shortform-algorithm',
-  },
-  {
-    room: ROOM2,
-    time: '19:00',
-    status: '신청중',
-    title: '혼밥·혼술, 편한 걸까 외로운 걸까',
-    tags: [
-      { label: '1:1 대화', bg: '#E6F5FC', color: '#1f5a75' },
-      { label: '1일 진행', bg: '#F3F1F5', color: '#4a4750' },
-    ],
-    seats: { top: '0', bottom: '/2명' },
-    cta: '입장 신청하기',
-    topicId: 'eating-alone',
-  },
   {
     room: ROOM1,
     time: '20:05',
@@ -76,19 +38,6 @@ export const SCHEDULE: ScheduleRowData[] = [
     cta: '입장 신청하기',
     topicId: 'ai-copyright',
     featured: true,
-  },
-  {
-    room: ROOM3,
-    time: '20:30',
-    status: '관전가능',
-    title: '인플루언서 뒷광고, 지금 처벌 수위로 충분한가',
-    tags: [
-      { label: '1:1 격돌', bg: '#F3F1F5', color: '#4a4750' },
-      { label: '관전 88', bg: '#F3F1F5', color: '#4a4750' },
-    ],
-    seats: { top: '0', bottom: '/2명' },
-    cta: '입장 신청하기',
-    topicId: 'backdoor-ads',
   },
   {
     room: ROOM2,
@@ -115,45 +64,6 @@ export const SCHEDULE: ScheduleRowData[] = [
     seats: { top: '0', bottom: '/2명' },
     cta: '입장 신청하기',
     topicId: 'meritocracy',
-  },
-  {
-    room: ROOM2,
-    time: '22:30',
-    status: '신청중',
-    title: '연애 안 해도 행복할 수 있을까',
-    tags: [
-      { label: '1:1 대화', bg: '#E6F5FC', color: '#1f5a75' },
-      { label: '1일 진행', bg: '#F3F1F5', color: '#4a4750' },
-    ],
-    seats: { top: '0', bottom: '/2명' },
-    cta: '입장 신청하기',
-    topicId: 'love-optional',
-  },
-  {
-    room: ROOM1,
-    time: '23:00',
-    status: '신청중',
-    title: '무지출 챌린지, 절약일까 보여주기식일까',
-    tags: [
-      { label: '1:1 대화', bg: '#fff', color: '#8d3f70' },
-      { label: 'AI 브리핑', bg: '#fff', color: '#4a4750' },
-    ],
-    seats: { top: '0', bottom: '/4명' },
-    cta: '입장 신청하기',
-    topicId: 'no-spend-challenge',
-  },
-  {
-    room: ROOM3,
-    time: '23:30',
-    status: '관전가능',
-    title: 'AI 커버곡, 저작권 침해인가 새로운 창작인가',
-    tags: [
-      { label: '1:1 격돌', bg: '#F3F1F5', color: '#4a4750' },
-      { label: '관전 41', bg: '#F3F1F5', color: '#4a4750' },
-    ],
-    seats: { top: '0', bottom: '/2명' },
-    cta: '입장 신청하기',
-    topicId: 'ai-cover-song',
   },
   {
     room: { id: 4, color: '#17171a', locked: true },

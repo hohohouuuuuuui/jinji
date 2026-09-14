@@ -555,9 +555,20 @@ export function useRoom(nickname: string | null): UseRoomResult {
       badges.push({ label: '참가 완료', bg: '#F3F1F5', color: '#4a4750' });
     }
 
-    const myMessages = messages.filter((m) => m.seat === mySeat);
-    const lastMine = myMessages[myMessages.length - 1];
-    const quote = lastMine ? `"${lastMine.text}"` : `"${room.topic_title}"에 참가했다.`;
+    const myMessageTexts = messages.filter((m) => m.seat === mySeat).map((m) => m.text);
+
+    let quote = myMessageTexts.length
+      ? `"${myMessageTexts[myMessageTexts.length - 1]}"`
+      : `"${room.topic_title}"에 참가했다.`;
+    try {
+      const summarized = await callApi<{ quote: string }>('/api/summarize-quote', {
+        topic: room.topic_title,
+        myMessages: myMessageTexts,
+      });
+      if (summarized.quote) quote = `"${summarized.quote}"`;
+    } catch (err) {
+      console.error('quote summarization failed', err);
+    }
 
     await supabase.from('logs').insert({
       nickname,

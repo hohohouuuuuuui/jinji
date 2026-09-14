@@ -13,13 +13,16 @@ React + Vite implementation of `project/Jinji Prototype v3.dc.html`: 4 tabs (시
 - 시간표 상단 필터 칩(1/2/3번 방)으로 목록을 좁혀볼 수 있고, 상태바/시간표 날짜는 실제 한국 시간과 동기화됩니다.
 - **자리 인원수는 Supabase 실시간 집계**입니다 — 여러 사람이 같은 방에 신청하면 서로의 화면에 자리 수가 바로 반영되고, 정원(예: "/4명")을 채우면 실제로 "마감"되어 더 이상 신청할 수 없습니다.
 - **방 만들기 · 방장**: 시간표 상단 "+ 방 만들기"로 누구나 직접 방을 만들 수 있습니다. 만든 사람이 방장이 되고, 총 시간(30/60/90/120분)·손들기 횟수·욕설 허용 여부를 직접 정합니다. **욕설을 허용해도 조롱·인신공격 축은 방장 권한으로도 해제할 수 없습니다.** 만들어진 방은 "만든 방" 목록에 실시간으로 뜨고, 다른 사람이 "참여하기"를 누르면 그 자리에서 바로 매칭됩니다(신청 취소는 그 방의 "입장 신청 완료" 버튼을 다시 누르면 됨). 세션 중에는 방장에게만 "🛑 토론 종료" 버튼이 보이고, 누르면 양쪽 모두에게 즉시 세션 종료가 통지됩니다.
+- **토론방 탭**: 참여중인 방(대기중이거나 진행중인 내 세션)과 참여할 방(자동 생성 3개 + 다른 사람이 만든 방) 목록을 보여주고, 없으면 각각 "없어요" 문구가 뜹니다. 항목을 클릭하면 바로 입장/매칭됩니다. 이미 참여중인 방이 있으면 참여할 방 목록은 숨겨집니다(동시에 두 방에 들어갈 수 없어서).
+- **참가기록 어록은 AI가 요약**합니다 — 세션 종료 시 내가 실제로 한 발언들을 AI에게 보내 핵심 주장이 가장 잘 드러나는 한 문장으로 뽑습니다(실패 시 마지막 발언을 그대로 사용).
+- AI 자동 생성 방은 방 번호(1/2/3)별로 딱 1개씩만 상시 고정으로 뜨고, 나머지는 "방 만들기"로 채워집니다.
 - 시간표의 2:2 토론·진지한 결혼 항목은 아직 목업입니다.
 
 ## 아키텍처
 
 - **프론트엔드**: Vite + React (정적 빌드, Vercel에 그대로 배포)
 - **실시간 매칭 · 채팅 · 상태 동기화 · 참가기록**: Supabase (Postgres + Realtime), 인증 없이 닉네임만 사용
-- **AI 기능** (`api/briefing.ts`, `api/moderate.ts`, `api/opponent.ts`, `api/validate-topic.ts`, `api/stillman.ts`, Vercel Serverless Functions): Google Gemini (`gemini-3.6-flash`)로 사전 브리핑 생성, 발언 4축(비속어/존대이탈/인신공격/조롱) 모더레이션, 리허설룸의 AI 상대 응답(+ AI 자신의 발언도 같은 모더레이션 적용), 리허설 주제가 찬반이 갈리는 토론 주제인지 검증, 스틸맨 요약 판정. API 키는 서버 함수 안에서만 쓰이고 브라우저에 노출되지 않습니다.
+- **AI 기능** (`api/briefing.ts`, `api/moderate.ts`, `api/opponent.ts`, `api/validate-topic.ts`, `api/stillman.ts`, `api/summarize-quote.ts`, Vercel Serverless Functions): Google Gemini (`gemini-3.6-flash`)로 사전 브리핑 생성, 발언 4축(비속어/존대이탈/인신공격/조롱) 모더레이션, 리허설룸의 AI 상대 응답(+ AI 자신의 발언도 같은 모더레이션 적용), 리허설 주제가 찬반이 갈리는 토론 주제인지 검증, 스틸맨 요약 판정, 참가기록 어록 요약. API 키는 서버 함수 안에서만 쓰이고 브라우저에 노출되지 않습니다.
 
 > ⚠️ **무료 티어 Gemini 키는 프로젝트+모델 기준 하루 20회 요청 한도**입니다(분당 한도가 아니라 하루 전체 한도). 브리핑·모더레이션·상대 응답·주제 검증·스틸맨 판정이 전부 같은 키/모델을 공유해서 이 20회를 나눠 쓰기 때문에, 몇 세션만 테스트해도 금방 소진됩니다. 한도를 넘으면 API가 429를 반환하고, 각 기능은 정해진 대체 응답으로 조용히 넘어가도록 만들어뒀습니다(예: 리허설 AI 상대가 매번 비슷한 일반적인 답변만 반복하는 것처럼 보이면 대부분 이 한도 소진이 원인입니다). 해커톤 시연/심사 전에는 **반드시 결제를 연결한 유료 티어 키로 바꾸는 걸 권장**합니다.
 
@@ -82,9 +85,9 @@ npm run dev
 - `src/lib/moderation.ts` — 모더레이션 축(4가지) → 한국어 라벨/토스트 문구 매핑
 - `src/lib/useTopicSeatCounts.ts` — 주제별 실시간 자리 집계(대기 1자리·매칭 2자리)를 Supabase에서 읽고 realtime으로 구독하는 훅
 - `src/lib/useCustomRooms.ts` — 사용자가 만든 방(방장·규칙 포함) 목록을 실시간으로 구독하는 훅
-- `api/_gemini.ts`, `api/briefing.ts`, `api/moderate.ts`, `api/opponent.ts`, `api/validate-topic.ts`, `api/stillman.ts` — Gemini 호출 Vercel 함수
+- `api/_gemini.ts`, `api/briefing.ts`, `api/moderate.ts`, `api/opponent.ts`, `api/validate-topic.ts`, `api/stillman.ts`, `api/summarize-quote.ts` — Gemini 호출 Vercel 함수
 - `supabase/schema.sql` — 처음 설치용 전체 스키마, `supabase/migration_2.sql` ~ `migration_6.sql` — 이미 설치한 DB에 추가분만 반영
-- `src/tabs/` — 네 개 탭 화면 (`SessionTab`은 진지한 대화·리허설룸·방장 세션 공용), `src/components/` — 폰 프레임 · 상태바 · 하단 내비 · 모달(온보딩 · 스틸맨 · 방 만들기 포함)
+- `src/tabs/` — 네 개 탭 화면 (`SessionTab`은 진지한 대화·리허설룸·방장 세션 공용, `SessionsListTab`은 토론방 탭의 참여중인 방/참여할 방 목록), `src/components/` — 폰 프레임 · 상태바 · 하단 내비 · 모달(온보딩 · 스틸맨 · 방 만들기 포함)
 - `src/icons/` — 내비 아이콘, 픽셀아트 애벌레/나비 캐릭터
 - `src/data.ts` — 아직 목업인 부분(시간표 2:2 토론·1:1 격돌·진지한 결혼 등)
 - `docs/기획안.md` — 원본 제품 기획안 (전체 12개 섹션, 이 문서를 기준으로 기능 갭 분석 진행)

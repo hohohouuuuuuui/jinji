@@ -53,7 +53,7 @@ export function CreateRoomModal({ open, onClose, onCreate, creating }: CreateRoo
           직접 방을 만들면 방장이 되고, 세션 규칙을 정할 수 있어요.
         </div>
 
-        <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 13, color: '#4a4750', marginTop: 18 }}>주제</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#4a4750', marginTop: 18 }}>주제</div>
         <input
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
@@ -71,7 +71,7 @@ export function CreateRoomModal({ open, onClose, onCreate, creating }: CreateRoo
           }}
         />
 
-        <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 13, color: '#4a4750', marginTop: 18 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#4a4750', marginTop: 18 }}>
           대화·토론 총 시간
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
@@ -96,7 +96,7 @@ export function CreateRoomModal({ open, onClose, onCreate, creating }: CreateRoo
           ))}
         </div>
 
-        <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 13, color: '#4a4750', marginTop: 18 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#4a4750', marginTop: 18 }}>
           손들기 횟수 (세션당)
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>

@@ -11,6 +11,7 @@ import { StillmanModal } from './components/StillmanModal';
 import { CreateRoomModal } from './components/CreateRoomModal';
 import { HomeTab } from './tabs/HomeTab';
 import { SessionTab } from './tabs/SessionTab';
+import { SessionsListTab } from './tabs/SessionsListTab';
 import { SparTab } from './tabs/SparTab';
 import { ShelfTab } from './tabs/ShelfTab';
 import { useRoom } from './lib/useRoom';
@@ -59,6 +60,7 @@ function mutedSecondsLeft(until: string | null | undefined): number {
 export default function App() {
   const [nickname, setNickname] = useState<string | null>(() => localStorage.getItem(NICKNAME_KEY));
   const [tab, setTab] = useState<Tab>('home');
+  const [sessionView, setSessionView] = useState<'list' | 'chat'>('list');
   const [briefingOpen, setBriefingOpen] = useState(false);
   const [briefRead, setBriefRead] = useState(false);
   const [changeOpen, setChangeOpen] = useState(false);
@@ -136,6 +138,7 @@ export default function App() {
       wasActive.current = false;
       setJoiningTopicId(null);
       setWaitingModalDismissed(false);
+      setSessionView('list');
     }
     if (phase === 'active' || phase === 'error') {
       setJoiningTopicId(null);
@@ -159,6 +162,18 @@ export default function App() {
     setJoiningTopicId(null);
     roomApi.cancelJoin();
     refetchCustomRooms();
+  }
+
+  async function handleEnterRoom(topicId: string, topicTitle: string) {
+    setJoiningTopicId(topicId);
+    setWaitingModalDismissed(false);
+    await roomApi.join(topicId, topicTitle);
+    refetchCustomRooms();
+  }
+
+  function handleNavChange(nextTab: Tab) {
+    if (nextTab === 'session') setSessionView('list');
+    setTab(nextTab);
   }
 
   async function handleCreateRoom(topicTitle: string, rules: CreateRoomRules) {
@@ -380,19 +395,31 @@ export default function App() {
                 nickname={nickname}
                 matchingTopicId={joiningTopicId}
                 matchError={phase === 'error' ? roomApi.error : null}
-                onEnterRoom={async (topicId, topicTitle) => {
-                  setJoiningTopicId(topicId);
-                  setWaitingModalDismissed(false);
-                  await roomApi.join(topicId, topicTitle);
-                  refetchCustomRooms();
-                }}
+                onEnterRoom={handleEnterRoom}
                 onCancelApply={handleCancelApply}
                 onOpenCreateRoom={() => setCreateRoomOpen(true)}
                 customRooms={customRooms}
               />
             )}
 
-            {tab === 'session' && room && mySeat && (
+            {tab === 'session' && sessionView === 'list' && (
+              <SessionsListTab
+                nickname={nickname}
+                customRooms={customRooms}
+                myRoom={
+                  room && mySeat && (phase === 'active' || phase === 'waiting')
+                    ? { topicTitle: room.topic_title, status: phase === 'active' ? 'active' : 'waiting' }
+                    : null
+                }
+                onEnterMyRoom={() => {
+                  if (phase === 'active') setSessionView('chat');
+                  else setWaitingModalDismissed(false);
+                }}
+                onJoinRoom={handleEnterRoom}
+              />
+            )}
+
+            {tab === 'session' && sessionView === 'chat' && room && mySeat && (
               <SessionTab
                 topicTitle={room.topic_title}
                 sessionLabel={fmt(sessionSec)}
@@ -483,7 +510,7 @@ export default function App() {
             )}
           </div>
 
-          <BottomNav tab={tab} onChange={setTab} />
+          <BottomNav tab={tab} onChange={handleNavChange} />
 
           <WaitingModal
             open={phase === 'waiting' && !waitingModalDismissed}
@@ -511,6 +538,7 @@ export default function App() {
                 setBriefingOpen(false);
                 await bumpBriefed();
                 setTab('session');
+                setSessionView('chat');
               }
             }}
           />
