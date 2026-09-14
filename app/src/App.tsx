@@ -368,6 +368,17 @@ export default function App() {
   const muted = isMuted(myMutedUntil);
   const otherMuted = isMuted(otherMutedUntil);
 
+  // 로컬 세션(room/mySeat)이 이미 붙어있으면 그걸 우선 쓰고, 새로고침 등으로
+  // 잃어버렸다면 실시간 목록(customRooms)에서 내가 방장인 방을 찾아 보여준다
+  // — 그래야 "내가 만든 방"이 토론방 탭에서 사라지지 않는다.
+  const myOwnCustomRoom = customRooms.find((r) => r.host_nickname === nickname);
+  const myRoom =
+    room && mySeat && (phase === 'active' || phase === 'waiting')
+      ? { topicTitle: room.topic_title, status: phase === 'active' ? ('active' as const) : ('waiting' as const) }
+      : myOwnCustomRoom
+        ? { topicTitle: myOwnCustomRoom.topic_title, status: myOwnCustomRoom.status }
+        : null;
+
   const sparRoom = sparRoomApi.room;
   const sparClosed = sparRoom?.status === 'closed';
   const sparIsMyTurn = sparRoom?.turn === 'A' && !sparClosed;
@@ -400,13 +411,16 @@ export default function App() {
               <SessionsListTab
                 nickname={nickname}
                 customRooms={customRooms}
-                myRoom={
-                  room && mySeat && (phase === 'active' || phase === 'waiting')
-                    ? { topicTitle: room.topic_title, status: phase === 'active' ? 'active' : 'waiting' }
-                    : null
-                }
-                onEnterMyRoom={() => {
-                  if (phase === 'active') setSessionView('chat');
+                myRoom={myRoom}
+                onEnterMyRoom={async () => {
+                  if (room && mySeat) {
+                    if (phase === 'active') setSessionView('chat');
+                    return;
+                  }
+                  if (myOwnCustomRoom) {
+                    const status = await roomApi.rejoinAsHost(myOwnCustomRoom.topic_id);
+                    if (status === 'active') setSessionView('chat');
+                  }
                 }}
                 onJoinRoom={handleEnterRoom}
               />

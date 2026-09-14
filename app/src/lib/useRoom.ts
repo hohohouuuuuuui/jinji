@@ -29,6 +29,7 @@ interface UseRoomResult {
   error: string | null;
   join: (topicId: string, topicTitle: string, vsAI?: boolean, skipBriefing?: boolean) => Promise<void>;
   createCustomRoom: (topicTitle: string, rules: CreateRoomRules) => Promise<string | null>;
+  rejoinAsHost: (topicId: string) => Promise<'waiting' | 'active' | null>;
   endSessionAsHost: () => Promise<void>;
   leave: () => void;
   cancelJoin: () => Promise<void>;
@@ -247,6 +248,42 @@ export function useRoom(nickname: string | null): UseRoomResult {
         setPhase('error');
         return null;
       }
+    },
+    [nickname, subscribe],
+  );
+
+  // 새로고침 등으로 로컬 상태(room/mySeat)를 잃어버려도, 내가 방장인 방이
+  // 아직 Supabase에 살아있으면 다시 붙는다. join()과 달리 seat_b를 채우지
+  // 않는다 — 그러면 방장이 자기 자신과 매칭되는 셈이라 반드시 구분해야 한다.
+  const rejoinAsHost = useCallback(
+    async (topicId: string): Promise<'waiting' | 'active' | null> => {
+      if (!nickname) return null;
+      const { data: existing } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('topic_id', topicId)
+        .eq('seat_a', nickname)
+        .in('status', ['waiting', 'active'])
+        .maybeSingle();
+
+      if (!existing) return null;
+
+      setRoom(existing as RoomRow);
+      setMySeat('A');
+      setPhase(existing.status === 'active' ? 'active' : 'waiting');
+      subscribe(existing.id);
+
+      if (existing.status === 'active') {
+        const { data: existingMsgs } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('room_id', existing.id)
+          .order('created_at', { ascending: true });
+        setMessages((existingMsgs as MessageRow[]) ?? []);
+        return 'active';
+      }
+      setMessages([]);
+      return 'waiting';
     },
     [nickname, subscribe],
   );
@@ -588,6 +625,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
     error,
     join,
     createCustomRoom,
+    rejoinAsHost,
     endSessionAsHost,
     leave,
     cancelJoin,
