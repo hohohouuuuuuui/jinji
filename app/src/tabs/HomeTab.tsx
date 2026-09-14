@@ -198,7 +198,17 @@ export function HomeTab({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '16px 20px 12px' }}>
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', flex: 1 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 5,
+            overflowX: 'auto',
+            flex: 1,
+            minWidth: 0,
+            WebkitMaskImage: 'linear-gradient(to right, #000 calc(100% - 18px), transparent 100%)',
+            maskImage: 'linear-gradient(to right, #000 calc(100% - 18px), transparent 100%)',
+          }}
+        >
           {FILTER_CHIPS.map((chip, i) => {
             const value: number | 'all' = i === 0 ? 'all' : i;
             const active = filter === value;
@@ -212,7 +222,7 @@ export function HomeTab({
                   cursor: 'pointer',
                   fontSize: 11.5,
                   fontWeight: 700,
-                  padding: '8px 14px',
+                  padding: '8px 12px',
                   borderRadius: 999,
                   background: active ? '#17171a' : '#F3F1F5',
                   color: active ? '#fff' : '#4a4750',
@@ -228,16 +238,17 @@ export function HomeTab({
           style={{
             flex: 'none',
             cursor: 'pointer',
-            border: '1px solid rgba(23,23,26,0.14)',
-            background: '#fff',
+            border: 'none',
+            background: '#D6F84C',
             borderRadius: 999,
-            padding: '8px 13px',
-            fontSize: 11.5,
-            fontWeight: 700,
-            color: '#17171a',
+            padding: '9px 14px',
+            fontSize: 12.5,
+            fontWeight: 900,
+            color: '#3d4a0f',
+            boxShadow: '0 2px 8px rgba(214,248,76,0.55)',
           }}
         >
-          + 방 만들기
+          + 방
         </button>
       </div>
 
