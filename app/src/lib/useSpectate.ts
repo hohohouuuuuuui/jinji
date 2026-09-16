@@ -16,13 +16,28 @@ export function useSpectate(topicId: string | null): { room: RoomRow | null; mes
     }
     let cancelled = false;
     (async () => {
-      const { data: roomRow } = await supabase
+      // 자동생성 방(시간표 topic_id)은 같은 topic_id로 여러 번 방이 만들어질 수
+      // 있어서, 그냥 "가장 최근" 행을 고르면 지금은 끝났거나 아무도 안 들어온
+      // 낡은 방을 관전하게 될 수 있다 — 지금 진행 중인(active) 방을 우선한다.
+      const { data: activeRoom } = await supabase
         .from('rooms')
         .select('*')
         .eq('topic_id', topicId)
+        .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
+      const roomRow =
+        activeRoom ??
+        (
+          await supabase
+            .from('rooms')
+            .select('*')
+            .eq('topic_id', topicId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        ).data;
       if (cancelled || !roomRow) return;
       setRoom(roomRow as RoomRow);
       const { data: msgs } = await supabase

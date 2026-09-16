@@ -1,3 +1,5 @@
+import type { RoomKind } from './lib/db-types';
+
 export interface ScheduleRoom {
   id: 1 | 2 | 3 | 4;
   color: string;
@@ -17,6 +19,7 @@ export interface ScheduleRowData {
   topicId?: string;
   lockedNote?: string;
   featured?: boolean;
+  kind: RoomKind;
 }
 
 const ROOM1 = { id: 1 as const, color: '#F586AE' };
@@ -38,6 +41,7 @@ export const SCHEDULE: ScheduleRowData[] = [
     cta: '입장 신청하기',
     topicId: 'ai-copyright',
     featured: true,
+    kind: 'chat',
   },
   {
     room: ROOM2,
@@ -51,6 +55,7 @@ export const SCHEDULE: ScheduleRowData[] = [
     seats: { top: '0', bottom: '/2명' },
     cta: '입장 신청하기',
     topicId: 'regret-choice',
+    kind: 'clash',
   },
   {
     room: ROOM3,
@@ -64,6 +69,7 @@ export const SCHEDULE: ScheduleRowData[] = [
     seats: { top: '0', bottom: '/2명' },
     cta: '입장 신청하기',
     topicId: 'meritocracy',
+    kind: 'clash',
   },
   {
     room: { id: 4, color: '#17171a', locked: true },
@@ -74,6 +80,7 @@ export const SCHEDULE: ScheduleRowData[] = [
     tags: [],
     seats: { top: '', bottom: '' },
     lockedNote: '🔒 초성충부터 참가',
+    kind: 'chat',
   },
 ];
 

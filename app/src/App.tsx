@@ -20,6 +20,7 @@ import { useCustomRooms } from './lib/useCustomRooms';
 import type { CustomRoomSummary } from './lib/useCustomRooms';
 import { useVotes } from './lib/useVotes';
 import { ClashSpectatorTab } from './tabs/ClashSpectatorTab';
+import { SCHEDULE } from './data';
 import { useProfile } from './lib/useProfile';
 import { supabase } from './lib/supabase';
 import { MODERATION_TOAST } from './lib/moderation';
@@ -190,9 +191,28 @@ export default function App() {
       refetchCustomRooms();
       return;
     }
+
+    // 자동생성 2번/3번방(격돌 종류)도 마찬가지: 이미 둘이 꽉 차서 진행 중인
+    // 대화가 있으면 새로 매칭하지 않고 그 대화를 관전한다.
+    const scheduleKind = SCHEDULE.find((row) => row.topicId === topicId)?.kind ?? 'chat';
+    if (scheduleKind === 'clash') {
+      const { data: activeRoom } = await supabase
+        .from('rooms')
+        .select('id')
+        .eq('topic_id', topicId)
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle();
+      if (activeRoom) {
+        setSpectateTopicId(topicId);
+        setTab('session');
+        return;
+      }
+    }
+
     setJoiningTopicId(topicId);
     setErrorSource('match');
-    await roomApi.join(topicId, topicTitle);
+    await roomApi.join(topicId, topicTitle, false, false, scheduleKind);
     refetchCustomRooms();
   }
 

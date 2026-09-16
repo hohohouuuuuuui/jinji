@@ -6,6 +6,7 @@ import { formatKSTDateLabel, formatKSTClock } from '../lib/kst';
 import { getGrowth } from '../lib/growth';
 import { useTopicSeatCounts } from '../lib/useTopicSeatCounts';
 import type { CustomRoomSummary } from '../lib/useCustomRooms';
+import type { RoomKind } from '../lib/db-types';
 
 function parseCapacity(bottom: string): number {
   const digits = bottom.match(/\d+/);
@@ -31,6 +32,7 @@ interface DisplayRow {
   isMine?: boolean;
   seatCount?: number;
   neverFull?: boolean;
+  kind: RoomKind;
 }
 
 interface HomeTabProps {
@@ -120,6 +122,7 @@ export function HomeTab({
         r.team_b_member2 === nickname,
       seatCount: r.status === 'active' ? 2 : 1,
       neverFull,
+      kind: r.kind,
     };
   });
 
@@ -139,6 +142,9 @@ export function HomeTab({
     featured: row.featured,
     lockedNote: row.lockedNote,
     seatsBottom: row.seats.bottom,
+    // 자동생성 격돌방(2/3번)은 자리가 다 찼어도 마감이 아니라 관전으로 들어갈 수 있다.
+    neverFull: row.kind === 'clash',
+    kind: row.kind,
   }));
 
   const visibleRows =
@@ -321,6 +327,7 @@ export function HomeTab({
           const seatCount = row.seatCount ?? (row.topicId ? seatCounts[row.topicId] ?? 0 : 0);
           const capacity = parseCapacity(row.seatsBottom);
           const isFull = !row.neverFull && !isApplying && seatCount >= capacity;
+          const spectateReady = row.kind === 'clash' && !isApplying && seatCount >= capacity;
           return (
             <div
               key={row.key}
@@ -463,7 +470,7 @@ export function HomeTab({
                         boxShadow: '0 2px 10px rgba(23,23,26,0.04)',
                       }}
                     >
-                      {isFull ? '마감' : isApplying ? '입장 신청 완료' : row.cta}
+                      {spectateReady ? '관전하기' : isFull ? '마감' : isApplying ? '입장 신청 완료' : row.cta}
                     </button>
                   )
                 )}

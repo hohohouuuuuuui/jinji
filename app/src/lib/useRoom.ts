@@ -28,7 +28,7 @@ interface UseRoomResult {
   isTeamMember2: boolean;
   messages: MessageRow[];
   error: string | null;
-  join: (topicId: string, topicTitle: string, vsAI?: boolean, skipBriefing?: boolean) => Promise<void>;
+  join: (topicId: string, topicTitle: string, vsAI?: boolean, skipBriefing?: boolean, kind?: RoomKind) => Promise<void>;
   createCustomRoom: (topicTitle: string, rules: CreateRoomRules, kind: RoomKind) => Promise<string | null>;
   rejoinAsHost: (topicId: string) => Promise<'waiting' | 'active' | null>;
   joinTeamSecondSeat: (topicId: string, side: Seat) => Promise<boolean>;
@@ -172,7 +172,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
   }, []);
 
   const join = useCallback(
-    async (topicId: string, topicTitle: string, vsAI = false, skipBriefing = false) => {
+    async (topicId: string, topicTitle: string, vsAI = false, skipBriefing = false, kind: RoomKind = 'chat') => {
       if (!nickname) return;
       setIsTeamMember2(false);
       setPhase('matching');
@@ -240,7 +240,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
 
         const { data: created, error: createErr } = await supabase
           .from('rooms')
-          .insert({ topic_id: topicId, topic_title: topicTitle, seat_a: nickname, status: 'waiting' })
+          .insert({ topic_id: topicId, topic_title: topicTitle, seat_a: nickname, status: 'waiting', kind })
           .select()
           .single();
 
