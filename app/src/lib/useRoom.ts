@@ -62,7 +62,12 @@ async function callApi<T>(path: string, body: unknown): Promise<T> {
 async function writeParticipationLog(room: RoomRow, mySeat: Seat, nickname: string, messages: MessageRow[]) {
   // seat만으로 거르면 2:2 토론방에서 같은 팀 2명의 발언이 섞인다 — sender(닉네임)로
   // 걸러야 내 발언만 정확히 모인다.
-  const myMessageTexts = messages.filter((m) => m.sender === nickname).map((m) => m.text);
+  // kind==='chat'만 실제 발언이다 — 방장이 "종료"를 누르면 시스템 메시지
+  // ("방장이 토론을 종료했습니다.")가 sender: nickname으로 들어가는데, 이건
+  // 시스템이 남긴 안내지 방장의 발언이 아니다. 이걸 걸러내지 않으면 한
+  // 마디도 안 한 방장이 "단순 방장으로 참가"했을 뿐인데도 그 안내 문구가
+  // 어록처럼 참가기록에 남는다.
+  const myMessageTexts = messages.filter((m) => m.sender === nickname && m.kind === 'chat').map((m) => m.text);
   if (myMessageTexts.length === 0) return;
 
   const changed = mySeat === 'A' ? room.changed_a : room.changed_b;
