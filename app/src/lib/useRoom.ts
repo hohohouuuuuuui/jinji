@@ -705,6 +705,11 @@ export function useRoom(nickname: string | null): UseRoomResult {
 
   const declareChange = useCallback(async () => {
     if (!room || !mySeat || !nickname || room.status === 'closed') return;
+    // 상대가 한마디도 안 했는데 생각이 바뀔 수는 없다 — 상대의 실제 발언이
+    // 최소 한 번은 있어야 선언할 수 있다.
+    const otherSeat: Seat = mySeat === 'A' ? 'B' : 'A';
+    const opponentHasSpoken = messages.some((m) => m.seat === otherSeat && m.kind === 'chat');
+    if (!opponentHasSpoken) return;
     const changedField = mySeat === 'A' ? 'changed_a' : 'changed_b';
     const changed = mySeat === 'A' ? room.changed_a : room.changed_b;
     await supabase.from('messages').insert({
@@ -718,7 +723,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
       .from('rooms')
       .update({ [changedField]: changed + 1 })
       .eq('id', room.id);
-  }, [room, mySeat, nickname]);
+  }, [room, mySeat, nickname, messages]);
 
   // 7-1 어뷰징 방지: 자기 선언만으로는 진지벌레 레벨에 반영되지 않는다.
   // 상대가 이 메시지에 동의(endorse)해야 실제 프로필의 changed_count가 오른다.
@@ -755,6 +760,8 @@ export function useRoom(nickname: string | null): UseRoomResult {
   const submitStillman = useCallback(
     async (summary: string): Promise<StillmanResult> => {
       if (!room || !mySeat || !nickname || room.status === 'closed') return { good: false, feedback: '' };
+      // 스틸맨은 상대 차례일 때만(내 차례엔 발언에 집중해야 하니) 쓸 수 있다.
+      if (room.turn === mySeat) return { good: false, feedback: '' };
       const opponentSeat: Seat = mySeat === 'A' ? 'B' : 'A';
       const opponentText = messages
         .filter((m) => m.seat === opponentSeat)

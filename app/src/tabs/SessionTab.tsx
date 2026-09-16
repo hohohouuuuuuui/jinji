@@ -85,6 +85,13 @@ export function SessionTab({
   otherMuted,
 }: SessionTabProps) {
   const canType = !closed && !muted && (isTeamMember2 ? handLeft > 0 : isMyTurn);
+  // 생각이 바뀜: 상대가 한마디도 안 했는데 내 생각이 바뀔 수는 없으니,
+  // 상대의 실제 발언이 최소 한 번은 있어야 쓸 수 있다.
+  const opponentHasSpoken = msgs.some((m) => m.who === 'other' && m.kind === 'chat');
+  const canDeclareChange = !closed && opponentHasSpoken;
+  // 스틸맨: 상대 주장을 요약하는 기능이라 내 차례(내가 말할 시간)가 아니라
+  // 상대 차례일 때만 쓴다 — 세션이 끝났으면(상대가 "종료"를 선언했으면) 당연히 못 쓴다.
+  const canStillman = !closed && !isMyTurn;
   const draftRef = useRef<HTMLTextAreaElement | null>(null);
   useEffect(() => {
     const el = draftRef.current;
@@ -343,10 +350,10 @@ export function SessionTab({
           </button>
           <button
             onClick={onDeclareChange}
-            disabled={closed}
+            disabled={!canDeclareChange}
             style={{
-              cursor: closed ? 'not-allowed' : 'pointer',
-              opacity: closed ? 0.5 : 1,
+              cursor: canDeclareChange ? 'pointer' : 'not-allowed',
+              opacity: canDeclareChange ? 1 : 0.5,
               flex: 1,
               background: '#FBDFEC',
               border: 'none',
@@ -361,10 +368,10 @@ export function SessionTab({
           </button>
           <button
             onClick={onOpenStillman}
-            disabled={closed}
+            disabled={!canStillman}
             style={{
-              cursor: closed ? 'not-allowed' : 'pointer',
-              opacity: closed ? 0.5 : 1,
+              cursor: canStillman ? 'pointer' : 'not-allowed',
+              opacity: canStillman ? 1 : 0.5,
               background: '#F3F1F5',
               border: 'none',
               borderRadius: 999,
