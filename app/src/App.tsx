@@ -74,6 +74,11 @@ export default function App() {
   const [joiningTopicId, setJoiningTopicId] = useState<string | null>(null);
   const [createRoomOpen, setCreateRoomOpen] = useState(false);
   const [creatingRoom, setCreatingRoom] = useState(false);
+  // roomApi(useRoom 훅)는 시간표 매칭(join)과 방 만들기(createCustomRoom) 양쪽에서
+  // 공유한다 — 방 만들기가 실패했을 때 그 에러를 시간표 매칭 실패로 착각해 엉뚱한
+  // 방(1번/2번 등)에 "매칭에 실패했어요" 문구가 뜨는 걸 막으려고, 방금 에러를
+  // 일으킨 게 어느 쪽 동작이었는지 따로 기록해둔다.
+  const [errorSource, setErrorSource] = useState<'match' | 'create' | null>(null);
   const [spectateTopicId, setSpectateTopicId] = useState<string | null>(null);
   const [changeContext, setChangeContext] = useState<'main' | 'spar'>('main');
 
@@ -186,6 +191,7 @@ export default function App() {
       return;
     }
     setJoiningTopicId(topicId);
+    setErrorSource('match');
     await roomApi.join(topicId, topicTitle);
     refetchCustomRooms();
   }
@@ -200,6 +206,7 @@ export default function App() {
 
   async function handleCreateRoom(topicTitle: string, rules: CreateRoomRules, kind: RoomKind) {
     setCreatingRoom(true);
+    setErrorSource('create');
     const topicId = await roomApi.createCustomRoom(topicTitle, rules, kind);
     setCreatingRoom(false);
     if (topicId) {
@@ -454,7 +461,7 @@ export default function App() {
                 changedCount={changedCount}
                 nickname={nickname}
                 matchingTopicId={joiningTopicId}
-                matchError={phase === 'error' ? roomApi.error : null}
+                matchError={phase === 'error' && errorSource === 'match' ? roomApi.error : null}
                 onEnterRoom={handleEnterRoom}
                 onCancelApply={handleCancelApply}
                 onOpenCreateRoom={() => setCreateRoomOpen(true)}
@@ -590,6 +597,7 @@ export default function App() {
             onClose={() => setCreateRoomOpen(false)}
             onCreate={handleCreateRoom}
             creating={creatingRoom}
+            error={phase === 'error' && errorSource === 'create' ? roomApi.error : null}
           />
 
           <BriefingModal

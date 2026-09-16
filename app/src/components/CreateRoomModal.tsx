@@ -7,6 +7,7 @@ interface CreateRoomModalProps {
   onClose: () => void;
   onCreate: (topicTitle: string, rules: CreateRoomRules, kind: RoomKind) => void;
   creating: boolean;
+  error?: string | null;
 }
 
 const DURATION_OPTIONS = [30, 60, 90, 120];
@@ -17,7 +18,7 @@ const KIND_OPTIONS: { value: RoomKind; label: string; note: string }[] = [
   { value: 'clash', label: '격돌', note: '관전 투표' },
 ];
 
-export function CreateRoomModal({ open, onClose, onCreate, creating }: CreateRoomModalProps) {
+export function CreateRoomModal({ open, onClose, onCreate, creating, error }: CreateRoomModalProps) {
   const [topic, setTopic] = useState('');
   const [kind, setKind] = useState<RoomKind>('chat');
   const [allowProfanity, setAllowProfanity] = useState(false);
@@ -195,6 +196,12 @@ export function CreateRoomModal({ open, onClose, onCreate, creating }: CreateRoo
             />
           </button>
         </div>
+
+        {error && (
+          <div style={{ marginTop: 16, background: '#FDECEC', borderRadius: 14, padding: '12px 14px', fontSize: 12, lineHeight: 1.55, color: '#c0392b', fontWeight: 500 }}>
+            방을 만들지 못했어요: {error}
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 8, marginTop: 22 }}>
           <button

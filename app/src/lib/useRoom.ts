@@ -55,6 +55,18 @@ async function callApi<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// Supabase가 던지는 PostgrestError는 Error를 상속하지 않는 평범한 객체라
+// `err instanceof Error`가 항상 false다 — 그걸 몰랐던 `String(err)` 폴백은
+// "[object Object]" 같은 읽을 수 없는 문구를 화면에 그대로 띄웠다.
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === 'object' && 'message' in err) {
+    const msg = (err as { message?: unknown }).message;
+    if (typeof msg === 'string' && msg) return msg;
+  }
+  return String(err);
+}
+
 // finishAndLog()(참가자)와 endSessionAsHost()(방장) 둘 다 "내 참여를 기록으로
 // 남긴다"는 동작은 똑같다 — 방장도 세션을 끝내는 순간이 곧 자신의 참가 완료
 // 시점이므로 참가기록에 남아야 한다. 단, 실제로 발언을 하나도 안 남겼다면
@@ -249,7 +261,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
         subscribe(created.id);
       } catch (err) {
         console.error('join failed', err);
-        setError(err instanceof Error ? err.message : String(err));
+        setError(errorMessage(err));
         setPhase('error');
       }
     },
@@ -302,7 +314,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
         return topicId;
       } catch (err) {
         console.error('createCustomRoom failed', err);
-        setError(err instanceof Error ? err.message : String(err));
+        setError(errorMessage(err));
         setPhase('error');
         return null;
       }
