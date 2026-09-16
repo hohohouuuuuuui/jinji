@@ -57,8 +57,14 @@ async function callApi<T>(path: string, body: unknown): Promise<T> {
 
 // finishAndLog()(참가자)와 endSessionAsHost()(방장) 둘 다 "내 참여를 기록으로
 // 남긴다"는 동작은 똑같다 — 방장도 세션을 끝내는 순간이 곧 자신의 참가 완료
-// 시점이므로 참가기록에 남아야 한다.
+// 시점이므로 참가기록에 남아야 한다. 단, 실제로 발언을 하나도 안 남겼다면
+// (예: 방장이 아무 말 없이 바로 종료) 참가기록 자체를 만들지 않는다.
 async function writeParticipationLog(room: RoomRow, mySeat: Seat, nickname: string, messages: MessageRow[]) {
+  // seat만으로 거르면 2:2 토론방에서 같은 팀 2명의 발언이 섞인다 — sender(닉네임)로
+  // 걸러야 내 발언만 정확히 모인다.
+  const myMessageTexts = messages.filter((m) => m.sender === nickname).map((m) => m.text);
+  if (myMessageTexts.length === 0) return;
+
   const changed = mySeat === 'A' ? room.changed_a : room.changed_b;
   const receivedAcks = ACK_LIMIT - (mySeat === 'A' ? room.acks_left_b : room.acks_left_a);
 
@@ -77,13 +83,7 @@ async function writeParticipationLog(room: RoomRow, mySeat: Seat, nickname: stri
     badges.push({ label: '참가 완료', bg: '#F3F1F5', color: '#4a4750' });
   }
 
-  // seat만으로 거르면 2:2 토론방에서 같은 팀 2명의 발언이 섞인다 — sender(닉네임)로
-  // 걸러야 내 발언만 정확히 모인다.
-  const myMessageTexts = messages.filter((m) => m.sender === nickname).map((m) => m.text);
-
-  let quote = myMessageTexts.length
-    ? `"${myMessageTexts[myMessageTexts.length - 1]}"`
-    : `"${room.topic_title}"에 참가했다.`;
+  let quote = `"${myMessageTexts[myMessageTexts.length - 1]}"`;
   try {
     const summarized = await callApi<{ quote: string }>('/api/summarize-quote', {
       topic: room.topic_title,
