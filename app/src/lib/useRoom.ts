@@ -31,6 +31,7 @@ interface UseRoomResult {
   join: (topicId: string, topicTitle: string, vsAI?: boolean, skipBriefing?: boolean, kind?: RoomKind) => Promise<void>;
   createCustomRoom: (topicTitle: string, rules: CreateRoomRules, kind: RoomKind) => Promise<string | null>;
   rejoinAsHost: (topicId: string) => Promise<'waiting' | 'active' | null>;
+  recoverMyRoom: () => Promise<'waiting' | 'active' | null>;
   joinTeamSecondSeat: (topicId: string, side: Seat) => Promise<boolean>;
   endSessionAsHost: () => Promise<void>;
   leave: () => void;
@@ -358,6 +359,45 @@ export function useRoom(nickname: string | null): UseRoomResult {
     },
     [nickname, subscribe],
   );
+
+  // rejoinAsHost는 방장(seat_a)만 찾는다 — 새로고침 등으로 로컬 상태를
+  // 잃었을 때 참가자(seat_b)나 2번째 팀원으로 들어가 있던 사람은 그걸로
+  // 못 찾아서 "참여 중인 방" 목록에서 통째로 사라져 보였다. topic_id도
+  // 몰라도(어느 방인지 기억 못 해도) 찾을 수 있게 전체 열린 방에서
+  // 내 닉네임이 어느 자리든 있는지 뒤진다. 리허설(vs_ai)은 제외.
+  const recoverMyRoom = useCallback(async (): Promise<'waiting' | 'active' | null> => {
+    if (!nickname) return null;
+    const { data } = await supabase
+      .from('rooms')
+      .select('*')
+      .in('status', ['waiting', 'active'])
+      .eq('vs_ai', false)
+      .order('created_at', { ascending: false });
+
+    const mine = ((data as RoomRow[] | null) ?? []).find(
+      (r) => r.seat_a === nickname || r.seat_b === nickname || r.team_a_member2 === nickname || r.team_b_member2 === nickname,
+    );
+    if (!mine) return null;
+
+    const onSeatA = mine.seat_a === nickname || mine.team_a_member2 === nickname;
+    setRoom(mine);
+    setMySeat(onSeatA ? 'A' : 'B');
+    setIsTeamMember2(mine.team_a_member2 === nickname || mine.team_b_member2 === nickname);
+    setPhase(mine.status === 'active' ? 'active' : 'waiting');
+    subscribe(mine.id);
+
+    if (mine.status === 'active') {
+      const { data: existingMsgs } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('room_id', mine.id)
+        .order('created_at', { ascending: true });
+      setMessages((existingMsgs as MessageRow[]) ?? []);
+      return 'active';
+    }
+    setMessages([]);
+    return 'waiting';
+  }, [nickname, subscribe]);
 
   // 2:2 토론방의 2번째 팀원으로 합류한다 — 대표 발언자(seat_a/seat_b)는
   // 그대로 두고, team_a_member2/team_b_member2 칸에 내 닉네임만 채운다.
@@ -725,6 +765,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
     join,
     createCustomRoom,
     rejoinAsHost,
+    recoverMyRoom,
     joinTeamSecondSeat,
     endSessionAsHost,
     leave,

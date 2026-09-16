@@ -102,6 +102,15 @@ export default function App() {
   const [customRooms, refetchCustomRooms] = useCustomRooms();
   const clashVotes = useVotes(room?.kind === 'clash' ? room.id : null, nickname);
 
+  // 새로고침 등으로 방 안에 있던 걸 잊어버린 채 앱이 새로 켜질 수 있다 —
+  // 내가 방장이든 참가자(2번째 팀원 포함)든 상관없이, 아직 열려있는 방에
+  // 내 닉네임이 자리 잡고 있으면 자동으로 다시 붙어서 "참여 중인 방"
+  // 목록에서 사라지지 않게 한다.
+  useEffect(() => {
+    if (nickname) roomApi.recoverMyRoom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nickname]);
+
   const sparRoomApi = useRoom(nickname);
   const { changedCount, listenedCount, briefedCount, stillmanCount, bumpListened, bumpBriefed, bumpStillman } =
     useProfile(nickname);
