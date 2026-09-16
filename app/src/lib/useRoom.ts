@@ -30,8 +30,8 @@ interface UseRoomResult {
   error: string | null;
   join: (topicId: string, topicTitle: string, vsAI?: boolean, skipBriefing?: boolean, kind?: RoomKind) => Promise<void>;
   createCustomRoom: (topicTitle: string, rules: CreateRoomRules, kind: RoomKind) => Promise<string | null>;
-  rejoin: (topicId: string) => Promise<'waiting' | 'active' | null>;
-  recoverMyRoom: () => Promise<'waiting' | 'active' | null>;
+  rejoin: (topicId: string) => Promise<'waiting' | 'active' | 'closed' | null>;
+  recoverMyRoom: () => Promise<'waiting' | 'active' | 'closed' | null>;
   joinTeamSecondSeat: (topicId: string, side: Seat) => Promise<boolean>;
   endSessionAsHost: () => Promise<void>;
   leave: () => void;
@@ -129,6 +129,13 @@ export function useRoom(nickname: string | null): UseRoomResult {
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const cancelledRef = useRef(false);
+  // 방장은 "종료"를 누르는 순간 자기 참가기록을 남기지만, 참가자는 그런
+  // 전용 버튼이 없다 — "나가기 · 참가기록 남기기"를 직접 눌러야만 기록이
+  // 남다 보니, 방장이 먼저 종료해버리면 참가자는 누르는 걸 잊고 그냥
+  // 다른 탭으로 넘어가서 기록이 안 남는 경우가 많았다. 방 id별로 한 번만
+  // 기록하도록 추적해서, 아래에서 방이 닫히는 순간 참가자도 자동으로
+  // 기록되게 한다(수동으로 "나가기"를 눌러도 중복 기록되지 않게).
+  const loggedRoomIdsRef = useRef<Set<string>>(new Set());
 
   const subscribe = useCallback((roomId: string) => {
     channelRef.current?.unsubscribe();
@@ -327,40 +334,47 @@ export function useRoom(nickname: string | null): UseRoomResult {
   // 참가자(2번째 팀원 포함)든 내 닉네임이 있는 자리를 찾아 그쪽으로 앉는다.
   // rejoin()/recoverMyRoom() 둘 다 이 로직을 공유한다.
   const applyRoomRow = useCallback(
-    async (row: RoomRow): Promise<'waiting' | 'active'> => {
+    async (row: RoomRow): Promise<'waiting' | 'active' | 'closed'> => {
+      // 대화가 이미 있었던 방(진행 중이든, 방금 닫혔든)은 메시지 기록을
+      // 먼저 다 불러온 다음에 room/messages를 한꺼번에 반영한다 — room만
+      // 먼저 반영하고 messages는 await 끝나고 나중에 반영하면, 그 사이
+      // "방은 closed인데 messages는 아직 비어있는" 렌더가 한 번 끼어서
+      // (아래 참가기록 자동 남기기 useEffect가 그 타이밍에 걸리면) 발언을
+      // 실제로 했는데도 빈 messages로 판정해 참가기록을 놓치는 버그가 있었다.
+      let msgs: MessageRow[] = [];
+      if (row.status !== 'waiting') {
+        const { data: existingMsgs } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('room_id', row.id)
+          .order('created_at', { ascending: true });
+        msgs = (existingMsgs as MessageRow[]) ?? [];
+      }
+
       const onSeatA = row.seat_a === nickname || row.team_a_member2 === nickname;
       setRoom(row);
       setMySeat(onSeatA ? 'A' : 'B');
       setIsTeamMember2(row.team_a_member2 === nickname || row.team_b_member2 === nickname);
       setPhase(row.status === 'active' ? 'active' : 'waiting');
       subscribe(row.id);
-
-      if (row.status === 'active') {
-        const { data: existingMsgs } = await supabase
-          .from('messages')
-          .select('*')
-          .eq('room_id', row.id)
-          .order('created_at', { ascending: true });
-        setMessages((existingMsgs as MessageRow[]) ?? []);
-        return 'active';
-      }
-      setMessages([]);
-      return 'waiting';
+      setMessages(msgs);
+      return row.status;
     },
     [nickname, subscribe],
   );
 
   // 특정 방(topic_id)에 다시 붙는다 — 새로고침 등으로 로컬 상태를 잃었거나,
   // 지금 붙어있는 방과 다른 내 방으로 전환해 들어갈 때 쓴다. 방장/참가자
-  // 상관없이 내 닉네임이 들어있는 자리를 찾는다.
+  // 상관없이 내 닉네임이 들어있는 자리를 찾는다. 방금 닫힌 방도 찾을 수
+  // 있어야 참가자가 뒤늦게(realtime을 놓치고) 다시 들어와도 참가기록이
+  // 남는다.
   const rejoin = useCallback(
-    async (topicId: string): Promise<'waiting' | 'active' | null> => {
+    async (topicId: string): Promise<'waiting' | 'active' | 'closed' | null> => {
       if (!nickname) return null;
       const { data: existing } = await supabase
         .from('rooms')
         .select('*')
         .eq('topic_id', topicId)
-        .in('status', ['waiting', 'active'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -379,7 +393,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
   // 방에서 내 닉네임이 어느 자리든 있는지 뒤진다. 새로고침 등으로 로컬
   // 상태를 완전히 잃었을 때 앱이 켜지자마자 한 번 불러서 쓴다. 리허설
   // (vs_ai)은 제외.
-  const recoverMyRoom = useCallback(async (): Promise<'waiting' | 'active' | null> => {
+  const recoverMyRoom = useCallback(async (): Promise<'waiting' | 'active' | 'closed' | null> => {
     if (!nickname) return null;
     const { data } = await supabase
       .from('rooms')
@@ -451,7 +465,8 @@ export function useRoom(nickname: string | null): UseRoomResult {
       kind: 'session_closed',
     });
     await supabase.from('rooms').update({ status: 'closed' }).eq('id', room.id);
-    if (mySeat) {
+    if (mySeat && !loggedRoomIdsRef.current.has(room.id)) {
+      loggedRoomIdsRef.current.add(room.id);
       await writeParticipationLog(room, mySeat, nickname, messages);
     }
     // realtime 왕복을 기다리지 않고 바로 반영한다 — 안 그러면 방장 화면이
@@ -459,6 +474,19 @@ export function useRoom(nickname: string | null): UseRoomResult {
     // 누를 수 있고, 그러면 참가기록이 중복으로 쌓인다.
     setRoom((prev) => (prev && prev.id === room.id ? { ...prev, status: 'closed' } : prev));
   }, [room, nickname, mySeat, messages]);
+
+  // 방장이 종료하거나 상대가 먼저 나가서 방이 닫히면, 참가자도 "나가기"를
+  // 따로 누르지 않아도 자동으로 참가기록을 남긴다 — 예전에는 참가자가 그
+  // 버튼을 직접 눌러야만 기록됐는데, 많은 참가자가 그냥 다른 탭으로
+  // 넘어가버려서 방장만 기록이 남고 참가자는 기록이 안 남는 문제가 있었다.
+  useEffect(() => {
+    if (!room || !mySeat || !nickname) return;
+    if (room.status !== 'closed') return;
+    if (room.host_nickname === nickname) return; // 방장은 endSessionAsHost에서 이미 기록함.
+    if (loggedRoomIdsRef.current.has(room.id)) return;
+    loggedRoomIdsRef.current.add(room.id);
+    writeParticipationLog(room, mySeat, nickname, messages);
+  }, [room, mySeat, nickname, messages]);
 
   // When the waiting side's room flips to 'active' via realtime, move phase forward.
   useEffect(() => {
@@ -637,7 +665,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
 
   const ack = useCallback(
     async (messageId: number) => {
-      if (!room || !mySeat) return;
+      if (!room || !mySeat || room.status === 'closed') return;
       const leftField = mySeat === 'A' ? 'acks_left_a' : 'acks_left_b';
       const left = mySeat === 'A' ? room.acks_left_a : room.acks_left_b;
       if (left <= 0) return;
@@ -651,7 +679,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
   );
 
   const raiseHand = useCallback(async () => {
-    if (!room || !mySeat) return;
+    if (!room || !mySeat || room.status === 'closed') return;
     const leftField = mySeat === 'A' ? 'hand_left_a' : 'hand_left_b';
     const left = mySeat === 'A' ? room.hand_left_a : room.hand_left_b;
     if (left <= 0) return;
@@ -662,7 +690,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
   }, [room, mySeat]);
 
   const declareChange = useCallback(async () => {
-    if (!room || !mySeat || !nickname) return;
+    if (!room || !mySeat || !nickname || room.status === 'closed') return;
     const changedField = mySeat === 'A' ? 'changed_a' : 'changed_b';
     const changed = mySeat === 'A' ? room.changed_a : room.changed_b;
     await supabase.from('messages').insert({
@@ -680,15 +708,19 @@ export function useRoom(nickname: string | null): UseRoomResult {
 
   // 7-1 어뷰징 방지: 자기 선언만으로는 진지벌레 레벨에 반영되지 않는다.
   // 상대가 이 메시지에 동의(endorse)해야 실제 프로필의 changed_count가 오른다.
-  const endorseMindChange = useCallback(async (messageId: number, declarerNickname: string) => {
-    await supabase.from('messages').update({ acked: true }).eq('id', messageId);
-    await endorseChangeFor(declarerNickname);
-  }, []);
+  const endorseMindChange = useCallback(
+    async (messageId: number, declarerNickname: string) => {
+      if (room?.status === 'closed') return;
+      await supabase.from('messages').update({ acked: true }).eq('id', messageId);
+      await endorseChangeFor(declarerNickname);
+    },
+    [room],
+  );
 
   // 6장 오탐 대비: 세션당 1회, 내가 받은 경고를 스스로 이의제기해 무효화할 수 있다.
   const dispute = useCallback(
     async (messageId: number) => {
-      if (!room || !mySeat) return;
+      if (!room || !mySeat || room.status === 'closed') return;
       const usedField = mySeat === 'A' ? 'dispute_used_a' : 'dispute_used_b';
       const used = mySeat === 'A' ? room.dispute_used_a : room.dispute_used_b;
       if (used) return;
@@ -708,7 +740,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
   // 7장 스틸맨 배지: 상대의 최근 발언을 얼마나 정확하게 요약했는지 AI가 판정한다.
   const submitStillman = useCallback(
     async (summary: string): Promise<StillmanResult> => {
-      if (!room || !mySeat || !nickname) return { good: false, feedback: '' };
+      if (!room || !mySeat || !nickname || room.status === 'closed') return { good: false, feedback: '' };
       const opponentSeat: Seat = mySeat === 'A' ? 'B' : 'A';
       const opponentText = messages
         .filter((m) => m.seat === opponentSeat)
@@ -747,7 +779,11 @@ export function useRoom(nickname: string | null): UseRoomResult {
       leave();
       return;
     }
-    await writeParticipationLog(room, mySeat, nickname, messages);
+    // 방이 이미 닫혀서 자동으로(위 useEffect) 기록됐다면 여기서 또 남기지 않는다.
+    if (!loggedRoomIdsRef.current.has(room.id)) {
+      loggedRoomIdsRef.current.add(room.id);
+      await writeParticipationLog(room, mySeat, nickname, messages);
+    }
     leave();
   }, [room, mySeat, nickname, messages, leave]);
 

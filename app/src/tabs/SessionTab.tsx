@@ -242,7 +242,7 @@ export function SessionTab({
                 <div style={{ maxWidth: '84%', background: '#F3F1F5', borderRadius: 22, padding: '13px 17px', fontSize: 14, lineHeight: 1.6, color: '#17171a' }}>
                   {m.text}
                 </div>
-                {!m.acked && (
+                {!m.acked && !closed && (
                   <button
                     onClick={() => onAck(m.id)}
                     style={{ cursor: 'pointer', background: '#fff', border: '2px solid #17171a', borderRadius: 999, padding: '8px 15px', fontSize: 12, fontWeight: 700, color: '#17171a' }}
@@ -266,7 +266,7 @@ export function SessionTab({
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', paddingRight: 6 }}>
                   {m.done && <div style={{ fontSize: 10, color: '#4a4750' }}>발언 종료</div>}
-                  {m.flagged && !m.disputed && (
+                  {m.flagged && !m.disputed && !closed && (
                     <button
                       onClick={() => onDispute(m.id)}
                       style={{ cursor: 'pointer', background: 'none', border: 'none', fontSize: 10, fontWeight: 700, color: '#c0392b', padding: 0 }}
@@ -285,7 +285,7 @@ export function SessionTab({
                 <div style={{ background: '#17171a', borderRadius: 999, padding: '9px 18px', fontSize: 11.5, fontWeight: 700, color: '#F7B3D4' }}>
                   {m.text}
                 </div>
-                {showEndorse && m.canEndorse && (
+                {showEndorse && m.canEndorse && !closed && (
                   <button
                     onClick={() => onEndorseChange?.(m.id)}
                     style={{ cursor: 'pointer', background: '#FBDFEC', border: 'none', borderRadius: 999, padding: '7px 16px', fontSize: 11, fontWeight: 700, color: '#8d3f70' }}
@@ -326,19 +326,53 @@ export function SessionTab({
         <div style={{ display: 'flex', gap: 7, marginBottom: 9 }}>
           <button
             onClick={onRaiseHand}
-            style={{ cursor: 'pointer', background: '#F3F1F5', border: 'none', borderRadius: 999, padding: '13px 14px', fontSize: 12, fontWeight: 700, color: '#17171a' }}
+            disabled={closed}
+            style={{
+              cursor: closed ? 'not-allowed' : 'pointer',
+              opacity: closed ? 0.5 : 1,
+              background: '#F3F1F5',
+              border: 'none',
+              borderRadius: 999,
+              padding: '13px 14px',
+              fontSize: 12,
+              fontWeight: 700,
+              color: '#17171a',
+            }}
           >
             ✋ {handLeft}/{handLimit}
           </button>
           <button
             onClick={onDeclareChange}
-            style={{ cursor: 'pointer', flex: 1, background: '#FBDFEC', border: 'none', borderRadius: 999, padding: '13px 14px', fontSize: 12, fontWeight: 700, color: '#8d3f70' }}
+            disabled={closed}
+            style={{
+              cursor: closed ? 'not-allowed' : 'pointer',
+              opacity: closed ? 0.5 : 1,
+              flex: 1,
+              background: '#FBDFEC',
+              border: 'none',
+              borderRadius: 999,
+              padding: '13px 14px',
+              fontSize: 12,
+              fontWeight: 700,
+              color: '#8d3f70',
+            }}
           >
             🔁 생각이 바뀜
           </button>
           <button
             onClick={onOpenStillman}
-            style={{ cursor: 'pointer', background: '#F3F1F5', border: 'none', borderRadius: 999, padding: '13px 14px', fontSize: 12, fontWeight: 700, color: '#17171a' }}
+            disabled={closed}
+            style={{
+              cursor: closed ? 'not-allowed' : 'pointer',
+              opacity: closed ? 0.5 : 1,
+              background: '#F3F1F5',
+              border: 'none',
+              borderRadius: 999,
+              padding: '13px 14px',
+              fontSize: 12,
+              fontWeight: 700,
+              color: '#17171a',
+            }}
           >
             🫱 스틸맨
           </button>

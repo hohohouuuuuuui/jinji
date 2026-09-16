@@ -186,19 +186,12 @@ export default function App() {
   }
 
   // 내가 만들었거나(방장) 이미 들어가 있는 방으로 들어간다 — 상대가 아직
-  // 안 왔어도(대기 중이어도) 바로 들어가서 기다릴 수 있다. 이미 그 방이
-  // 로컬에 붙어있으면 바로 화면만 전환하고, 아니면(다른 방을 보고 있었거나
-  // 새로고침으로 로컬 상태를 잃었으면) Supabase에서 그 방을 다시 불러온다.
+  // 안 왔어도(대기 중이어도) 바로 들어가서 기다릴 수 있다. 매번 Supabase에서
+  // 현재 상태를 다시 불러온다 — 로컬 상태를 그대로 믿으면(놓친 realtime
+  // 이벤트 때문에) 이미 상대가 들어왔거나 방장이 종료했는데도 옛 화면이
+  // 보이는 문제가 반복해서 나왔다(대기중인데 실제론 진행중, 진행중인데
+  // 실제론 종료됨). 방 하나 조회라 가벼우니 정확성을 우선한다.
   async function handleEnterMyRoom(topicId: string) {
-    // 로컬 room이 이미 'active'라면 믿을 수 있다(한 번 매칭되면 다시 대기
-    // 상태로 돌아가지 않는다). 반대로 로컬이 'waiting'이면 놓친 realtime
-    // 이벤트 때문에 실제로는 이미 상대가 들어와 있을 수 있으니(위의 방장
-    // 재입장 버그와 같은 종류) 매번 Supabase에서 다시 확인한다.
-    if (room && mySeat && room.topic_id === topicId && room.status === 'active') {
-      setTab('session');
-      setSessionView('chat');
-      return;
-    }
     const status = await roomApi.rejoin(topicId);
     if (status) {
       setTab('session');
