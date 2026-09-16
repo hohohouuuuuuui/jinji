@@ -389,10 +389,9 @@ export default function App() {
     showToast('good', '발언권 요청 · 다음 턴에 앞당겨집니다');
   }
 
-  async function handleSparLeave() {
-    // 리허설도 "참가"이므로 실제 세션과 동일하게 참가기록에 어록을 남긴다.
-    await sparRoomApi.finishAndLog();
-    await bumpListened();
+  function handleSparLeave() {
+    // 리허설은 연습일 뿐 — 참가기록에 어록을 남기지 않는다.
+    sparRoomApi.leave();
     setSparTopicInput('');
   }
 
