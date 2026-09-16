@@ -481,7 +481,7 @@ export function HomeTab({
                 )}
               </div>
               {!locked && (
-                <div style={{ flex: 'none', textAlign: 'right' }}>
+                <div style={{ flex: 'none', minWidth: 38, textAlign: 'right' }}>
                   <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 17, color: isFull ? '#b0568f' : '#17171a' }}>
                     {row.topicId ? (isFull ? '마감' : String(seatCount)) : ''}
                   </div>
