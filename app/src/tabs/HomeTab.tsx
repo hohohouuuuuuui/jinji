@@ -95,10 +95,9 @@ export function HomeTab({
 
   const customDisplayRows: DisplayRow[] = customRooms.map((r) => {
     const kindTag = { chat: '1:1 대화', debate: '2:2 토론', clash: '1:1 격돌' }[r.kind] ?? '1:1 대화';
-    // 진행 중인 격돌방은 자리가 다 찼어도 관전으로 들어갈 수 있고, 진행 중인
-    // 2:2 토론방은 팀 자리가 하나라도 비어있으면 여전히 들어갈 수 있다.
-    const neverFull =
-      r.status === 'active' && (r.kind === 'clash' || (r.kind === 'debate' && (!r.team_a_member2 || !r.team_b_member2)));
+    // 진행 중인 2:2 토론방은 팀 자리가 하나라도 비어있으면 여전히 들어갈 수 있다.
+    // 격돌방은 자리가 다 차면(관전 입장은 이 목록에서 빼기로 함) 그냥 마감이다.
+    const neverFull = r.status === 'active' && r.kind === 'debate' && (!r.team_a_member2 || !r.team_b_member2);
     return {
       key: `custom-${r.id}`,
       roomBadge: '👑',
@@ -112,7 +111,7 @@ export function HomeTab({
         { label: `방장 ${r.host_nickname}`, bg: '#F3F1F5', color: '#4a4750' },
       ],
       topicId: r.topic_id,
-      cta: r.kind === 'clash' && r.status === 'active' ? '관전하기' : r.kind === 'debate' && r.status === 'active' ? '팀 합류하기' : '참여하기',
+      cta: r.kind === 'debate' && r.status === 'active' ? '팀 합류하기' : '참여하기',
       seatsBottom: '/2명',
       isMine:
         r.host_nickname === nickname ||
@@ -142,8 +141,6 @@ export function HomeTab({
     featured: row.featured,
     lockedNote: row.lockedNote,
     seatsBottom: row.seats.bottom,
-    // 자동생성 격돌방(2/3번)은 자리가 다 찼어도 마감이 아니라 관전으로 들어갈 수 있다.
-    neverFull: row.kind === 'clash',
     kind: row.kind,
   }));
 
@@ -327,7 +324,6 @@ export function HomeTab({
           const seatCount = row.seatCount ?? (row.topicId ? seatCounts[row.topicId] ?? 0 : 0);
           const capacity = parseCapacity(row.seatsBottom);
           const isFull = !row.neverFull && !isApplying && seatCount >= capacity;
-          const spectateReady = row.kind === 'clash' && !isApplying && seatCount >= capacity;
           return (
             <div
               key={row.key}
@@ -470,7 +466,7 @@ export function HomeTab({
                         boxShadow: '0 2px 10px rgba(23,23,26,0.04)',
                       }}
                     >
-                      {spectateReady ? '관전하기' : isFull ? '마감' : isApplying ? '입장 신청 완료' : row.cta}
+                      {isFull ? '마감' : isApplying ? '입장 신청 완료' : row.cta}
                     </button>
                   )
                 )}

@@ -14,7 +14,6 @@ function isParticipant(r: CustomRoomSummary, nickname: string): boolean {
 }
 
 function customRoomCta(r: CustomRoomSummary): string {
-  if (r.kind === 'clash' && r.status === 'active') return '관전하기';
   if (r.kind === 'debate' && r.status === 'active') return '팀 합류하기';
   return '참여하기';
 }
@@ -39,16 +38,13 @@ export function SessionsListTab({ nickname, customRooms, myRoom, onEnterMyRoom, 
   const joinableSchedule = SCHEDULE.filter((row) => {
     if (row.room.locked || !row.topicId) return false;
     const count = seatCounts[row.topicId] ?? 0;
-    if (count < parseCapacity(row.seats.bottom)) return true;
-    // 자동생성 격돌방(2/3번)은 자리가 다 차도 관전하러 들어갈 수 있다.
-    return row.kind === 'clash';
+    return count < parseCapacity(row.seats.bottom);
   });
   const joinableCustom = customRooms.filter((r) => {
     if (isParticipant(r, nickname)) return false;
     if (r.status === 'waiting') return true;
     if (r.status !== 'active') return false;
-    // 진행 중인 격돌방은 관전으로, 진행 중인 2:2 토론방은 남은 팀 자리로 들어갈 수 있다.
-    if (r.kind === 'clash') return true;
+    // 진행 중인 2:2 토론방은 남은 팀 자리가 있으면 들어갈 수 있다.
     if (r.kind === 'debate') return !r.team_a_member2 || !r.team_b_member2;
     return false;
   });
@@ -133,37 +129,32 @@ export function SessionsListTab({ nickname, customRooms, myRoom, onEnterMyRoom, 
                   <span style={{ flex: 'none', fontSize: 11, fontWeight: 700, color: '#b0568f' }}>{customRoomCta(r)}</span>
                 </button>
               ))}
-              {joinableSchedule.map((row) => {
-                const count = seatCounts[row.topicId!] ?? 0;
-                const isFull = count >= parseCapacity(row.seats.bottom);
-                const cta = row.kind === 'clash' && isFull ? '관전하기' : '참여하기';
-                return (
-                  <button
-                    key={row.topicId}
-                    onClick={() => onJoinRoom(row.topicId!, row.title)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 10,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      background: '#F3F1F5',
-                      border: 'none',
-                      borderRadius: 16,
-                      padding: '13px 15px',
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#17171a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {row.room.id}번 방 · {row.title}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#78747e', marginTop: 3 }}>{row.time}</div>
+              {joinableSchedule.map((row) => (
+                <button
+                  key={row.topicId}
+                  onClick={() => onJoinRoom(row.topicId!, row.title)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    background: '#F3F1F5',
+                    border: 'none',
+                    borderRadius: 16,
+                    padding: '13px 15px',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#17171a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {row.room.id}번 방 · {row.title}
                     </div>
-                    <span style={{ flex: 'none', fontSize: 11, fontWeight: 700, color: '#b0568f' }}>{cta}</span>
-                  </button>
-                );
-              })}
+                    <div style={{ fontSize: 11, color: '#78747e', marginTop: 3 }}>{row.time}</div>
+                  </div>
+                  <span style={{ flex: 'none', fontSize: 11, fontWeight: 700, color: '#b0568f' }}>참여하기</span>
+                </button>
+              ))}
             </div>
           )}
         </div>
