@@ -1,5 +1,7 @@
 export type Seat = 'A' | 'B';
 export type RoomStatus = 'waiting' | 'active' | 'closed';
+export type RoomKind = 'chat' | 'debate' | 'clash';
+export type VoteSide = 'A' | 'B';
 
 export interface Briefing {
   terms: string[];
@@ -35,6 +37,17 @@ export interface RoomRow {
   allow_profanity: boolean;
   duration_minutes: number;
   hand_limit: number;
+  kind: RoomKind;
+  team_a_member2: string | null;
+  team_b_member2: string | null;
+  created_at: string;
+}
+
+export interface VoteRow {
+  id: number;
+  room_id: string;
+  voter_nickname: string;
+  side: VoteSide;
   created_at: string;
 }
 

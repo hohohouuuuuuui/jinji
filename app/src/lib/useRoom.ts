@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 import { AXIS_LABEL_KO } from './moderation';
 import { endorseChangeFor } from './useProfile';
-import type { LogBadge, MessageRow, ModerationResult, RoomRow, Seat } from './db-types';
+import type { LogBadge, MessageRow, ModerationResult, RoomKind, RoomRow, Seat } from './db-types';
 
 export type MatchPhase = 'idle' | 'matching' | 'waiting' | 'active' | 'error';
 
@@ -25,11 +25,13 @@ interface UseRoomResult {
   phase: MatchPhase;
   room: RoomRow | null;
   mySeat: Seat | null;
+  isTeamMember2: boolean;
   messages: MessageRow[];
   error: string | null;
   join: (topicId: string, topicTitle: string, vsAI?: boolean, skipBriefing?: boolean) => Promise<void>;
-  createCustomRoom: (topicTitle: string, rules: CreateRoomRules) => Promise<string | null>;
+  createCustomRoom: (topicTitle: string, rules: CreateRoomRules, kind: RoomKind) => Promise<string | null>;
   rejoinAsHost: (topicId: string) => Promise<'waiting' | 'active' | null>;
+  joinTeamSecondSeat: (topicId: string, side: Seat) => Promise<boolean>;
   endSessionAsHost: () => Promise<void>;
   leave: () => void;
   cancelJoin: () => Promise<void>;
@@ -75,7 +77,9 @@ async function writeParticipationLog(room: RoomRow, mySeat: Seat, nickname: stri
     badges.push({ label: '참가 완료', bg: '#F3F1F5', color: '#4a4750' });
   }
 
-  const myMessageTexts = messages.filter((m) => m.seat === mySeat).map((m) => m.text);
+  // seat만으로 거르면 2:2 토론방에서 같은 팀 2명의 발언이 섞인다 — sender(닉네임)로
+  // 걸러야 내 발언만 정확히 모인다.
+  const myMessageTexts = messages.filter((m) => m.sender === nickname).map((m) => m.text);
 
   let quote = myMessageTexts.length
     ? `"${myMessageTexts[myMessageTexts.length - 1]}"`
@@ -102,6 +106,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
   const [phase, setPhase] = useState<MatchPhase>('idle');
   const [room, setRoom] = useState<RoomRow | null>(null);
   const [mySeat, setMySeat] = useState<Seat | null>(null);
+  const [isTeamMember2, setIsTeamMember2] = useState(false);
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -152,6 +157,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
   const join = useCallback(
     async (topicId: string, topicTitle: string, vsAI = false, skipBriefing = false) => {
       if (!nickname) return;
+      setIsTeamMember2(false);
       setPhase('matching');
       setError(null);
       try {
@@ -249,10 +255,11 @@ export function useRoom(nickname: string | null): UseRoomResult {
   // 정해서 대기방을 만든다. 다른 사람이 기존 join()으로 이 topic_id를
   // 찾아 들어오면 자동으로 매칭된다 — 방 찾기/합류 로직은 그대로 재사용.
   const createCustomRoom = useCallback(
-    async (topicTitle: string, rules: CreateRoomRules): Promise<string | null> => {
+    async (topicTitle: string, rules: CreateRoomRules, kind: RoomKind): Promise<string | null> => {
       if (!nickname) return null;
       setPhase('matching');
       setError(null);
+      setIsTeamMember2(false);
       try {
         const topicId = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const { data: created, error: createErr } = await supabase
@@ -269,6 +276,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
             hand_limit: rules.handLimit,
             hand_left_a: rules.handLimit,
             hand_left_b: rules.handLimit,
+            kind,
           })
           .select()
           .single();
@@ -315,6 +323,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
 
       setRoom(existing as RoomRow);
       setMySeat('A');
+      setIsTeamMember2(false);
       setPhase(existing.status === 'active' ? 'active' : 'waiting');
       subscribe(existing.id);
 
@@ -329,6 +338,50 @@ export function useRoom(nickname: string | null): UseRoomResult {
       }
       setMessages([]);
       return 'waiting';
+    },
+    [nickname, subscribe],
+  );
+
+  // 2:2 토론방의 2번째 팀원으로 합류한다 — 대표 발언자(seat_a/seat_b)는
+  // 그대로 두고, team_a_member2/team_b_member2 칸에 내 닉네임만 채운다.
+  // 이미 그 팀에 2번째 팀원이 있으면 실패(false)한다.
+  const joinTeamSecondSeat = useCallback(
+    async (topicId: string, side: Seat): Promise<boolean> => {
+      if (!nickname) return false;
+      const memberField = side === 'A' ? 'team_a_member2' : 'team_b_member2';
+      const { data: target } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('topic_id', topicId)
+        .eq('kind', 'debate')
+        .in('status', ['waiting', 'active'])
+        .is(memberField, null)
+        .maybeSingle();
+
+      if (!target) return false;
+
+      const { data: updated } = await supabase
+        .from('rooms')
+        .update({ [memberField]: nickname })
+        .eq('id', target.id)
+        .is(memberField, null)
+        .select()
+        .maybeSingle();
+
+      if (!updated) return false;
+
+      setRoom(updated as RoomRow);
+      setMySeat(side);
+      setIsTeamMember2(true);
+      setPhase('active');
+      subscribe(updated.id);
+      const { data: existingMsgs } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('room_id', updated.id)
+        .order('created_at', { ascending: true });
+      setMessages((existingMsgs as MessageRow[]) ?? []);
+      return true;
     },
     [nickname, subscribe],
   );
@@ -372,6 +425,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
     channelRef.current = null;
     setRoom(null);
     setMySeat(null);
+    setIsTeamMember2(false);
     setMessages([]);
     setPhase('idle');
   }, []);
@@ -395,6 +449,13 @@ export function useRoom(nickname: string | null): UseRoomResult {
       const mutedUntil = mySeat === 'A' ? room.muted_until_a : room.muted_until_b;
       if (mutedUntil && new Date(mutedUntil).getTime() > Date.now()) return null;
 
+      // 2번째 팀원은 원래 발언 순서가 아니라 손들기 토큰을 소모해 덧붙이는
+      // 발언이다 — 남은 손들기가 없으면 보낼 수 없고, 보내도 순서(turn)는
+      // 그대로 대표 발언자 차례를 유지한다.
+      const handField = mySeat === 'A' ? 'hand_left_a' : 'hand_left_b';
+      const handLeft = mySeat === 'A' ? room.hand_left_a : room.hand_left_b;
+      if (isTeamMember2 && handLeft <= 0) return null;
+
       let moderation: ModerationResult | null = null;
       try {
         moderation = await callApi<ModerationResult>('/api/moderate', { text });
@@ -417,8 +478,15 @@ export function useRoom(nickname: string | null): UseRoomResult {
         moderation,
       });
 
-      const nextTurn: Seat = mySeat === 'A' ? 'B' : 'A';
-      await supabase.from('rooms').update({ turn: nextTurn }).eq('id', room.id);
+      if (isTeamMember2) {
+        await supabase
+          .from('rooms')
+          .update({ [handField]: handLeft - 1 })
+          .eq('id', room.id);
+      } else {
+        const nextTurn: Seat = mySeat === 'A' ? 'B' : 'A';
+        await supabase.from('rooms').update({ turn: nextTurn }).eq('id', room.id);
+      }
 
       // 6장 모더레이션 경고 처리: 1차는 비공개 토스트(App.tsx)뿐이지만,
       // 2차는 30초 발언정지, 3차는 세션 종료 — AI와 동일한 잣대를 사람에게도.
@@ -511,7 +579,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
 
       return moderation;
     },
-    [room, mySeat, nickname, messages],
+    [room, mySeat, isTeamMember2, nickname, messages],
   );
 
   const ack = useCallback(
@@ -634,11 +702,13 @@ export function useRoom(nickname: string | null): UseRoomResult {
     phase,
     room,
     mySeat,
+    isTeamMember2,
     messages,
     error,
     join,
     createCustomRoom,
     rejoinAsHost,
+    joinTeamSecondSeat,
     endSessionAsHost,
     leave,
     cancelJoin,

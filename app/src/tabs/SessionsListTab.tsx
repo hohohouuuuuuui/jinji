@@ -7,6 +7,18 @@ function parseCapacity(bottom: string): number {
   return digits ? Number(digits[0]) : Infinity;
 }
 
+const KIND_LABEL = { chat: '대화', debate: '토론', clash: '격돌' } as const;
+
+function isParticipant(r: CustomRoomSummary, nickname: string): boolean {
+  return r.host_nickname === nickname || r.seat_a === nickname || r.seat_b === nickname || r.team_a_member2 === nickname || r.team_b_member2 === nickname;
+}
+
+function customRoomCta(r: CustomRoomSummary): string {
+  if (r.kind === 'clash' && r.status === 'active') return '관전하기';
+  if (r.kind === 'debate' && r.status === 'active') return '팀 합류하기';
+  return '참여하기';
+}
+
 interface MyRoom {
   topicTitle: string;
   status: 'waiting' | 'active';
@@ -29,7 +41,15 @@ export function SessionsListTab({ nickname, customRooms, myRoom, onEnterMyRoom, 
     const count = seatCounts[row.topicId] ?? 0;
     return count < parseCapacity(row.seats.bottom);
   });
-  const joinableCustom = customRooms.filter((r) => r.status === 'waiting' && r.host_nickname !== nickname);
+  const joinableCustom = customRooms.filter((r) => {
+    if (isParticipant(r, nickname)) return false;
+    if (r.status === 'waiting') return true;
+    if (r.status !== 'active') return false;
+    // 진행 중인 격돌방은 관전으로, 진행 중인 2:2 토론방은 남은 팀 자리로 들어갈 수 있다.
+    if (r.kind === 'clash') return true;
+    if (r.kind === 'debate') return !r.team_a_member2 || !r.team_b_member2;
+    return false;
+  });
 
   return (
     <div style={{ padding: '18px 20px 24px', animation: 'jz-fade .25s ease' }}>
@@ -104,9 +124,11 @@ export function SessionsListTab({ nickname, customRooms, myRoom, onEnterMyRoom, 
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#17171a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       👑 {r.topic_title}
                     </div>
-                    <div style={{ fontSize: 11, color: '#78747e', marginTop: 3 }}>방장 {r.host_nickname} · 모집중</div>
+                    <div style={{ fontSize: 11, color: '#78747e', marginTop: 3 }}>
+                      {KIND_LABEL[r.kind]} · 방장 {r.host_nickname} · {r.status === 'active' ? '진행중' : '모집중'}
+                    </div>
                   </div>
-                  <span style={{ flex: 'none', fontSize: 11, fontWeight: 700, color: '#b0568f' }}>참여하기</span>
+                  <span style={{ flex: 'none', fontSize: 11, fontWeight: 700, color: '#b0568f' }}>{customRoomCta(r)}</span>
                 </button>
               ))}
               {joinableSchedule.map((row) => (

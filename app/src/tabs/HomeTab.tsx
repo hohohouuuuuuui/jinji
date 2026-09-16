@@ -31,6 +31,7 @@ interface DisplayRow {
   isMine?: boolean;
   seatCount?: number;
   ended?: boolean;
+  neverFull?: boolean;
 }
 
 interface HomeTabProps {
@@ -93,6 +94,11 @@ export function HomeTab({
 
   const customDisplayRows: DisplayRow[] = customRooms.map((r) => {
     const ended = r.status === 'closed';
+    const kindTag = { chat: '1:1 대화', debate: '2:2 토론', clash: '1:1 격돌' }[r.kind] ?? '1:1 대화';
+    // 진행 중인 격돌방은 자리가 다 찼어도 관전으로 들어갈 수 있고, 진행 중인
+    // 2:2 토론방은 팀 자리가 하나라도 비어있으면 여전히 들어갈 수 있다.
+    const neverFull =
+      r.status === 'active' && (r.kind === 'clash' || (r.kind === 'debate' && (!r.team_a_member2 || !r.team_b_member2)));
     return {
       key: `custom-${r.id}`,
       roomBadge: '👑',
@@ -102,15 +108,21 @@ export function HomeTab({
       status: ended ? '종료됨' : r.status === 'active' ? '진행중' : '모집중',
       title: r.topic_title,
       tags: [
-        { label: '1:1 대화', bg: '#F3F1F5', color: '#4a4750' },
+        { label: kindTag, bg: '#F3F1F5', color: '#4a4750' },
         { label: `방장 ${r.host_nickname}`, bg: '#F3F1F5', color: '#4a4750' },
       ],
       topicId: r.topic_id,
-      cta: ended ? undefined : '참여하기',
+      cta: ended ? undefined : r.kind === 'clash' && r.status === 'active' ? '관전하기' : r.kind === 'debate' && r.status === 'active' ? '팀 합류하기' : '참여하기',
       seatsBottom: '/2명',
-      isMine: r.host_nickname === nickname,
+      isMine:
+        r.host_nickname === nickname ||
+        r.seat_a === nickname ||
+        r.seat_b === nickname ||
+        r.team_a_member2 === nickname ||
+        r.team_b_member2 === nickname,
       seatCount: r.status === 'active' ? 2 : 1,
       ended,
+      neverFull,
     };
   });
 
@@ -311,7 +323,7 @@ export function HomeTab({
           const isApplying = matchingTopicId === row.topicId;
           const seatCount = row.seatCount ?? (row.topicId ? seatCounts[row.topicId] ?? 0 : 0);
           const capacity = parseCapacity(row.seatsBottom);
-          const isFull = !row.ended && !isApplying && seatCount >= capacity;
+          const isFull = !row.ended && !row.neverFull && !isApplying && seatCount >= capacity;
           return (
             <div
               key={row.key}
@@ -434,7 +446,7 @@ export function HomeTab({
                   </div>
                 ) : row.isMine ? (
                   <div style={{ marginTop: 11, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#a9a5af' }}>
-                    내가 만든 방
+                    참여 중인 방
                   </div>
                 ) : (
                   row.cta &&

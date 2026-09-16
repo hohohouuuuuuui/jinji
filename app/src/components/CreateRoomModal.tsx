@@ -1,18 +1,25 @@
 import { useState } from 'react';
 import type { CreateRoomRules } from '../lib/useRoom';
+import type { RoomKind } from '../lib/db-types';
 
 interface CreateRoomModalProps {
   open: boolean;
   onClose: () => void;
-  onCreate: (topicTitle: string, rules: CreateRoomRules) => void;
+  onCreate: (topicTitle: string, rules: CreateRoomRules, kind: RoomKind) => void;
   creating: boolean;
 }
 
 const DURATION_OPTIONS = [30, 60, 90, 120];
 const HAND_LIMIT_OPTIONS = [1, 2, 3, 5];
+const KIND_OPTIONS: { value: RoomKind; label: string; note: string }[] = [
+  { value: 'chat', label: '대화', note: '1:1' },
+  { value: 'debate', label: '토론', note: '2:2 팀' },
+  { value: 'clash', label: '격돌', note: '관전 투표' },
+];
 
 export function CreateRoomModal({ open, onClose, onCreate, creating }: CreateRoomModalProps) {
   const [topic, setTopic] = useState('');
+  const [kind, setKind] = useState<RoomKind>('chat');
   const [allowProfanity, setAllowProfanity] = useState(false);
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [handLimit, setHandLimit] = useState(2);
@@ -21,7 +28,7 @@ export function CreateRoomModal({ open, onClose, onCreate, creating }: CreateRoo
 
   function submit() {
     if (!topic.trim() || creating) return;
-    onCreate(topic.trim(), { allowProfanity, durationMinutes, handLimit });
+    onCreate(topic.trim(), { allowProfanity, durationMinutes, handLimit }, kind);
   }
 
   return (
@@ -51,6 +58,28 @@ export function CreateRoomModal({ open, onClose, onCreate, creating }: CreateRoo
         <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: -0.6, color: '#17171a' }}>방 만들기</div>
         <div style={{ fontSize: 12, lineHeight: 1.6, color: '#4a4750', marginTop: 6 }}>
           직접 방을 만들면 방장이 되고, 세션 규칙을 정할 수 있어요.
+        </div>
+
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#4a4750', marginTop: 18 }}>방 종류</div>
+        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+          {KIND_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setKind(opt.value)}
+              style={{
+                flex: 1,
+                cursor: 'pointer',
+                border: 'none',
+                borderRadius: 14,
+                padding: '10px 0',
+                background: kind === opt.value ? '#17171a' : '#F3F1F5',
+                color: kind === opt.value ? '#fff' : '#4a4750',
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{opt.label}</div>
+              <div style={{ fontSize: 9.5, fontWeight: 700, marginTop: 2, opacity: 0.75 }}>{opt.note}</div>
+            </button>
+          ))}
         </div>
 
         <div style={{ fontSize: 13, fontWeight: 700, color: '#4a4750', marginTop: 18 }}>주제</div>

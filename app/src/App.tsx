@@ -15,8 +15,11 @@ import { SparTab } from './tabs/SparTab';
 import { ShelfTab } from './tabs/ShelfTab';
 import { useRoom } from './lib/useRoom';
 import type { CreateRoomRules } from './lib/useRoom';
+import type { RoomKind } from './lib/db-types';
 import { useCustomRooms } from './lib/useCustomRooms';
 import type { CustomRoomSummary } from './lib/useCustomRooms';
+import { useVotes } from './lib/useVotes';
+import { ClashSpectatorTab } from './tabs/ClashSpectatorTab';
 import { useProfile } from './lib/useProfile';
 import { supabase } from './lib/supabase';
 import { MODERATION_TOAST } from './lib/moderation';
@@ -71,6 +74,7 @@ export default function App() {
   const [joiningTopicId, setJoiningTopicId] = useState<string | null>(null);
   const [createRoomOpen, setCreateRoomOpen] = useState(false);
   const [creatingRoom, setCreatingRoom] = useState(false);
+  const [spectateTopicId, setSpectateTopicId] = useState<string | null>(null);
   const [changeContext, setChangeContext] = useState<'main' | 'spar'>('main');
 
   const [sparTopicInput, setSparTopicInput] = useState('');
@@ -88,8 +92,9 @@ export default function App() {
   const [stillmanSubmitting, setStillmanSubmitting] = useState(false);
 
   const roomApi = useRoom(nickname);
-  const { phase, room, mySeat, messages } = roomApi;
+  const { phase, room, mySeat, isTeamMember2, messages } = roomApi;
   const [customRooms, refetchCustomRooms] = useCustomRooms();
+  const clashVotes = useVotes(room?.kind === 'clash' ? room.id : null, nickname);
 
   const sparRoomApi = useRoom(nickname);
   const { changedCount, listenedCount, briefedCount, stillmanCount, bumpListened, bumpBriefed, bumpStillman } =
@@ -162,19 +167,40 @@ export default function App() {
   }
 
   async function handleEnterRoom(topicId: string, topicTitle: string) {
+    // 진행 중인 격돌방은 참여가 아니라 관전(+투표) — 자리(seat)가 이미 둘 다
+    // 찼으니 join()을 그대로 태우면 같은 topic_id로 새 방을 또 만들게 된다.
+    const customRoom = customRooms.find((r) => r.topic_id === topicId);
+    if (customRoom?.kind === 'clash' && customRoom.status === 'active') {
+      setSpectateTopicId(topicId);
+      setTab('session');
+      return;
+    }
+    // 2:2 토론방이 이미 대표끼리 매칭돼 있다면, 남은 자리에 2번째 팀원으로
+    // 합류한다 — 마찬가지로 join()을 쓰면 안 된다.
+    if (customRoom?.kind === 'debate' && customRoom.status === 'active') {
+      const side: Seat | null = !customRoom.team_a_member2 ? 'A' : !customRoom.team_b_member2 ? 'B' : null;
+      if (!side) return;
+      setJoiningTopicId(topicId);
+      await roomApi.joinTeamSecondSeat(topicId, side);
+      refetchCustomRooms();
+      return;
+    }
     setJoiningTopicId(topicId);
     await roomApi.join(topicId, topicTitle);
     refetchCustomRooms();
   }
 
   function handleNavChange(nextTab: Tab) {
-    if (nextTab === 'session') setSessionView('list');
+    if (nextTab === 'session') {
+      setSessionView('list');
+      setSpectateTopicId(null);
+    }
     setTab(nextTab);
   }
 
-  async function handleCreateRoom(topicTitle: string, rules: CreateRoomRules) {
+  async function handleCreateRoom(topicTitle: string, rules: CreateRoomRules, kind: RoomKind) {
     setCreatingRoom(true);
-    const topicId = await roomApi.createCustomRoom(topicTitle, rules);
+    const topicId = await roomApi.createCustomRoom(topicTitle, rules, kind);
     setCreatingRoom(false);
     if (topicId) {
       setJoiningTopicId(topicId);
@@ -363,9 +389,10 @@ export default function App() {
     showToast('good', '발언권 요청 · 다음 턴에 앞당겨집니다');
   }
 
-  function handleSparLeave() {
-    // Rehearsal is just practice — no participation-log entry, unlike a real session.
-    sparRoomApi.leave();
+  async function handleSparLeave() {
+    // 리허설도 "참가"이므로 실제 세션과 동일하게 참가기록에 어록을 남긴다.
+    await sparRoomApi.finishAndLog();
+    await bumpListened();
     setSparTopicInput('');
   }
 
@@ -375,6 +402,13 @@ export default function App() {
   const ackLeft = (mySeat === 'A' ? room?.acks_left_a : room?.acks_left_b) ?? ACK_LIMIT;
   const handLeft = (mySeat === 'A' ? room?.hand_left_a : room?.hand_left_b) ?? HAND_LIMIT;
   const otherSeatLabel = (mySeat === 'A' ? room?.seat_b : room?.seat_a) ?? '상대';
+  // 내가 대표 발언자면 내 팀의 2번째 팀원을, 내가 2번째 팀원이면 우리 팀
+  // 대표를 "+ 팀원"으로 보여준다 — 둘 다 team_x_member2만 보면 내가 2번째
+  // 팀원일 때 내 이름이 내 팀원으로 다시 뜨는 오류가 생긴다.
+  const myTeamMember2 = isTeamMember2
+    ? ((mySeat === 'A' ? room?.seat_a : room?.seat_b) ?? null)
+    : ((mySeat === 'A' ? room?.team_a_member2 : room?.team_b_member2) ?? null);
+  const otherTeamMember2 = (mySeat === 'A' ? room?.team_b_member2 : room?.team_a_member2) ?? null;
   const isMyTurn = room?.turn === mySeat;
   const myMutedUntil = room ? (mySeat === 'A' ? room.muted_until_a : room.muted_until_b) : null;
   const otherMutedUntil = room ? (mySeat === 'A' ? room.muted_until_b : room.muted_until_a) : null;
@@ -429,7 +463,11 @@ export default function App() {
               />
             )}
 
-            {tab === 'session' && sessionView === 'list' && (
+            {tab === 'session' && spectateTopicId && (
+              <ClashSpectatorTab topicId={spectateTopicId} nickname={nickname} onExit={() => setSpectateTopicId(null)} />
+            )}
+
+            {tab === 'session' && !spectateTopicId && sessionView === 'list' && (
               <SessionsListTab
                 nickname={nickname}
                 customRooms={customRooms}
@@ -448,13 +486,19 @@ export default function App() {
               />
             )}
 
-            {tab === 'session' && sessionView === 'chat' && room && mySeat && (
+            {tab === 'session' && !spectateTopicId && sessionView === 'chat' && room && mySeat && (
               <SessionTab
                 topicTitle={room.topic_title}
                 sessionLabel={fmt(sessionSec)}
                 isMyTurn={isMyTurn}
                 mySeatLabel={nickname}
                 otherSeatLabel={otherSeatLabel}
+                myTeamMember2={myTeamMember2}
+                otherTeamMember2={otherTeamMember2}
+                isTeamMember2={isTeamMember2}
+                voteCounts={room.kind === 'clash' ? clashVotes.counts : undefined}
+                voteALabel={room.seat_a ?? 'A'}
+                voteBLabel={room.seat_b ?? 'B'}
                 ackLeft={ackLeft}
                 ackLimit={ACK_LIMIT}
                 msgs={msgs}

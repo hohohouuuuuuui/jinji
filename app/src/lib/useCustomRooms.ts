@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import { kstStartOfTodayISO } from './kst';
+import type { RoomKind } from './db-types';
 
 export interface CustomRoomSummary {
   id: string;
@@ -12,6 +13,9 @@ export interface CustomRoomSummary {
   seat_b: string | null;
   allow_profanity: boolean;
   duration_minutes: number;
+  kind: RoomKind;
+  team_a_member2: string | null;
+  team_b_member2: string | null;
   created_at: string;
 }
 
@@ -26,7 +30,9 @@ export function useCustomRooms(): [CustomRoomSummary[], () => void] {
     const todayStart = kstStartOfTodayISO();
     const { data } = await supabase
       .from('rooms')
-      .select('id, topic_id, topic_title, status, host_nickname, seat_a, seat_b, allow_profanity, duration_minutes, created_at')
+      .select(
+        'id, topic_id, topic_title, status, host_nickname, seat_a, seat_b, allow_profanity, duration_minutes, kind, team_a_member2, team_b_member2, created_at',
+      )
       .eq('is_custom', true)
       .or(`status.in.(waiting,active),and(status.eq.closed,created_at.gte.${todayStart})`)
       .order('created_at', { ascending: false });

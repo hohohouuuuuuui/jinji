@@ -1,6 +1,8 @@
 import type { RefObject } from 'react';
 import type { Msg, ToastState } from '../types';
 import { ISSUE_CHIPS } from '../data';
+import { VoteGauge } from '../components/VoteGauge';
+import type { VoteCounts } from '../lib/useVotes';
 
 interface SessionTabProps {
   topicTitle: string;
@@ -8,6 +10,12 @@ interface SessionTabProps {
   isMyTurn: boolean;
   mySeatLabel: string;
   otherSeatLabel: string;
+  myTeamMember2?: string | null;
+  otherTeamMember2?: string | null;
+  isTeamMember2?: boolean;
+  voteCounts?: VoteCounts;
+  voteALabel?: string;
+  voteBLabel?: string;
   ackLeft: number;
   ackLimit: number;
   msgs: Msg[];
@@ -42,6 +50,12 @@ export function SessionTab({
   isMyTurn,
   mySeatLabel,
   otherSeatLabel,
+  myTeamMember2 = null,
+  otherTeamMember2 = null,
+  isTeamMember2 = false,
+  voteCounts,
+  voteALabel = 'A',
+  voteBLabel = 'B',
   ackLeft,
   ackLimit,
   msgs,
@@ -69,7 +83,7 @@ export function SessionTab({
   mutedSecondsLeft,
   otherMuted,
 }: SessionTabProps) {
-  const canType = isMyTurn && !closed && !muted;
+  const canType = !closed && !muted && (isTeamMember2 ? handLeft > 0 : isMyTurn);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', animation: 'jz-fade .25s ease' }}>
       <div style={{ flex: 'none', margin: '0 16px', background: '#17171a', borderRadius: 22, padding: '13px 16px 14px' }}>
@@ -99,6 +113,9 @@ export function SessionTab({
               {isMyTurn ? '발언 중 · 나' : '나'}
             </div>
             <div style={{ fontSize: 11.5, fontWeight: 700, color: '#fff', marginTop: 3 }}>{mySeatLabel}</div>
+            {myTeamMember2 && (
+              <div style={{ fontSize: 9.5, fontWeight: 700, color: '#c9c6cd', marginTop: 2 }}>+ {myTeamMember2}</div>
+            )}
           </div>
           <div
             style={{
@@ -113,9 +130,14 @@ export function SessionTab({
               {!isMyTurn ? '발언 중 · 상대' : '상대'}
             </div>
             <div style={{ fontSize: 11.5, fontWeight: 700, color: '#c9c6cd', marginTop: 3 }}>{otherSeatLabel}</div>
+            {otherTeamMember2 && (
+              <div style={{ fontSize: 9.5, fontWeight: 700, color: '#c9c6cd', marginTop: 2 }}>+ {otherTeamMember2}</div>
+            )}
           </div>
         </div>
       </div>
+
+      {voteCounts && <VoteGauge counts={voteCounts} aLabel={voteALabel} bLabel={voteBLabel} />}
 
       <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px 8px' }}>
         <span
