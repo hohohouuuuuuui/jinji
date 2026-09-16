@@ -45,15 +45,48 @@ export function useCustomRooms(): [CustomRoomSummary[], () => void] {
   useEffect(() => {
     load();
 
+    // 디바운스: 짧은 시간 안에 여러 postgres_changes 이벤트가 몰려도 한 번만
+    // 다시 불러온다 — 방 하나가 활발히 채팅 중일 때(메시지마다 turn/hand_left 등
+    // rooms 행이 계속 바뀜) 목록이 매번 깜빡이는 걸 막아준다.
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleLoad = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(load, 400);
+    };
+
     // is_custom=true인 방 변경에만 반응한다 — 필터 없이 테이블 전체를 구독하면
-    // 이 목록과 무관한 다른 방(자동 매칭, 발언 순서 등)의 변경에도 매번
-    // 다시 불러오면서 목록이 잠깐씩 깜빡이는 원인이 됐다.
+    // 이 목록과 무관한 다른 방(자동 매칭 등)의 변경에도 매번 다시 불러오게 된다.
+    // UPDATE 이벤트는 목록에 실제로 영향 있는 필드(상태/방 종류/팀원 등)가
+    // 바뀌었을 때만 반응한다 — 턴 넘김·손들기·인정권 같은 채팅 중 수시로
+    // 바뀌는 필드는 무시한다(REPLICA IDENTITY FULL이라 old 값도 함께 온다).
     const channel = supabase
       .channel('custom-rooms-list')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: 'is_custom=eq.true' }, () => load())
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'rooms', filter: 'is_custom=eq.true' },
+        (payload) => {
+          if (payload.eventType !== 'UPDATE') {
+            scheduleLoad();
+            return;
+          }
+          const before = payload.old as Partial<CustomRoomSummary> | null;
+          const after = payload.new as Partial<CustomRoomSummary> | null;
+          const listRelevant =
+            !before ||
+            !after ||
+            before.status !== after.status ||
+            before.kind !== after.kind ||
+            before.host_nickname !== after.host_nickname ||
+            before.topic_title !== after.topic_title ||
+            before.team_a_member2 !== after.team_a_member2 ||
+            before.team_b_member2 !== after.team_b_member2;
+          if (listRelevant) scheduleLoad();
+        },
+      )
       .subscribe();
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       channel.unsubscribe();
     };
   }, [load]);

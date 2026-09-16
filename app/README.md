@@ -44,7 +44,7 @@ npm run dev
 
 1. https://supabase.com → 새 프로젝트 생성 (무료 티어)
 2. 프로젝트의 **SQL Editor**에서 `supabase/schema.sql` 내용을 그대로 실행 (테이블 생성 + Realtime 활성화까지 포함)
-   - **이미 `schema.sql`을 실행한 적이 있다면** `supabase/migration_2.sql` ~ `migration_7.sql`을 순서대로 추가 실행해주세요 (참가기록 테이블, AI 스파링 3진 아웃 카운터, 사용자별 진지벌레 레벨, 모더레이션 2차/3차·이의제기·생각이 바뀜 상대 승인·스틸맨/브리핑완독/끝까지들음 실데이터화, 방 생성·방장·규칙 설정, **방 종류(대화/토론/격돌)·2:2 토론·격돌 관전 투표** — 재실행해도 안전함). 특히 `migration_6.sql`은 방 만들기/방장 기능에, `migration_7.sql`은 방 종류·2:2 토론·격돌 투표 기능에 꼭 필요합니다.
+   - **이미 `schema.sql`을 실행한 적이 있다면** `supabase/migration_2.sql` ~ `migration_8.sql`을 순서대로 추가 실행해주세요 (참가기록 테이블, AI 스파링 3진 아웃 카운터, 사용자별 진지벌레 레벨, 모더레이션 2차/3차·이의제기·생각이 바뀜 상대 승인·스틸맨/브리핑완독/끝까지들음 실데이터화, 방 생성·방장·규칙 설정, 방 종류(대화/토론/격돌)·2:2 토론·격돌 관전 투표, **토론방 목록 깜빡임 개선** — 재실행해도 안전함). 특히 `migration_6.sql`은 방 만들기/방장 기능에, `migration_7.sql`은 방 종류·2:2 토론·격돌 투표 기능에, `migration_8.sql`은 토론방 목록이 실시간 갱신될 때 불필요하게 다시 불러오지 않도록 하는 데 필요합니다.
 3. **Project Settings → API**에서 `Project URL`과 `anon public` 키를 복사
    → `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
    - Vercel에 등록할 때 이 두 값은 **Sensitive가 아니라 Plain Text**로 등록해야 합니다 (`VITE_` 접두사는 빌드 시 클라이언트에 그대로 노출되는 값이라 Vercel이 Sensitive 지정을 거부합니다)
@@ -88,7 +88,7 @@ npm run dev
 - `src/lib/useTopicSeatCounts.ts` — 주제별 실시간 자리 집계(대기 1자리·매칭 2자리)를 Supabase에서 읽고 realtime으로 구독하는 훅
 - `src/lib/useCustomRooms.ts` — 사용자가 만든 방(방장·규칙 포함) 목록을 실시간으로 구독하는 훅
 - `api/_gemini.ts`, `api/briefing.ts`, `api/moderate.ts`, `api/opponent.ts`, `api/validate-topic.ts`, `api/stillman.ts`, `api/summarize-quote.ts` — Gemini 호출 Vercel 함수
-- `supabase/schema.sql` — 처음 설치용 전체 스키마, `supabase/migration_2.sql` ~ `migration_7.sql` — 이미 설치한 DB에 추가분만 반영
+- `supabase/schema.sql` — 처음 설치용 전체 스키마, `supabase/migration_2.sql` ~ `migration_8.sql` — 이미 설치한 DB에 추가분만 반영
 - `src/tabs/` — 네 개 탭 화면 (`SessionTab`은 진지한 대화·리허설룸·방장 세션 공용, `SessionsListTab`은 토론방 탭의 참여중인 방/참여할 방 목록), `src/components/` — 폰 프레임 · 상태바 · 하단 내비 · 모달(온보딩 · 스틸맨 · 방 만들기 포함)
 - `src/icons/` — 내비 아이콘, 픽셀아트 애벌레/나비 캐릭터
 - `src/data.ts` — 아직 목업인 부분(시간표 2:2 토론·1:1 격돌·진지한 결혼 등)
