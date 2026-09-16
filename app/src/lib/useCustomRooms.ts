@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 import { kstStartOfTodayISO } from './kst';
 import type { RoomKind } from './db-types';
@@ -25,8 +25,15 @@ export interface CustomRoomSummary {
 // — 시간표에서 오늘 있었던 토론이었다는 걸 알 수 있게.
 export function useCustomRooms(): [CustomRoomSummary[], () => void] {
   const [rooms, setRooms] = useState<CustomRoomSummary[]>([]);
+  // load()가 겹쳐 호출되면(디바운스된 realtime 알림 + 직접 refetch 등)
+  // 네트워크 지연 때문에 응답이 요청 순서와 다르게 도착할 수 있다 — 오래된
+  // 요청의 응답이 나중에 도착해 최신 상태를 덮어쓰면 방이 잠깐 사라졌다
+  // 나타나는 것처럼 보인다. 매 호출마다 번호를 매겨 "가장 마지막에 보낸
+  // 요청"의 응답만 실제로 반영한다.
+  const requestIdRef = useRef(0);
 
   const load = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     const todayStart = kstStartOfTodayISO();
     const { data } = await supabase
       .from('rooms')
@@ -36,6 +43,7 @@ export function useCustomRooms(): [CustomRoomSummary[], () => void] {
       .eq('is_custom', true)
       .or(`status.in.(waiting,active),and(status.eq.closed,created_at.gte.${todayStart})`)
       .order('created_at', { ascending: false });
+    if (requestId !== requestIdRef.current) return; // 더 최근 요청이 이미 나간 뒤라 이 응답은 버린다.
     // 방어적 중복 제거: 같은 id가 혹시라도 두 번 오더라도 목록에 한 번만 보이게.
     const rows = (data as CustomRoomSummary[]) ?? [];
     const deduped = Array.from(new Map(rows.map((r) => [r.id, r])).values());
