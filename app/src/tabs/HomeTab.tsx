@@ -30,7 +30,6 @@ interface DisplayRow {
   seatsBottom: string;
   isMine?: boolean;
   seatCount?: number;
-  ended?: boolean;
   neverFull?: boolean;
 }
 
@@ -88,12 +87,11 @@ export function HomeTab({
     }
   }
   const growth = getGrowth(changedCount);
-  const openCount = SCHEDULE.filter((row) => !row.room.locked).length + customRooms.filter((r) => r.status !== 'closed').length;
+  const openCount = SCHEDULE.filter((row) => !row.room.locked).length + customRooms.length;
   const topicIds = SCHEDULE.filter((row) => row.topicId).map((row) => row.topicId!);
   const seatCounts = useTopicSeatCounts(topicIds);
 
   const customDisplayRows: DisplayRow[] = customRooms.map((r) => {
-    const ended = r.status === 'closed';
     const kindTag = { chat: '1:1 대화', debate: '2:2 토론', clash: '1:1 격돌' }[r.kind] ?? '1:1 대화';
     // 진행 중인 격돌방은 자리가 다 찼어도 관전으로 들어갈 수 있고, 진행 중인
     // 2:2 토론방은 팀 자리가 하나라도 비어있으면 여전히 들어갈 수 있다.
@@ -102,17 +100,17 @@ export function HomeTab({
     return {
       key: `custom-${r.id}`,
       roomBadge: '👑',
-      roomColor: ended ? '#b8b4bd' : '#4a4750',
+      roomColor: '#4a4750',
       filterId: null,
       time: formatKSTClock(new Date(r.created_at)),
-      status: ended ? '종료됨' : r.status === 'active' ? '진행중' : '모집중',
+      status: r.status === 'active' ? '진행중' : '모집중',
       title: r.topic_title,
       tags: [
         { label: kindTag, bg: '#F3F1F5', color: '#4a4750' },
         { label: `방장 ${r.host_nickname}`, bg: '#F3F1F5', color: '#4a4750' },
       ],
       topicId: r.topic_id,
-      cta: ended ? undefined : r.kind === 'clash' && r.status === 'active' ? '관전하기' : r.kind === 'debate' && r.status === 'active' ? '팀 합류하기' : '참여하기',
+      cta: r.kind === 'clash' && r.status === 'active' ? '관전하기' : r.kind === 'debate' && r.status === 'active' ? '팀 합류하기' : '참여하기',
       seatsBottom: '/2명',
       isMine:
         r.host_nickname === nickname ||
@@ -121,7 +119,6 @@ export function HomeTab({
         r.team_a_member2 === nickname ||
         r.team_b_member2 === nickname,
       seatCount: r.status === 'active' ? 2 : 1,
-      ended,
       neverFull,
     };
   });
@@ -323,7 +320,7 @@ export function HomeTab({
           const isApplying = matchingTopicId === row.topicId;
           const seatCount = row.seatCount ?? (row.topicId ? seatCounts[row.topicId] ?? 0 : 0);
           const capacity = parseCapacity(row.seatsBottom);
-          const isFull = !row.ended && !row.neverFull && !isApplying && seatCount >= capacity;
+          const isFull = !row.neverFull && !isApplying && seatCount >= capacity;
           return (
             <div
               key={row.key}
@@ -413,7 +410,7 @@ export function HomeTab({
                     fontWeight: 900,
                     letterSpacing: -0.5,
                     lineHeight: 1.35,
-                    color: locked || row.ended ? '#5a5760' : '#17171a',
+                    color: locked ? '#5a5760' : '#17171a',
                   }}
                 >
                   {row.title}
@@ -440,11 +437,7 @@ export function HomeTab({
                 {row.lockedNote && (
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#3f3c45', marginTop: 7 }}>{row.lockedNote}</div>
                 )}
-                {row.ended ? (
-                  <div style={{ marginTop: 11, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#a9a5af' }}>
-                    🔚 종료된 토론이에요
-                  </div>
-                ) : row.isMine ? (
+                {row.isMine ? (
                   <div style={{ marginTop: 11, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#a9a5af' }}>
                     참여 중인 방
                   </div>
@@ -480,7 +473,7 @@ export function HomeTab({
                   </div>
                 )}
               </div>
-              {!locked && !row.ended && (
+              {!locked && (
                 <div style={{ flex: 'none', textAlign: 'right' }}>
                   <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 17, color: isFull ? '#b0568f' : '#17171a' }}>
                     {row.topicId ? (isFull ? '마감' : String(seatCount)) : ''}
