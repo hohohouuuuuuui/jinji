@@ -28,7 +28,13 @@ interface UseRoomResult {
   isTeamMember2: boolean;
   messages: MessageRow[];
   error: string | null;
-  join: (topicId: string, topicTitle: string, vsAI?: boolean, skipBriefing?: boolean, kind?: RoomKind) => Promise<void>;
+  join: (
+    topicId: string,
+    topicTitle: string,
+    vsAI?: boolean,
+    skipBriefing?: boolean,
+    kind?: RoomKind,
+  ) => Promise<'waiting' | 'active' | 'error' | null>;
   createCustomRoom: (topicTitle: string, rules: CreateRoomRules, kind: RoomKind) => Promise<string | null>;
   rejoin: (topicId: string) => Promise<'waiting' | 'active' | 'closed' | null>;
   recoverMyRoom: () => Promise<'waiting' | 'active' | 'closed' | null>;
@@ -180,8 +186,14 @@ export function useRoom(nickname: string | null): UseRoomResult {
   }, []);
 
   const join = useCallback(
-    async (topicId: string, topicTitle: string, vsAI = false, skipBriefing = false, kind: RoomKind = 'chat') => {
-      if (!nickname) return;
+    async (
+      topicId: string,
+      topicTitle: string,
+      vsAI = false,
+      skipBriefing = false,
+      kind: RoomKind = 'chat',
+    ): Promise<'waiting' | 'active' | 'error' | null> => {
+      if (!nickname) return null;
       setIsTeamMember2(false);
       setPhase('matching');
       setError(null);
@@ -208,7 +220,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
           setMessages([]);
           subscribe(created.id);
           if (!skipBriefing) await generateBriefingIfNeeded(created as RoomRow);
-          return;
+          return 'active';
         }
 
         const { data: waitingRoom } = await supabase
@@ -241,7 +253,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
               .order('created_at', { ascending: true });
             setMessages((existingMsgs as MessageRow[]) ?? []);
             await generateBriefingIfNeeded(joined as RoomRow);
-            return;
+            return 'active';
           }
           // Someone else grabbed it between our select and update — fall through to create our own.
         }
@@ -259,7 +271,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
         if (cancelledRef.current) {
           cancelledRef.current = false;
           await supabase.from('rooms').delete().eq('id', created.id).eq('status', 'waiting');
-          return;
+          return null;
         }
 
         setRoom(created as RoomRow);
@@ -267,10 +279,12 @@ export function useRoom(nickname: string | null): UseRoomResult {
         setPhase('waiting');
         setMessages([]);
         subscribe(created.id);
+        return 'waiting';
       } catch (err) {
         console.error('join failed', err);
         setError(errorMessage(err));
         setPhase('error');
+        return 'error';
       }
     },
     [nickname, subscribe, generateBriefingIfNeeded],

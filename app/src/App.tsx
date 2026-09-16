@@ -30,8 +30,35 @@ import type { Msg, Tab, ToastState } from './types';
 import type { MessageRow, Seat } from './lib/db-types';
 
 const NICKNAME_KEY = 'jinji.nickname';
+const BRIEFED_ROOMS_KEY = 'jinji.briefedRoomIds';
 const ACK_LIMIT = 3;
 const HAND_LIMIT = 2;
+
+// 입장 전 브리핑은 방마다 처음 한 번만 보여준다 — 재접속/재입장할 때마다
+// 다시 뜨면 대화 흐름이 계속 끊긴다. 이미 본 방 id는 브라우저에 기억해둔다.
+function hasSeenBriefing(roomId: string): boolean {
+  try {
+    const raw = localStorage.getItem(BRIEFED_ROOMS_KEY);
+    const ids: string[] = raw ? JSON.parse(raw) : [];
+    return ids.includes(roomId);
+  } catch {
+    return false;
+  }
+}
+
+function markBriefingSeen(roomId: string) {
+  try {
+    const raw = localStorage.getItem(BRIEFED_ROOMS_KEY);
+    const ids: string[] = raw ? JSON.parse(raw) : [];
+    if (!ids.includes(roomId)) {
+      // 무한히 쌓이지 않게 최근 200개만 유지.
+      const next = [...ids, roomId].slice(-200);
+      localStorage.setItem(BRIEFED_ROOMS_KEY, JSON.stringify(next));
+    }
+  } catch {
+    // localStorage를 못 쓰는 환경이면 그냥 매번 보여주는 쪽으로 안전하게 둔다.
+  }
+}
 
 function fmt(n: number) {
   const m = Math.floor(n / 60);
@@ -148,13 +175,22 @@ export default function App() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [sparRoomApi.messages.length, tab]);
 
-  // Open the briefing the moment a real match completes (either side).
+  // Open the briefing the moment a real match completes (either side) — but
+  // only the first time for this specific room. 재입장/재접속마다 다시
+  // 뜨면 "다 읽었다"고 매번 다시 체크해야 해서 대화 흐름이 끊긴다.
   useEffect(() => {
     if (phase === 'active' && !wasActive.current) {
       wasActive.current = true;
-      setBriefRead(false);
-      setSessionSec((room?.duration_minutes ?? 18) * 60);
-      setBriefingOpen(true);
+      if (room && !hasSeenBriefing(room.id)) {
+        setBriefRead(false);
+        setSessionSec((room.duration_minutes ?? 18) * 60);
+        setBriefingOpen(true);
+      } else {
+        // 이미 브리핑을 본 방이면(재접속/재입장) 곧장 대화 화면으로 이어준다
+        // — 새로고침해도 하던 대화로 바로 돌아오는 게 자연스러운 흐름이다.
+        setTab('session');
+        setSessionView('chat');
+      }
     }
     if (phase === 'idle') {
       wasActive.current = false;
@@ -164,7 +200,7 @@ export default function App() {
     if (phase === 'active' || phase === 'error') {
       setJoiningTopicId(null);
     }
-  }, [phase]);
+  }, [phase, room]);
 
   useEffect(() => {
     if (sparRoomApi.phase === 'active') {
@@ -239,9 +275,17 @@ export default function App() {
 
     setJoiningTopicId(topicId);
     setErrorSource('match');
-    await roomApi.join(topicId, topicTitle, false, false, scheduleKind);
+    const result = await roomApi.join(topicId, topicTitle, false, false, scheduleKind);
     refetchCustomRooms();
     refetchMyScheduleRooms();
+    // 매칭 성공(진행중이든 대기중이든) 시 곧장 그 방 화면으로 데려간다 —
+    // 예전엔 버튼 라벨만 바뀌고 사용자는 계속 목록에 남아있어서, 방금 누른
+    // 버튼이 뭘 했는지 체감이 안 됐다. 활성 매칭은 브리핑 모달이 이미
+    // 화면 전환까지 처리하므로, 여기서는 "대기중" 결과만 직접 이동시킨다.
+    if (result === 'waiting') {
+      setTab('session');
+      setSessionView('chat');
+    }
   }
 
   function handleNavChange(nextTab: Tab) {
@@ -261,6 +305,11 @@ export default function App() {
       setJoiningTopicId(topicId);
       setCreateRoomOpen(false);
       refetchCustomRooms();
+      // 방을 만들었으면 곧장 그 방(대기 화면)으로 들어간다 — 예전엔 모달만
+      // 닫히고 시간표에 남아서, 방금 만든 방이 실제로 어디 있는지 직접
+      // 찾아 들어가야 했다.
+      setTab('session');
+      setSessionView('chat');
     }
   }
 
@@ -667,6 +716,7 @@ export default function App() {
             onEnter={async () => {
               if (briefRead && room?.briefing) {
                 setBriefingOpen(false);
+                markBriefingSeen(room.id);
                 await bumpBriefed();
                 setTab('session');
                 setSessionView('chat');
