@@ -76,8 +76,15 @@ export function SessionsListTab({ nickname, customRooms, myRoom, onEnterMyRoom, 
               <div style={{ fontSize: 11, fontWeight: 700, color: '#b0568f', marginTop: 4 }}>진행 중 · 눌러서 입장</div>
             </button>
           ) : (
-            <div
+            // 표시상 '대기 중'이어도 실제로는 이미 상대가 들어와 있을 수 있다
+            // (realtime 갱신을 놓친 경우) — 눌렀을 때 다시 확인하도록 버튼으로 둔다.
+            <button
+              onClick={onEnterMyRoom}
               style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
                 marginTop: 10,
                 background: '#F3F1F5',
                 border: '1.5px solid transparent',
@@ -86,8 +93,8 @@ export function SessionsListTab({ nickname, customRooms, myRoom, onEnterMyRoom, 
               }}
             >
               <div style={{ fontSize: 14, fontWeight: 700, color: '#17171a' }}>{myRoom.topicTitle}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#78747e', marginTop: 4 }}>상대를 기다리는 중</div>
-            </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#78747e', marginTop: 4 }}>상대를 기다리는 중 · 눌러서 새로고침</div>
+            </button>
           )
         ) : (
           <div style={{ padding: '18px 0', textAlign: 'center', fontSize: 12.5, color: '#78747e' }}>참여 중인 방이 없어요</div>

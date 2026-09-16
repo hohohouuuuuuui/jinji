@@ -452,9 +452,12 @@ export default function App() {
   // room.status === 'closed'면 이미 끝난 토론이다 — phase는 로컬 상태라 종료 후에도
   // 'active'에 머물러 있으므로, 실제 방 상태를 따로 확인해서 "진행 중"으로
   // 잘못 보이지 않게 한다.
+  // room 전용 realtime 채널(useRoom.ts의 subscribe)이 이벤트를 하나 놓치면
+  // phase가 'waiting'에 멈춰버릴 수 있다 — customRooms 목록은 별도 채널로
+  // 갱신되니, 거기서 이미 'active'로 보인다면 그걸 더 믿는다.
   const myRoom =
     room && mySeat && (phase === 'active' || phase === 'waiting') && room.status !== 'closed'
-      ? { topicTitle: room.topic_title, status: phase === 'active' ? ('active' as const) : ('waiting' as const) }
+      ? { topicTitle: room.topic_title, status: (phase === 'active' || myOwnCustomRoom?.status === 'active') ? ('active' as const) : ('waiting' as const) }
       : myOwnCustomRoom
         ? { topicTitle: myOwnCustomRoom.topic_title, status: myOwnCustomRoom.status }
         : null;
@@ -499,12 +502,16 @@ export default function App() {
                 customRooms={customRooms}
                 myRoom={myRoom}
                 onEnterMyRoom={async () => {
-                  if (room && mySeat) {
-                    if (phase === 'active') setSessionView('chat');
+                  if (room && mySeat && phase === 'active') {
+                    setSessionView('chat');
                     return;
                   }
-                  if (myOwnCustomRoom) {
-                    const status = await roomApi.rejoinAsHost(myOwnCustomRoom.topic_id);
+                  // phase가 아직 'active'로 안 넘어왔다면(놓친 realtime 이벤트일 수
+                  // 있음) Supabase에서 현재 상태를 직접 다시 확인한다 — 그래야
+                  // 실제로는 상대가 이미 들어왔는데도 화면이 안 바뀌는 걸 막는다.
+                  const topicId = room?.topic_id ?? myOwnCustomRoom?.topic_id;
+                  if (topicId) {
+                    const status = await roomApi.rejoinAsHost(topicId);
                     if (status === 'active') setSessionView('chat');
                   }
                 }}
