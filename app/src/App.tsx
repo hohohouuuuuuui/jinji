@@ -11,13 +11,15 @@ import { CreateRoomModal } from './components/CreateRoomModal';
 import { HomeTab } from './tabs/HomeTab';
 import { SessionTab } from './tabs/SessionTab';
 import { SessionsListTab } from './tabs/SessionsListTab';
+import type { MyRoomEntry } from './tabs/SessionsListTab';
+import { WaitingRoomTab } from './tabs/WaitingRoomTab';
 import { SparTab } from './tabs/SparTab';
 import { ShelfTab } from './tabs/ShelfTab';
 import { useRoom } from './lib/useRoom';
 import type { CreateRoomRules } from './lib/useRoom';
 import type { RoomKind } from './lib/db-types';
 import { useCustomRooms } from './lib/useCustomRooms';
-import type { CustomRoomSummary } from './lib/useCustomRooms';
+import { useMyScheduleRooms } from './lib/useMyScheduleRooms';
 import { useVotes } from './lib/useVotes';
 import { ClashSpectatorTab } from './tabs/ClashSpectatorTab';
 import { SCHEDULE } from './data';
@@ -100,6 +102,7 @@ export default function App() {
   const roomApi = useRoom(nickname);
   const { phase, room, mySeat, isTeamMember2, messages } = roomApi;
   const [customRooms, refetchCustomRooms] = useCustomRooms();
+  const [myScheduleRooms, refetchMyScheduleRooms] = useMyScheduleRooms(nickname);
   const clashVotes = useVotes(room?.kind === 'clash' ? room.id : null, nickname);
 
   // 새로고침 등으로 방 안에 있던 걸 잊어버린 채 앱이 새로 켜질 수 있다 —
@@ -179,6 +182,28 @@ export default function App() {
     setJoiningTopicId(null);
     roomApi.cancelJoin();
     refetchCustomRooms();
+    refetchMyScheduleRooms();
+  }
+
+  // 내가 만들었거나(방장) 이미 들어가 있는 방으로 들어간다 — 상대가 아직
+  // 안 왔어도(대기 중이어도) 바로 들어가서 기다릴 수 있다. 이미 그 방이
+  // 로컬에 붙어있으면 바로 화면만 전환하고, 아니면(다른 방을 보고 있었거나
+  // 새로고침으로 로컬 상태를 잃었으면) Supabase에서 그 방을 다시 불러온다.
+  async function handleEnterMyRoom(topicId: string) {
+    // 로컬 room이 이미 'active'라면 믿을 수 있다(한 번 매칭되면 다시 대기
+    // 상태로 돌아가지 않는다). 반대로 로컬이 'waiting'이면 놓친 realtime
+    // 이벤트 때문에 실제로는 이미 상대가 들어와 있을 수 있으니(위의 방장
+    // 재입장 버그와 같은 종류) 매번 Supabase에서 다시 확인한다.
+    if (room && mySeat && room.topic_id === topicId && room.status === 'active') {
+      setTab('session');
+      setSessionView('chat');
+      return;
+    }
+    const status = await roomApi.rejoin(topicId);
+    if (status) {
+      setTab('session');
+      setSessionView('chat');
+    }
   }
 
   async function handleEnterRoom(topicId: string, topicTitle: string) {
@@ -223,6 +248,7 @@ export default function App() {
     setErrorSource('match');
     await roomApi.join(topicId, topicTitle, false, false, scheduleKind);
     refetchCustomRooms();
+    refetchMyScheduleRooms();
   }
 
   function handleNavChange(nextTab: Tab) {
@@ -450,26 +476,25 @@ export default function App() {
   const muted = isMuted(myMutedUntil);
   const otherMuted = isMuted(otherMutedUntil);
 
-  // 로컬 세션(room/mySeat)이 이미 붙어있으면 그걸 우선 쓰고, 새로고침 등으로
-  // 잃어버렸다면 실시간 목록(customRooms)에서 내가 방장인 방을 찾아 보여준다
-  // — 그래야 "내가 만든 방"이 토론방 탭에서 사라지지 않는다.
-  // customRooms엔 오늘 종료된 방도 (시간표에 보여주려고) 들어있으므로, 여기서는
-  // 아직 열려있는 방만 "내가 참여 중인 방" 후보로 본다.
-  const myOwnCustomRoom = customRooms.find(
-    (r): r is CustomRoomSummary & { status: 'waiting' | 'active' } => r.host_nickname === nickname && r.status !== 'closed',
+  // "참여중인 방" 목록: 커스텀 방이든 스케줄(자동생성) 방이든, 대기 중이든
+  // 진행 중이든 상관없이 내가 자리 잡고 있는 방은 전부 보여준다 — 예전에는
+  // roomApi가 붙들고 있는 방 하나만(그것도 진행 중일 때만) 보여서, 방을 여러
+  // 개 오가거나 상대를 기다리는 중이면 목록에서 빠져 보였다.
+  // customRooms/스케줄 목록 둘 다 각자 실시간 채널로 갱신되므로, 방 전용
+  // 채널(roomApi)이 이벤트를 하나 놓쳐도 여기 상태는 최신을 유지한다.
+  const myCustomRooms: MyRoomEntry[] = customRooms
+    .filter(
+      (r) =>
+        r.host_nickname === nickname || r.seat_a === nickname || r.seat_b === nickname || r.team_a_member2 === nickname || r.team_b_member2 === nickname,
+    )
+    .map((r) => ({ topicId: r.topic_id, topicTitle: r.topic_title, status: r.status as 'waiting' | 'active' }));
+  const myRooms: MyRoomEntry[] = [
+    ...myCustomRooms,
+    ...myScheduleRooms.map((r) => ({ topicId: r.topic_id, topicTitle: r.topic_title, status: r.status })),
+  ];
+  const myScheduleRoomStatus: Record<string, 'waiting' | 'active'> = Object.fromEntries(
+    myScheduleRooms.map((r) => [r.topic_id, r.status]),
   );
-  // room.status === 'closed'면 이미 끝난 토론이다 — phase는 로컬 상태라 종료 후에도
-  // 'active'에 머물러 있으므로, 실제 방 상태를 따로 확인해서 "진행 중"으로
-  // 잘못 보이지 않게 한다.
-  // room 전용 realtime 채널(useRoom.ts의 subscribe)이 이벤트를 하나 놓치면
-  // phase가 'waiting'에 멈춰버릴 수 있다 — customRooms 목록은 별도 채널로
-  // 갱신되니, 거기서 이미 'active'로 보인다면 그걸 더 믿는다.
-  const myRoom =
-    room && mySeat && (phase === 'active' || phase === 'waiting') && room.status !== 'closed'
-      ? { topicTitle: room.topic_title, status: (phase === 'active' || myOwnCustomRoom?.status === 'active') ? ('active' as const) : ('waiting' as const) }
-      : myOwnCustomRoom
-        ? { topicTitle: myOwnCustomRoom.topic_title, status: myOwnCustomRoom.status }
-        : null;
 
   const closed = room?.status === 'closed';
 
@@ -495,9 +520,11 @@ export default function App() {
                 matchingTopicId={joiningTopicId}
                 matchError={phase === 'error' && errorSource === 'match' ? roomApi.error : null}
                 onEnterRoom={handleEnterRoom}
+                onEnterMyRoom={handleEnterMyRoom}
                 onCancelApply={handleCancelApply}
                 onOpenCreateRoom={() => setCreateRoomOpen(true)}
                 customRooms={customRooms}
+                myScheduleRoomStatus={myScheduleRoomStatus}
               />
             )}
 
@@ -509,26 +536,26 @@ export default function App() {
               <SessionsListTab
                 nickname={nickname}
                 customRooms={customRooms}
-                myRoom={myRoom}
-                onEnterMyRoom={async () => {
-                  if (room && mySeat && phase === 'active') {
-                    setSessionView('chat');
-                    return;
-                  }
-                  // phase가 아직 'active'로 안 넘어왔다면(놓친 realtime 이벤트일 수
-                  // 있음) Supabase에서 현재 상태를 직접 다시 확인한다 — 그래야
-                  // 실제로는 상대가 이미 들어왔는데도 화면이 안 바뀌는 걸 막는다.
-                  const topicId = room?.topic_id ?? myOwnCustomRoom?.topic_id;
-                  if (topicId) {
-                    const status = await roomApi.rejoinAsHost(topicId);
-                    if (status === 'active') setSessionView('chat');
-                  }
-                }}
+                myRooms={myRooms}
+                onEnterMyRoom={handleEnterMyRoom}
                 onJoinRoom={handleEnterRoom}
               />
             )}
 
-            {tab === 'session' && !spectateTopicId && sessionView === 'chat' && room && mySeat && (
+            {tab === 'session' && !spectateTopicId && sessionView === 'chat' && room && mySeat && room.status === 'waiting' && (
+              <WaitingRoomTab
+                topicTitle={room.topic_title}
+                kind={room.kind}
+                isHost={mySeat === 'A'}
+                onCancel={() => {
+                  handleCancelApply();
+                  setSessionView('list');
+                }}
+                onBack={() => setSessionView('list')}
+              />
+            )}
+
+            {tab === 'session' && !spectateTopicId && sessionView === 'chat' && room && mySeat && room.status !== 'waiting' && (
               <SessionTab
                 topicTitle={room.topic_title}
                 sessionLabel={fmt(sessionSec)}

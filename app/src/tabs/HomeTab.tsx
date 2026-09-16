@@ -30,6 +30,7 @@ interface DisplayRow {
   lockedNote?: string;
   seatsBottom: string;
   isMine?: boolean;
+  myStatus?: 'waiting' | 'active';
   seatCount?: number;
   neverFull?: boolean;
   kind: RoomKind;
@@ -40,11 +41,14 @@ interface HomeTabProps {
   changedCount: number;
   nickname: string;
   onEnterRoom: (topicId: string, topicTitle: string) => void;
+  onEnterMyRoom: (topicId: string) => void;
   onCancelApply: (topicId: string) => void;
   matchingTopicId: string | null;
   matchError: string | null;
   onOpenCreateRoom: () => void;
   customRooms: CustomRoomSummary[];
+  // 스케줄(자동생성) 방 중 내가 대기 중이거나 참여 중인 방 — topic_id별 상태.
+  myScheduleRoomStatus: Record<string, 'waiting' | 'active'>;
 }
 
 export function HomeTab({
@@ -52,11 +56,13 @@ export function HomeTab({
   changedCount,
   nickname,
   onEnterRoom,
+  onEnterMyRoom,
   onCancelApply,
   matchingTopicId,
   matchError,
   onOpenCreateRoom,
   customRooms,
+  myScheduleRoomStatus,
 }: HomeTabProps) {
   const [filter, setFilter] = useState<number | 'all'>('all');
   const [chipsDragging, setChipsDragging] = useState(false);
@@ -119,6 +125,7 @@ export function HomeTab({
         r.seat_b === nickname ||
         r.team_a_member2 === nickname ||
         r.team_b_member2 === nickname,
+      myStatus: r.status === 'active' ? 'active' : 'waiting',
       seatCount: r.status === 'active' ? 2 : 1,
       neverFull,
       kind: r.kind,
@@ -144,6 +151,8 @@ export function HomeTab({
     // 자동생성 격돌방(2/3번)은 자리가 다 찼어도 마감이 아니라 관전으로 들어갈 수 있다.
     neverFull: row.kind === 'clash',
     kind: row.kind,
+    isMine: !!row.topicId && !!myScheduleRoomStatus[row.topicId],
+    myStatus: row.topicId ? myScheduleRoomStatus[row.topicId] : undefined,
   }));
 
   const visibleRows =
@@ -445,9 +454,27 @@ export function HomeTab({
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#3f3c45', marginTop: 7 }}>{row.lockedNote}</div>
                 )}
                 {row.isMine ? (
-                  <div style={{ marginTop: 11, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#a9a5af' }}>
-                    참여 중인 방
-                  </div>
+                  // 내가 만들었거나 참여 중인 방은 상대가 아직 안 왔어도 바로
+                  // 들어가서 기다릴 수 있게 눌러지는 버튼으로 둔다.
+                  row.topicId && (
+                    <button
+                      onClick={() => onEnterMyRoom(row.topicId!)}
+                      style={{
+                        width: '100%',
+                        marginTop: 11,
+                        cursor: 'pointer',
+                        background: row.myStatus === 'active' ? 'rgba(245,134,174,0.18)' : 'rgba(23,23,26,0.05)',
+                        border: row.myStatus === 'active' ? '1px solid rgba(245,134,174,0.45)' : '1px solid rgba(23,23,26,0.08)',
+                        color: row.myStatus === 'active' ? '#b0568f' : '#5a5760',
+                        fontSize: 13.5,
+                        fontWeight: 700,
+                        padding: 13,
+                        borderRadius: 999,
+                      }}
+                    >
+                      {row.myStatus === 'active' ? '참여 중인 방 · 입장' : '대기 중인 방 · 입장'}
+                    </button>
+                  )
                 ) : (
                   row.cta &&
                   row.topicId && (
