@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import type { Msg, ToastState } from '../types';
 import { ISSUE_CHIPS } from '../data';
@@ -84,6 +85,13 @@ export function SessionTab({
   otherMuted,
 }: SessionTabProps) {
   const canType = !closed && !muted && (isTeamMember2 ? handLeft > 0 : isMyTurn);
+  const draftRef = useRef<HTMLTextAreaElement | null>(null);
+  useEffect(() => {
+    const el = draftRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [draft]);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', animation: 'jz-fade .25s ease' }}>
       <div style={{ flex: 'none', margin: '0 16px', background: '#17171a', borderRadius: 22, padding: '13px 16px 14px' }}>
@@ -336,20 +344,19 @@ export function SessionTab({
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+          <textarea
+            ref={draftRef}
             value={draft}
             onChange={(e) => onDraftChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) onSend();
-            }}
+            rows={1}
             placeholder={
               closed
                 ? '세션이 종료됐습니다'
                 : muted
                   ? `${mutedSecondsLeft}초 후 다시 발언할 수 있어요`
                   : isMyTurn
-                    ? '발언대에서 말하기'
+                    ? '발언대에서 말하기 · 여러 문장을 쓴 뒤 [종료]를 눌러 보내세요'
                     : '상대 차례를 기다리는 중…'
             }
             disabled={!canType}
@@ -358,12 +365,17 @@ export function SessionTab({
               minWidth: 0,
               background: '#F3F1F5',
               border: 'none',
-              borderRadius: 999,
+              borderRadius: 20,
               padding: '14px 18px',
               fontSize: 14,
+              lineHeight: 1.4,
+              fontFamily: 'inherit',
               color: '#17171a',
               outline: 'none',
               opacity: canType ? 1 : 0.6,
+              resize: 'none',
+              maxHeight: 120,
+              overflowY: 'auto',
             }}
           />
           <button
