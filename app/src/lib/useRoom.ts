@@ -21,6 +21,12 @@ export interface CreateRoomRules {
   handLimit: number;
 }
 
+// join()/rejoin()/recoverMyRoom() 모두 "방에 붙었다"는 결과를 이 형태로
+// 돌려준다 — 호출한 쪽(App.tsx)이 room state가 다음 렌더에 반영되길
+// 기다리지 않고(그 사이 다른 화면으로 넘어갔을 수 있는 stale closure
+// 문제 없이) 곧바로 그 방 row를 갖고 화면을 결정할 수 있게 하기 위해서다.
+export type AttachResult = { status: 'waiting' | 'active' | 'closed'; room: RoomRow } | { status: 'error' } | null;
+
 interface UseRoomResult {
   phase: MatchPhase;
   room: RoomRow | null;
@@ -34,10 +40,10 @@ interface UseRoomResult {
     vsAI?: boolean,
     skipBriefing?: boolean,
     kind?: RoomKind,
-  ) => Promise<'waiting' | 'active' | 'error' | null>;
+  ) => Promise<AttachResult>;
   createCustomRoom: (topicTitle: string, rules: CreateRoomRules, kind: RoomKind) => Promise<string | null>;
-  rejoin: (topicId: string) => Promise<'waiting' | 'active' | 'closed' | null>;
-  recoverMyRoom: () => Promise<'waiting' | 'active' | 'closed' | null>;
+  rejoin: (topicId: string) => Promise<AttachResult>;
+  recoverMyRoom: () => Promise<AttachResult>;
   joinTeamSecondSeat: (topicId: string, side: Seat) => Promise<boolean>;
   endSessionAsHost: () => Promise<void>;
   leave: () => void;
@@ -175,13 +181,19 @@ export function useRoom(nickname: string | null): UseRoomResult {
     };
   }, []);
 
-  const generateBriefingIfNeeded = useCallback(async (roomRow: RoomRow) => {
-    if (roomRow.briefing) return;
+  // briefing을 반환한다 — DB만 업데이트하고 끝내면, 이 함수를 부른 쪽이
+  // 곧바로 room.briefing을 써야 할 때(예: 매칭 직후 브리핑 모달을 여는
+  // 순간) realtime이 그 UPDATE를 되돌려줄 때까지 기다려야 해서 null로
+  // 보일 수 있다.
+  const generateBriefingIfNeeded = useCallback(async (roomRow: RoomRow): Promise<RoomRow['briefing']> => {
+    if (roomRow.briefing) return roomRow.briefing;
     try {
       const briefing = await callApi<RoomRow['briefing']>('/api/briefing', { topic: roomRow.topic_title });
       await supabase.from('rooms').update({ briefing }).eq('id', roomRow.id).is('briefing', null);
+      return briefing;
     } catch (err) {
       console.error('briefing generation failed', err);
+      return null;
     }
   }, []);
 
@@ -192,7 +204,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
       vsAI = false,
       skipBriefing = false,
       kind: RoomKind = 'chat',
-    ): Promise<'waiting' | 'active' | 'error' | null> => {
+    ): Promise<AttachResult> => {
       if (!nickname) return null;
       setIsTeamMember2(false);
       setPhase('matching');
@@ -214,13 +226,18 @@ export function useRoom(nickname: string | null): UseRoomResult {
 
           if (createErr || !created) throw createErr ?? new Error('room creation failed');
 
-          setRoom(created as RoomRow);
+          let finalCreated = created as RoomRow;
+          setRoom(finalCreated);
           setMySeat('A');
           setPhase('active');
           setMessages([]);
           subscribe(created.id);
-          if (!skipBriefing) await generateBriefingIfNeeded(created as RoomRow);
-          return 'active';
+          if (!skipBriefing) {
+            const briefing = await generateBriefingIfNeeded(finalCreated);
+            finalCreated = { ...finalCreated, briefing };
+            setRoom(finalCreated);
+          }
+          return { status: 'active', room: finalCreated };
         }
 
         const { data: waitingRoom } = await supabase
@@ -242,7 +259,8 @@ export function useRoom(nickname: string | null): UseRoomResult {
             .maybeSingle();
 
           if (joined) {
-            setRoom(joined as RoomRow);
+            let finalJoined = joined as RoomRow;
+            setRoom(finalJoined);
             setMySeat('B');
             setPhase('active');
             subscribe(joined.id);
@@ -252,8 +270,10 @@ export function useRoom(nickname: string | null): UseRoomResult {
               .eq('room_id', joined.id)
               .order('created_at', { ascending: true });
             setMessages((existingMsgs as MessageRow[]) ?? []);
-            await generateBriefingIfNeeded(joined as RoomRow);
-            return 'active';
+            const briefing = await generateBriefingIfNeeded(finalJoined);
+            finalJoined = { ...finalJoined, briefing };
+            setRoom(finalJoined);
+            return { status: 'active', room: finalJoined };
           }
           // Someone else grabbed it between our select and update — fall through to create our own.
         }
@@ -279,12 +299,12 @@ export function useRoom(nickname: string | null): UseRoomResult {
         setPhase('waiting');
         setMessages([]);
         subscribe(created.id);
-        return 'waiting';
+        return { status: 'waiting', room: created as RoomRow };
       } catch (err) {
         console.error('join failed', err);
         setError(errorMessage(err));
         setPhase('error');
-        return 'error';
+        return { status: 'error' };
       }
     },
     [nickname, subscribe, generateBriefingIfNeeded],
@@ -348,7 +368,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
   // 참가자(2번째 팀원 포함)든 내 닉네임이 있는 자리를 찾아 그쪽으로 앉는다.
   // rejoin()/recoverMyRoom() 둘 다 이 로직을 공유한다.
   const applyRoomRow = useCallback(
-    async (row: RoomRow): Promise<'waiting' | 'active' | 'closed'> => {
+    async (row: RoomRow): Promise<{ status: 'waiting' | 'active' | 'closed'; room: RoomRow }> => {
       // 대화가 이미 있었던 방(진행 중이든, 방금 닫혔든)은 메시지 기록을
       // 먼저 다 불러온 다음에 room/messages를 한꺼번에 반영한다 — room만
       // 먼저 반영하고 messages는 await 끝나고 나중에 반영하면, 그 사이
@@ -372,7 +392,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
       setPhase(row.status === 'active' ? 'active' : 'waiting');
       subscribe(row.id);
       setMessages(msgs);
-      return row.status;
+      return { status: row.status, room: row };
     },
     [nickname, subscribe],
   );
@@ -383,7 +403,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
   // 있어야 참가자가 뒤늦게(realtime을 놓치고) 다시 들어와도 참가기록이
   // 남는다.
   const rejoin = useCallback(
-    async (topicId: string): Promise<'waiting' | 'active' | 'closed' | null> => {
+    async (topicId: string): Promise<AttachResult> => {
       if (!nickname) return null;
       const { data: existing } = await supabase
         .from('rooms')
@@ -407,7 +427,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
   // 방에서 내 닉네임이 어느 자리든 있는지 뒤진다. 새로고침 등으로 로컬
   // 상태를 완전히 잃었을 때 앱이 켜지자마자 한 번 불러서 쓴다. 리허설
   // (vs_ai)은 제외.
-  const recoverMyRoom = useCallback(async (): Promise<'waiting' | 'active' | 'closed' | null> => {
+  const recoverMyRoom = useCallback(async (): Promise<AttachResult> => {
     if (!nickname) return null;
     const { data } = await supabase
       .from('rooms')

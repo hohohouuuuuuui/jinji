@@ -391,6 +391,11 @@ export function SessionTab({
             value={draft}
             onChange={(e) => onDraftChange(e.target.value)}
             rows={1}
+            // 모바일 키보드에 "전송"이 아니라 "줄바꿈" 아이콘이 뜨게 한다 —
+            // 엔터는 항상 줄바꿈일 뿐이고(카카오톡 채팅창처럼 여러 줄을
+            // 자연스럽게 쓸 수 있음), 실제 전송(발언 종료)은 오직 [종료]
+            // 버튼을 눌러야만 된다.
+            enterKeyHint="enter"
             placeholder={
               closed
                 ? '세션이 종료됐습니다'

@@ -27,7 +27,7 @@ import { useProfile } from './lib/useProfile';
 import { supabase } from './lib/supabase';
 import { MODERATION_TOAST } from './lib/moderation';
 import type { Msg, Tab, ToastState } from './types';
-import type { MessageRow, Seat } from './lib/db-types';
+import type { MessageRow, RoomRow, Seat } from './lib/db-types';
 
 const NICKNAME_KEY = 'jinji.nickname';
 const BRIEFED_ROOMS_KEY = 'jinji.briefedRoomIds';
@@ -175,19 +175,41 @@ export default function App() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [sparRoomApi.messages.length, tab]);
 
-  // Open the briefing the moment a real match completes (either side) — but
-  // only the first time for this specific room. 재입장/재접속마다 다시
-  // 뜨면 "다 읽었다"고 매번 다시 체크해야 해서 대화 흐름이 끊긴다.
+  // 방금 매칭됐거나(join) 다시 붙은(rejoin) 방을 "처리 완료"로 표시하고,
+  // 처음 보는 방이면 브리핑을 띄운다. handleEnterRoom/handleEnterMyRoom
+  // 같은 명시적 입장 경로에서 room row를 직접 받은 그 자리에서 불러야
+  // stale closure 문제(방금 매칭된 room이 아직 렌더에 반영 안 된 상태에서
+  // 판단하는 것) 없이 정확히 판단할 수 있다. true를 반환하면 브리핑을
+  // 새로 띄운 것이다(이미 wasActive였다면 아무 것도 안 하고 false).
+  function activateRoom(row: RoomRow): boolean {
+    if (wasActive.current) return false;
+    wasActive.current = true;
+    if (!hasSeenBriefing(row.id)) {
+      setBriefRead(false);
+      setSessionSec((row.duration_minutes ?? 18) * 60);
+      setBriefingOpen(true);
+      return true;
+    }
+    return false;
+  }
+
+  // 위 activateRoom이 못 잡는 "백그라운드에서 방이 active로 바뀐" 경우를
+  // 처리한다 — 대표적으로 (1) 새로고침 직후 recoverMyRoom()이 이미
+  // 진행 중인 방을 조용히 다시 붙일 때, (2) 대기 화면(WaitingRoomTab)에
+  // 앉아있다가 상대가 실시간으로 들어왔을 때.
+  // 지금 그 방의 채팅 화면(session 탭 + sessionView==='chat')을 실제로
+  // 보고 있을 때만 브리핑을 띄운다 — tab만으로는 부족하다: "토론방" 탭을
+  // 눌러 방 목록만 보는 중이어도 tab은 이미 'session'이라, 목록만 보고
+  // 있는데도 느닷없이 브리핑이 뜨는 문제가 있었다. 다른 화면에 있고 아직
+  // 못 본 브리핑이면, wasActive를 그대로 false로 남겨서(여기서 처리하지
+  // 않고) 나중에 사용자가 그 방에 직접 들어갈 때 activateRoom이 띄우게 한다.
   useEffect(() => {
-    if (phase === 'active' && !wasActive.current) {
-      wasActive.current = true;
-      if (room && !hasSeenBriefing(room.id)) {
-        setBriefRead(false);
-        setSessionSec((room.duration_minutes ?? 18) * 60);
-        setBriefingOpen(true);
-      } else {
-        // 이미 브리핑을 본 방이면(재접속/재입장) 곧장 대화 화면으로 이어준다
-        // — 새로고침해도 하던 대화로 바로 돌아오는 게 자연스러운 흐름이다.
+    if (phase === 'active' && !wasActive.current && room) {
+      if (tab === 'session' && sessionView === 'chat') {
+        activateRoom(room);
+      } else if (hasSeenBriefing(room.id)) {
+        // 이미 본 방이면 새로고침해도 하던 대화로 바로 돌아오는 게 자연스럽다.
+        wasActive.current = true;
         setTab('session');
         setSessionView('chat');
       }
@@ -200,7 +222,7 @@ export default function App() {
     if (phase === 'active' || phase === 'error') {
       setJoiningTopicId(null);
     }
-  }, [phase, room]);
+  }, [phase, room, tab, sessionView]);
 
   useEffect(() => {
     if (sparRoomApi.phase === 'active') {
@@ -228,11 +250,11 @@ export default function App() {
   // 보이는 문제가 반복해서 나왔다(대기중인데 실제론 진행중, 진행중인데
   // 실제론 종료됨). 방 하나 조회라 가벼우니 정확성을 우선한다.
   async function handleEnterMyRoom(topicId: string) {
-    const status = await roomApi.rejoin(topicId);
-    if (status) {
-      setTab('session');
-      setSessionView('chat');
-    }
+    const result = await roomApi.rejoin(topicId);
+    if (!result || result.status === 'error') return;
+    if (result.status === 'active') activateRoom(result.room);
+    setTab('session');
+    setSessionView('chat');
   }
 
   async function handleEnterRoom(topicId: string, topicTitle: string) {
@@ -250,8 +272,12 @@ export default function App() {
       const side: Seat | null = !customRoom.team_a_member2 ? 'A' : !customRoom.team_b_member2 ? 'B' : null;
       if (!side) return;
       setJoiningTopicId(topicId);
-      await roomApi.joinTeamSecondSeat(topicId, side);
+      const joined = await roomApi.joinTeamSecondSeat(topicId, side);
       refetchCustomRooms();
+      if (joined) {
+        setTab('session');
+        setSessionView('chat');
+      }
       return;
     }
 
@@ -278,14 +304,13 @@ export default function App() {
     const result = await roomApi.join(topicId, topicTitle, false, false, scheduleKind);
     refetchCustomRooms();
     refetchMyScheduleRooms();
+    if (!result || result.status === 'error') return;
     // 매칭 성공(진행중이든 대기중이든) 시 곧장 그 방 화면으로 데려간다 —
     // 예전엔 버튼 라벨만 바뀌고 사용자는 계속 목록에 남아있어서, 방금 누른
-    // 버튼이 뭘 했는지 체감이 안 됐다. 활성 매칭은 브리핑 모달이 이미
-    // 화면 전환까지 처리하므로, 여기서는 "대기중" 결과만 직접 이동시킨다.
-    if (result === 'waiting') {
-      setTab('session');
-      setSessionView('chat');
-    }
+    // 버튼이 뭘 했는지 체감이 안 됐다.
+    if (result.status === 'active') activateRoom(result.room);
+    setTab('session');
+    setSessionView('chat');
   }
 
   function handleNavChange(nextTab: Tab) {
