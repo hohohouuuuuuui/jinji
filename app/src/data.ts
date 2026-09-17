@@ -55,7 +55,7 @@ export const SCHEDULE: ScheduleRowData[] = [
     seats: { top: '0', bottom: '/2명' },
     cta: '입장 신청하기',
     topicId: 'regret-choice',
-    kind: 'clash',
+    kind: 'chat',
   },
   {
     room: ROOM3,

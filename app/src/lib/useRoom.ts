@@ -132,6 +132,27 @@ async function writeParticipationLog(room: RoomRow, mySeat: Seat, nickname: stri
   });
 }
 
+// 방을 닫는(status: 'closed') 모든 경로(방장 종료, 3회 위반 자동 종료,
+// AI 3회 위반 자동 종료, 대표 발언자 나가기)가 공유한다. update()가 조용히
+// 실패하면(네트워크 문제 등) 실제 DB는 그대로 active인데 화면만 닫힌 것처럼
+// 보이는 문제가 있었다 — 업데이트된 row를 직접 확인하고, 실패하면 몇 번
+// 재시도한다.
+async function closeRoomWithRetry(roomId: string, extraFields: Record<string, unknown> = {}): Promise<RoomRow | null> {
+  let closedRow: RoomRow | null = null;
+  for (let attempt = 0; attempt < 3 && !closedRow; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 400));
+    const { data, error } = await supabase
+      .from('rooms')
+      .update({ ...extraFields, status: 'closed' })
+      .eq('id', roomId)
+      .select()
+      .maybeSingle();
+    if (error) console.error('room close update failed', error);
+    if (data) closedRow = data as RoomRow;
+  }
+  return closedRow;
+}
+
 export function useRoom(nickname: string | null): UseRoomResult {
   const [phase, setPhase] = useState<MatchPhase>('idle');
   const [room, setRoom] = useState<RoomRow | null>(null);
@@ -140,7 +161,20 @@ export function useRoom(nickname: string | null): UseRoomResult {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const visibilityHandlerRef = useRef<(() => void) | null>(null);
   const cancelledRef = useRef(false);
+
+  const stopRoomPolling = useCallback(() => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+    if (visibilityHandlerRef.current) {
+      document.removeEventListener('visibilitychange', visibilityHandlerRef.current);
+      visibilityHandlerRef.current = null;
+    }
+  }, []);
   // 방장은 "종료"를 누르는 순간 자기 참가기록을 남기지만, 참가자는 그런
   // 전용 버튼이 없다 — "나가기 · 참가기록 남기기"를 직접 눌러야만 기록이
   // 남다 보니, 방장이 먼저 종료해버리면 참가자는 누르는 걸 잊고 그냥
@@ -149,37 +183,62 @@ export function useRoom(nickname: string | null): UseRoomResult {
   // 기록되게 한다(수동으로 "나가기"를 눌러도 중복 기록되지 않게).
   const loggedRoomIdsRef = useRef<Set<string>>(new Set());
 
-  const subscribe = useCallback((roomId: string) => {
-    channelRef.current?.unsubscribe();
-    const channel = supabase
-      .channel(`room:${roomId}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
-        (payload) => setRoom(payload.new as RoomRow),
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` },
-        (payload) => setMessages((prev) => [...prev, payload.new as MessageRow]),
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` },
-        (payload) => {
-          const updated = payload.new as MessageRow;
-          setMessages((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
-        },
-      )
-      .subscribe();
-    channelRef.current = channel;
-  }, []);
+  const subscribe = useCallback(
+    (roomId: string) => {
+      channelRef.current?.unsubscribe();
+      stopRoomPolling();
+      const channel = supabase
+        .channel(`room:${roomId}`)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
+          (payload) => setRoom(payload.new as RoomRow),
+        )
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` },
+          (payload) => setMessages((prev) => [...prev, payload.new as MessageRow]),
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` },
+          (payload) => {
+            const updated = payload.new as MessageRow;
+            setMessages((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+          },
+        )
+        .subscribe();
+      channelRef.current = channel;
+
+      // realtime이 이벤트를 놓치는 경우를 대비한 안전망 — 채팅방 안에서는
+      // 턴·인정권·뮤트·종료 여부가 계속 바뀌는데, 이걸 하나라도 놓치면
+      // 상대가 답장했는데도 "상대 차례"로 멈춰있거나, 3회 위반/AI 3회
+      // 위반으로 방이 닫혔는데도 계속 진행 중으로 보여 대화가 사실상
+      // 막혀버린다. 주기적 재조회와 탭 복귀 시 재조회를 안전망으로 건다.
+      const poll = async () => {
+        const [{ data: roomRow }, { data: msgRows }] = await Promise.all([
+          supabase.from('rooms').select('*').eq('id', roomId).maybeSingle(),
+          supabase.from('messages').select('*').eq('room_id', roomId).order('created_at', { ascending: true }),
+        ]);
+        if (roomRow) setRoom(roomRow as RoomRow);
+        if (msgRows) setMessages(msgRows as MessageRow[]);
+      };
+      pollTimerRef.current = setInterval(poll, 8000);
+      const onVisible = () => {
+        if (document.visibilityState === 'visible') poll();
+      };
+      document.addEventListener('visibilitychange', onVisible);
+      visibilityHandlerRef.current = onVisible;
+    },
+    [stopRoomPolling],
+  );
 
   useEffect(() => {
     return () => {
       channelRef.current?.unsubscribe();
+      stopRoomPolling();
     };
-  }, []);
+  }, [stopRoomPolling]);
 
   // briefing을 반환한다 — DB만 업데이트하고 끝내면, 이 함수를 부른 쪽이
   // 곧바로 room.briefing을 써야 할 때(예: 매칭 직후 브리핑 모달을 여는
@@ -489,12 +548,6 @@ export function useRoom(nickname: string | null): UseRoomResult {
 
   // 방장 전용 종료 권한: 참가자 한쪽이 조용히 나가는 것과 달리, 방장이
   // 끝내면 즉시 양쪽 모두에게 종료가 통지되고 세션이 닫힌다.
-  //
-  // update()가 조용히 실패하면(네트워크 문제 등) 방장 화면만 로컬로
-  // "종료됨"처럼 보이고 실제 DB row는 계속 active로 남아, 새로고침하거나
-  // 다른 사람이 보면 여전히 "진행중"으로 보이는 버그가 있었다. .select()로
-  // 실제로 업데이트된 row를 직접 확인하고, 실패하면 몇 번 재시도한 뒤에도
-  // 안 되면 로컬 상태를 낙관적으로 바꾸지 않고 실패를 알린다.
   const endSessionAsHost = useCallback(async (): Promise<boolean> => {
     if (!room || !nickname || room.host_nickname !== nickname || room.status === 'closed') return false;
     await supabase.from('messages').insert({
@@ -505,19 +558,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
       kind: 'session_closed',
     });
 
-    let closedRow: RoomRow | null = null;
-    for (let attempt = 0; attempt < 3 && !closedRow; attempt++) {
-      if (attempt > 0) await new Promise((r) => setTimeout(r, 400));
-      const { data, error: updateErr } = await supabase
-        .from('rooms')
-        .update({ status: 'closed' })
-        .eq('id', room.id)
-        .select()
-        .maybeSingle();
-      if (updateErr) console.error('room close update failed', updateErr);
-      if (data) closedRow = data as RoomRow;
-    }
-
+    const closedRow = await closeRoomWithRetry(room.id);
     if (!closedRow) return false;
 
     if (mySeat && !loggedRoomIdsRef.current.has(room.id)) {
@@ -527,7 +568,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
     // realtime 왕복을 기다리지 않고 바로 반영한다 — 안 그러면 방장 화면이
     // 잠깐(혹은 연결이 불안정하면 계속) "진행 중"으로 남아 종료 버튼을 또
     // 누를 수 있고, 그러면 참가기록이 중복으로 쌓인다.
-    setRoom((prev) => (prev && prev.id === room.id ? { ...prev, status: 'closed' } : prev));
+    setRoom(closedRow);
     return true;
   }, [room, nickname, mySeat, messages]);
 
@@ -560,12 +601,13 @@ export function useRoom(nickname: string | null): UseRoomResult {
   const leave = useCallback(() => {
     channelRef.current?.unsubscribe();
     channelRef.current = null;
+    stopRoomPolling();
     setRoom(null);
     setMySeat(null);
     setIsTeamMember2(false);
     setMessages([]);
     setPhase('idle');
-  }, []);
+  }, [stopRoomPolling]);
 
   // Cancel a pending application before a match is found: remove the
   // waiting room we created so nobody matches into an abandoned seat.
@@ -641,10 +683,8 @@ export function useRoom(nickname: string | null): UseRoomResult {
             text: '세션이 종료되었습니다 · 반복된 규정 위반',
             kind: 'session_closed',
           });
-          await supabase
-            .from('rooms')
-            .update({ [violationsField]: violations, status: 'closed' })
-            .eq('id', room.id);
+          const closedRow = await closeRoomWithRetry(room.id, { [violationsField]: violations });
+          if (closedRow) setRoom(closedRow);
         } else if (violations === 2) {
           const mutedField = mySeat === 'A' ? 'muted_until_a' : 'muted_until_b';
           await supabase
@@ -702,7 +742,8 @@ export function useRoom(nickname: string | null): UseRoomResult {
                   text: 'AI가 규칙을 3회 위반해 세션이 종료되었습니다.',
                   kind: 'session_closed',
                 });
-                await supabase.from('rooms').update({ ai_strikes: strikes, status: 'closed' }).eq('id', room.id);
+                const closedRow = await closeRoomWithRetry(room.id, { ai_strikes: strikes });
+                if (closedRow) setRoom(closedRow);
                 return;
               }
               await supabase.from('rooms').update({ ai_strikes: strikes, turn: 'A' }).eq('id', room.id);
@@ -847,8 +888,23 @@ export function useRoom(nickname: string | null): UseRoomResult {
       loggedRoomIdsRef.current.add(room.id);
       await writeParticipationLog(room, mySeat, nickname, messages);
     }
+    // 대표 발언자(seat_a/seat_b 본인 — 방장이 아니어도)가 나가면 그 자리는
+    // 다시 채워지지 않아 상대만 영원히 답장을 기다리게 되고, 나 자신도
+    // 다음에 새로고침하면 recoverMyRoom()이 "아직 열려있는 내 방"으로
+    // 착각해 다시 끌고 들어온다. 대표가 나가면 방도 같이 닫는다 — 2번째
+    // 팀원(isTeamMember2)은 자기 팀 대표가 계속 있으니 나가도 방을 안 닫는다.
+    if (room.status !== 'closed' && !isTeamMember2) {
+      await supabase.from('messages').insert({
+        room_id: room.id,
+        seat: 'SYS',
+        sender: nickname,
+        text: `${nickname}님이 나가서 세션이 종료되었습니다.`,
+        kind: 'session_closed',
+      });
+      await closeRoomWithRetry(room.id);
+    }
     leave();
-  }, [room, mySeat, nickname, messages, leave]);
+  }, [room, mySeat, nickname, messages, leave, isTeamMember2]);
 
   return {
     phase,
