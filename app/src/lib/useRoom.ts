@@ -673,14 +673,16 @@ export function useRoom(nickname: string | null): UseRoomResult {
         });
       }
 
+      // 이번 send() 호출에서 room 테이블에 적용할 필드 변경을 전부 모아
+      // 한 번의 update로 보낸다 — 턴/손들기 토큰과 위반 처리를 따로따로
+      // 보내면, 엔터로 같은 차례에 연달아 보낼 때 그 사이 로컬 room
+      // 상태가 아직 최신화되지 않아 다음 send()가 오래된 값(예: 위반
+      // 횟수)을 기준으로 계산해버려 카운트가 누락될 수 있다.
+      const roomUpdate: Record<string, unknown> = {};
       if (isTeamMember2) {
-        await supabase
-          .from('rooms')
-          .update({ [handField]: handLeft - 1 })
-          .eq('id', room.id);
+        roomUpdate[handField] = handLeft - 1;
       } else if (endTurn) {
-        const nextTurn: Seat = mySeat === 'A' ? 'B' : 'A';
-        await supabase.from('rooms').update({ turn: nextTurn }).eq('id', room.id);
+        roomUpdate.turn = mySeat === 'A' ? 'B' : 'A';
       }
 
       // 6장 모더레이션 경고 처리: 1차는 비공개 토스트(App.tsx)뿐이지만,
@@ -689,6 +691,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
       if (trimmed && moderation?.flagged) {
         const violationsField = mySeat === 'A' ? 'violations_a' : 'violations_b';
         const violations = (mySeat === 'A' ? room.violations_a : room.violations_b) + 1;
+        roomUpdate[violationsField] = violations;
 
         if (violations >= 3) {
           justClosed = true;
@@ -699,23 +702,17 @@ export function useRoom(nickname: string | null): UseRoomResult {
             text: '세션이 종료되었습니다 · 반복된 규정 위반',
             kind: 'session_closed',
           });
-          const closedRow = await closeRoomWithRetry(room.id, { [violationsField]: violations });
+          const closedRow = await closeRoomWithRetry(room.id, roomUpdate);
           if (closedRow) setRoom(closedRow);
         } else if (violations === 2) {
           const mutedField = mySeat === 'A' ? 'muted_until_a' : 'muted_until_b';
-          await supabase
-            .from('rooms')
-            .update({
-              [violationsField]: violations,
-              [mutedField]: new Date(Date.now() + MUTE_SECONDS * 1000).toISOString(),
-            })
-            .eq('id', room.id);
-        } else {
-          await supabase
-            .from('rooms')
-            .update({ [violationsField]: violations })
-            .eq('id', room.id);
+          roomUpdate[mutedField] = new Date(Date.now() + MUTE_SECONDS * 1000).toISOString();
         }
+      }
+
+      if (!justClosed && Object.keys(roomUpdate).length > 0) {
+        const { data: updated } = await supabase.from('rooms').update(roomUpdate).eq('id', room.id).select().maybeSingle();
+        if (updated) setRoom(updated as RoomRow);
       }
 
       // AI 상대는 내 턴이 진짜로 끝났을 때만(엔터로 보내는 중간 문장에는
@@ -784,10 +781,17 @@ export function useRoom(nickname: string | null): UseRoomResult {
       const left = mySeat === 'A' ? room.acks_left_a : room.acks_left_b;
       if (left <= 0) return;
       await supabase.from('messages').update({ acked: true }).eq('id', messageId);
-      await supabase
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, acked: true } : m)));
+      // realtime 왕복을 기다리지 않고 바로 반영 — 안 그러면 연달아 인정
+      // 버튼을 누를 때 아직 갱신 안 된 남은 인정권 수를 기준으로 계산해
+      // 실제로는 다 썼는데도 더 쓸 수 있는 것처럼 보일 수 있다.
+      const { data: updated } = await supabase
         .from('rooms')
         .update({ [leftField]: left - 1 })
-        .eq('id', room.id);
+        .eq('id', room.id)
+        .select()
+        .maybeSingle();
+      if (updated) setRoom(updated as RoomRow);
     },
     [room, mySeat],
   );
@@ -797,10 +801,13 @@ export function useRoom(nickname: string | null): UseRoomResult {
     const leftField = mySeat === 'A' ? 'hand_left_a' : 'hand_left_b';
     const left = mySeat === 'A' ? room.hand_left_a : room.hand_left_b;
     if (left <= 0) return;
-    await supabase
+    const { data: updated } = await supabase
       .from('rooms')
       .update({ [leftField]: left - 1 })
-      .eq('id', room.id);
+      .eq('id', room.id)
+      .select()
+      .maybeSingle();
+    if (updated) setRoom(updated as RoomRow);
   }, [room, mySeat]);
 
   const declareChange = useCallback(async () => {
@@ -846,12 +853,23 @@ export function useRoom(nickname: string | null): UseRoomResult {
 
       const violationsField = mySeat === 'A' ? 'violations_a' : 'violations_b';
       const violations = Math.max(0, (mySeat === 'A' ? room.violations_a : room.violations_b) - 1);
+      // 2차 경고로 걸린 발언정지(뮤팅)도 그 위반이 무효 처리되는 것과
+      // 함께 풀어준다 — 안 그러면 위반 카운트는 취소됐는데 화면엔
+      // "N초간 발언이 제한됩니다" 타이머가 계속 떠 있고 실제로도 그
+      // 시간이 다 지나야만 다시 입력할 수 있는 문제가 있었다.
+      const mutedField = mySeat === 'A' ? 'muted_until_a' : 'muted_until_b';
 
       await supabase.from('messages').update({ disputed: true }).eq('id', messageId);
-      await supabase
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, disputed: true } : m)));
+      const { data: updated } = await supabase
         .from('rooms')
-        .update({ [usedField]: true, [violationsField]: violations })
-        .eq('id', room.id);
+        .update({ [usedField]: true, [violationsField]: violations, [mutedField]: null })
+        .eq('id', room.id)
+        .select()
+        .maybeSingle();
+      // realtime 왕복을 기다리지 않고 바로 반영 — 안 그러면 뮤팅 타이머가
+      // 실제로는 풀렸는데도 잠깐(또는 이벤트를 놓치면 계속) 화면에 남는다.
+      if (updated) setRoom(updated as RoomRow);
     },
     [room, mySeat],
   );
