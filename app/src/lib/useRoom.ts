@@ -48,7 +48,7 @@ interface UseRoomResult {
   endSessionAsHost: () => Promise<boolean>;
   leave: () => void;
   cancelJoin: () => Promise<void>;
-  send: (text: string) => Promise<ModerationResult | null>;
+  send: (text: string, endTurn: boolean) => Promise<ModerationResult | null>;
   ack: (messageId: number) => Promise<void>;
   raiseHand: () => Promise<void>;
   declareChange: () => Promise<void>;
@@ -622,11 +622,19 @@ export function useRoom(nickname: string | null): UseRoomResult {
     leave();
   }, [room, mySeat, phase, leave]);
 
+  // text만 보내면(엔터) 발언권은 그대로 나한테 남는다 — 카카오톡처럼 여러
+  // 줄을 잇달아 보낼 수 있다. endTurn=true([종료] 버튼)를 줘야만 실제로
+  // 상대에게 순서가 넘어간다. 대표 발언자는 더 할 말이 없어도(빈 텍스트)
+  // [종료]만 눌러 순서를 넘길 수 있다 — 그 외의 빈 텍스트 호출은 무시한다.
   const send = useCallback(
-    async (text: string) => {
+    async (text: string, endTurn: boolean) => {
       if (!room || !mySeat || !nickname || room.status === 'closed') return null;
       const mutedUntil = mySeat === 'A' ? room.muted_until_a : room.muted_until_b;
       if (mutedUntil && new Date(mutedUntil).getTime() > Date.now()) return null;
+
+      const trimmed = text.trim();
+      const passingEmptyTurn = endTurn && !isTeamMember2 && !trimmed;
+      if (!trimmed && !passingEmptyTurn) return null;
 
       // 2번째 팀원은 원래 발언 순서가 아니라 손들기 토큰을 소모해 덧붙이는
       // 발언이다 — 남은 손들기가 없으면 보낼 수 없고, 보내도 순서(turn)는
@@ -636,33 +644,35 @@ export function useRoom(nickname: string | null): UseRoomResult {
       if (isTeamMember2 && handLeft <= 0) return null;
 
       let moderation: ModerationResult | null = null;
-      try {
-        moderation = await callApi<ModerationResult>('/api/moderate', { text });
-      } catch (err) {
-        console.error('moderation call failed', err);
-      }
+      if (trimmed) {
+        try {
+          moderation = await callApi<ModerationResult>('/api/moderate', { text: trimmed });
+        } catch (err) {
+          console.error('moderation call failed', err);
+        }
 
-      // 방장이 욕설 허용으로 완화했다면 profanity 축만 눈감아준다.
-      // 조롱·인신공격 축은 방장 권한으로도 해제할 수 없다.
-      if (moderation?.flagged && moderation.axis === 'profanity' && room.allow_profanity) {
-        moderation = { ...moderation, flagged: false };
-      }
+        // 방장이 욕설 허용으로 완화했다면 profanity 축만 눈감아준다.
+        // 조롱·인신공격 축은 방장 권한으로도 해제할 수 없다.
+        if (moderation?.flagged && moderation.axis === 'profanity' && room.allow_profanity) {
+          moderation = { ...moderation, flagged: false };
+        }
 
-      await supabase.from('messages').insert({
-        room_id: room.id,
-        seat: mySeat,
-        sender: nickname,
-        text,
-        kind: 'chat',
-        moderation,
-      });
+        await supabase.from('messages').insert({
+          room_id: room.id,
+          seat: mySeat,
+          sender: nickname,
+          text: trimmed,
+          kind: 'chat',
+          moderation,
+        });
+      }
 
       if (isTeamMember2) {
         await supabase
           .from('rooms')
           .update({ [handField]: handLeft - 1 })
           .eq('id', room.id);
-      } else {
+      } else if (endTurn) {
         const nextTurn: Seat = mySeat === 'A' ? 'B' : 'A';
         await supabase.from('rooms').update({ turn: nextTurn }).eq('id', room.id);
       }
@@ -670,7 +680,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
       // 6장 모더레이션 경고 처리: 1차는 비공개 토스트(App.tsx)뿐이지만,
       // 2차는 30초 발언정지, 3차는 세션 종료 — AI와 동일한 잣대를 사람에게도.
       let justClosed = false;
-      if (moderation?.flagged) {
+      if (trimmed && moderation?.flagged) {
         const violationsField = mySeat === 'A' ? 'violations_a' : 'violations_b';
         const violations = (mySeat === 'A' ? room.violations_a : room.violations_b) + 1;
 
@@ -702,10 +712,11 @@ export function useRoom(nickname: string | null): UseRoomResult {
         }
       }
 
-      if (room.vs_ai && mySeat === 'A' && room.status === 'active' && !justClosed) {
-        const history = messages
-          .map((m) => ({ seat: m.seat, text: m.text }))
-          .concat([{ seat: 'A', text }]);
+      // AI 상대는 내 턴이 진짜로 끝났을 때만(엔터로 보내는 중간 문장에는
+      // 반응하지 않고, [종료]로 순서를 넘겼을 때) 응답한다.
+      if (room.vs_ai && mySeat === 'A' && room.status === 'active' && endTurn && !justClosed) {
+        const history = messages.map((m) => ({ seat: m.seat, text: m.text }));
+        if (trimmed) history.push({ seat: 'A', text: trimmed });
         callApi<{ text: string }>('/api/opponent', { topic: room.topic_title, history })
           .then(async (reply) => {
             await supabase.from('messages').insert({
@@ -888,20 +899,45 @@ export function useRoom(nickname: string | null): UseRoomResult {
       loggedRoomIdsRef.current.add(room.id);
       await writeParticipationLog(room, mySeat, nickname, messages);
     }
-    // 대표 발언자(seat_a/seat_b 본인 — 방장이 아니어도)가 나가면 그 자리는
-    // 다시 채워지지 않아 상대만 영원히 답장을 기다리게 되고, 나 자신도
+    // 나간 사람이 다시 채워지지 않는 자리를 그대로 두면(대표 발언자든
+    // 2번째 팀원이든) 상대만 영원히 답장을 기다리게 되고, 나 자신도
     // 다음에 새로고침하면 recoverMyRoom()이 "아직 열려있는 내 방"으로
-    // 착각해 다시 끌고 들어온다. 대표가 나가면 방도 같이 닫는다 — 2번째
-    // 팀원(isTeamMember2)은 자기 팀 대표가 계속 있으니 나가도 방을 안 닫는다.
-    if (room.status !== 'closed' && !isTeamMember2) {
-      await supabase.from('messages').insert({
-        room_id: room.id,
-        seat: 'SYS',
-        sender: nickname,
-        text: `${nickname}님이 나가서 세션이 종료되었습니다.`,
-        kind: 'session_closed',
-      });
-      await closeRoomWithRetry(room.id);
+    // 착각해 다시 끌고 들어온다. 1:1(대화/격돌)은 누구든 나가면 바로
+    // 종료되지만, 토론(2:2)은 같은 편(대표+2번째 팀원)이 둘 다 나가야
+    // 종료된다 — 한쪽이 남아있으면 그 편은 계속 대화를 이어갈 수 있다.
+    if (room.status !== 'closed') {
+      if (room.kind === 'debate') {
+        const memberField = mySeat === 'A' ? 'team_a_member2' : 'team_b_member2';
+        const seatField = mySeat === 'A' ? 'seat_a' : 'seat_b';
+        const myField = isTeamMember2 ? memberField : seatField;
+        const { data: updated } = await supabase
+          .from('rooms')
+          .update({ [myField]: null })
+          .eq('id', room.id)
+          .select()
+          .maybeSingle();
+        const row = updated as RoomRow | null;
+        const sideNowEmpty = row ? (mySeat === 'A' ? !row.seat_a && !row.team_a_member2 : !row.seat_b && !row.team_b_member2) : false;
+        if (sideNowEmpty) {
+          await supabase.from('messages').insert({
+            room_id: room.id,
+            seat: 'SYS',
+            sender: nickname,
+            text: `${nickname}님이 나가서 세션이 종료되었습니다.`,
+            kind: 'session_closed',
+          });
+          await closeRoomWithRetry(room.id);
+        }
+      } else {
+        await supabase.from('messages').insert({
+          room_id: room.id,
+          seat: 'SYS',
+          sender: nickname,
+          text: `${nickname}님이 나가서 세션이 종료되었습니다.`,
+          kind: 'session_closed',
+        });
+        await closeRoomWithRetry(room.id);
+      }
     }
     leave();
   }, [room, mySeat, nickname, messages, leave, isTeamMember2]);

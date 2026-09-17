@@ -7,6 +7,7 @@ import { ChangeModal } from './components/ChangeModal';
 import { NicknameGate } from './components/NicknameGate';
 import { OnboardingModal } from './components/OnboardingModal';
 import { StillmanModal } from './components/StillmanModal';
+import { LeaveConfirmModal } from './components/LeaveConfirmModal';
 import { CreateRoomModal } from './components/CreateRoomModal';
 import { HomeTab } from './tabs/HomeTab';
 import { SessionTab } from './tabs/SessionTab';
@@ -119,6 +120,7 @@ export default function App() {
   const [sparSessionSec, setSparSessionSec] = useState(1080);
 
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [stillmanOpen, setStillmanOpen] = useState(false);
   const [stillmanContext, setStillmanContext] = useState<'main' | 'spar'>('main');
   const [stillmanText, setStillmanText] = useState('');
@@ -296,10 +298,12 @@ export default function App() {
       return;
     }
 
-    // 자동생성 2번/3번방(격돌 종류)도 마찬가지: 이미 둘이 꽉 차서 진행 중인
-    // 대화가 있으면 새로 매칭하지 않고 그 대화를 관전한다.
-    const scheduleKind = SCHEDULE.find((row) => row.topicId === topicId)?.kind ?? 'chat';
-    if (scheduleKind === 'clash') {
+    // 자동생성 2번/3번방(관전 가능한 방)도 마찬가지: 이미 둘이 꽉 차서
+    // 진행 중인 대화가 있으면 새로 매칭하지 않고 그 대화를 관전한다.
+    // 1번방은 관전 자체가 없다(spectate: 'none').
+    const scheduleRow = SCHEDULE.find((row) => row.topicId === topicId);
+    const scheduleKind = scheduleRow?.kind ?? 'chat';
+    if (scheduleRow && scheduleRow.spectate !== 'none') {
       const { data: activeRoom } = await supabase
         .from('rooms')
         .select('id')
@@ -406,11 +410,18 @@ export default function App() {
     showToast('good', '발언권 요청 · 다음 턴에 앞당겨집니다');
   }
 
-  async function handleSend() {
+  // endTurn=false(엔터): 카카오톡처럼 그 자리에서 바로 메시지가 올라가고
+  // 발언권은 그대로 남는다. endTurn=true([종료] 버튼): 발언을 마치고
+  // 상대에게 순서를 넘긴다 — 대표 발언자는 더 할 말이 없어도 빈 채로
+  // 눌러 순서만 넘길 수 있다. 2번째 팀원은 원래 순서가 없어(손들기 토큰
+  // 소모) turn 검사 자체가 적용되지 않는다.
+  async function handleSend(endTurn: boolean) {
     const text = draft.trim();
-    if (!text || !room || room.turn !== mySeat) return;
+    if (!room || room.status === 'closed') return;
+    if (!isTeamMember2 && room.turn !== mySeat) return;
+    if (!text && !(endTurn && !isTeamMember2)) return;
     setDraft('');
-    const moderation = await roomApi.send(text);
+    const moderation = await roomApi.send(text, endTurn);
     if (moderation?.flagged) {
       const toastText = MODERATION_TOAST[moderation.axis];
       if (toastText) showToast('warn', toastText);
@@ -430,6 +441,35 @@ export default function App() {
     await roomApi.finishAndLog();
     await bumpListened();
     setTab('shelf');
+  }
+
+  // 토론(2:2)은 같은 편에 남은 사람이 있으면 한 명이 나가도 방이 안
+  // 닫히지만, 그 외(1:1 대화/격돌)는 누구든 나가면 바로 방이 종료된다.
+  function willCloseRoomOnLeave(): boolean {
+    if (!room) return false;
+    if (room.kind !== 'debate') return true;
+    const otherOnMySide = isTeamMember2
+      ? mySeat === 'A'
+        ? room.seat_a
+        : room.seat_b
+      : mySeat === 'A'
+        ? room.team_a_member2
+        : room.team_b_member2;
+    return !otherOnMySide;
+  }
+
+  function requestLeaveSession() {
+    // 방장이 이미 종료(폭파)한 방을 나가는 건 더 닫을 세션이 없으니 바로 나간다.
+    if (room?.status === 'closed') {
+      handleLeaveSession();
+      return;
+    }
+    setLeaveConfirmOpen(true);
+  }
+
+  function confirmLeaveSession() {
+    setLeaveConfirmOpen(false);
+    handleLeaveSession();
   }
 
   async function confirmChange() {
@@ -516,12 +556,13 @@ export default function App() {
     await sparRoomApi.join('spar', `리허설 · ${topic}`, true, true);
   }
 
-  async function handleSparSend() {
+  async function handleSparSend(endTurn: boolean) {
     const text = sparChatDraft.trim();
     const sparRoom = sparRoomApi.room;
-    if (!text || !sparRoom || sparRoom.turn !== 'A' || sparRoom.status === 'closed') return;
+    if (!sparRoom || sparRoom.turn !== 'A' || sparRoom.status === 'closed') return;
+    if (!text && !endTurn) return;
     setSparChatDraft('');
-    const moderation = await sparRoomApi.send(text);
+    const moderation = await sparRoomApi.send(text, endTurn);
     if (moderation?.flagged) {
       const toastText = MODERATION_TOAST[moderation.axis];
       if (toastText) showToast('warn', toastText);
@@ -626,7 +667,14 @@ export default function App() {
             )}
 
             {tab === 'session' && spectateTopicId && (
-              <ClashSpectatorTab topicId={spectateTopicId} nickname={nickname} onExit={() => setSpectateTopicId(null)} />
+              <ClashSpectatorTab
+                topicId={spectateTopicId}
+                nickname={nickname}
+                // 자동생성 방은 spectate 값대로(2번=관전만, 3번=투표까지).
+                // 커스텀 격돌방은 스케줄에 없으니(=undefined) 원래대로 투표 가능.
+                allowVote={(SCHEDULE.find((row) => row.topicId === spectateTopicId)?.spectate ?? 'vote') === 'vote'}
+                onExit={() => setSpectateTopicId(null)}
+              />
             )}
 
             {tab === 'session' && !spectateTopicId && sessionView === 'list' && (
@@ -681,7 +729,7 @@ export default function App() {
                   setChangeContext('main');
                   setChangeOpen(true);
                 }}
-                onLeave={handleLeaveSession}
+                onLeave={requestLeaveSession}
                 draft={draft}
                 onDraftChange={setDraft}
                 onSend={handleSend}
@@ -780,6 +828,13 @@ export default function App() {
           />
 
           <ChangeModal open={changeOpen} onCancel={() => setChangeOpen(false)} onConfirm={confirmChange} />
+
+          <LeaveConfirmModal
+            open={leaveConfirmOpen}
+            willCloseRoom={willCloseRoomOnLeave()}
+            onCancel={() => setLeaveConfirmOpen(false)}
+            onConfirm={confirmLeaveSession}
+          />
 
           <OnboardingModal
             open={showOnboarding}

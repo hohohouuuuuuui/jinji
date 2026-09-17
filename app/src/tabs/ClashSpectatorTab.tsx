@@ -5,12 +5,14 @@ import { VoteGauge } from '../components/VoteGauge';
 interface ClashSpectatorTabProps {
   topicId: string;
   nickname: string;
+  // false면 읽기 전용 관전만 된다(2번방) — true면 A/B 투표까지 가능하다(3번방, 커스텀 격돌방).
+  allowVote?: boolean;
   onExit: () => void;
 }
 
-export function ClashSpectatorTab({ topicId, nickname, onExit }: ClashSpectatorTabProps) {
+export function ClashSpectatorTab({ topicId, nickname, allowVote = true, onExit }: ClashSpectatorTabProps) {
   const { room, messages } = useSpectate(topicId);
-  const { counts, myVote, castVote } = useVotes(room?.id ?? null, nickname);
+  const { counts, myVote, castVote } = useVotes(allowVote ? (room?.id ?? null) : null, nickname);
 
   const aLabel = room?.seat_a ?? 'A';
   const bLabel = room?.seat_b ?? 'B';
@@ -34,9 +36,9 @@ export function ClashSpectatorTab({ topicId, nickname, onExit }: ClashSpectatorT
         </div>
       </div>
 
-      {room && <VoteGauge counts={counts} aLabel={aLabel} bLabel={bLabel} />}
+      {room && allowVote && <VoteGauge counts={counts} aLabel={aLabel} bLabel={bLabel} />}
 
-      {room && (
+      {room && allowVote && (
         <div style={{ flex: 'none', display: 'flex', gap: 8, padding: '8px 16px 4px' }}>
           <button
             onClick={() => castVote('A')}

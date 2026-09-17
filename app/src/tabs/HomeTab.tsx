@@ -7,6 +7,7 @@ import { getGrowth } from '../lib/growth';
 import { useTopicSeatCounts } from '../lib/useTopicSeatCounts';
 import type { CustomRoomSummary } from '../lib/useCustomRooms';
 import type { RoomKind } from '../lib/db-types';
+import type { SpectateMode } from '../data';
 
 function parseCapacity(bottom: string): number {
   const digits = bottom.match(/\d+/);
@@ -34,6 +35,7 @@ interface DisplayRow {
   seatCount?: number;
   neverFull?: boolean;
   kind: RoomKind;
+  spectate?: SpectateMode;
 }
 
 interface HomeTabProps {
@@ -148,9 +150,11 @@ export function HomeTab({
     featured: row.featured,
     lockedNote: row.lockedNote,
     seatsBottom: row.seats.bottom,
-    // 자동생성 격돌방(2/3번)은 자리가 다 찼어도 마감이 아니라 관전으로 들어갈 수 있다.
-    neverFull: row.kind === 'clash',
+    // 자동생성 2/3번방은 자리가 다 찼어도 마감이 아니라 관전으로 들어갈 수
+    // 있다(2번은 읽기 전용, 3번은 투표까지) — 1번방은 관전 자체가 없다.
+    neverFull: row.spectate !== 'none',
     kind: row.kind,
+    spectate: row.spectate,
     isMine: !!row.topicId && !!myScheduleRoomStatus[row.topicId],
     myStatus: row.topicId ? myScheduleRoomStatus[row.topicId] : undefined,
   }));
@@ -335,8 +339,9 @@ export function HomeTab({
           const seatCount = row.seatCount ?? (row.topicId ? seatCounts[row.topicId] ?? 0 : 0);
           const capacity = parseCapacity(row.seatsBottom);
           const isFull = !row.neverFull && !isApplying && seatCount >= capacity;
-          // 자동생성 격돌방(2/3번)은 자리가 찼을 때 마감 대신 관전하기로 들어갈 수 있다.
-          const spectateReady = row.kind === 'clash' && row.neverFull && !isApplying && seatCount >= capacity;
+          // 자동생성 2/3번방은 자리가 찼을 때 마감 대신 관전하기로 들어갈 수
+          // 있다 — 커스텀 방(격돌 포함)은 spectate 필드 자체가 없어서 항상 false.
+          const spectateReady = (row.spectate === 'view' || row.spectate === 'vote') && row.neverFull && !isApplying && seatCount >= capacity;
           return (
             <div
               key={row.key}

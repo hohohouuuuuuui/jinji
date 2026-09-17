@@ -6,6 +6,11 @@ export interface ScheduleRoom {
   locked?: boolean;
 }
 
+// 자리가 다 찼을 때 관전이 되는지: 'none'(1번방 — 마감), 'view'(2번방 — 읽기
+// 전용 관전만, 투표 없음), 'vote'(3번방 — 관전 + A/B 투표). 대화 형식(kind:
+// 1:1/2:2/투표UI 여부)과는 별개 축이라 따로 둔다.
+export type SpectateMode = 'none' | 'view' | 'vote';
+
 export interface ScheduleRowData {
   room: ScheduleRoom;
   time: string;
@@ -20,6 +25,7 @@ export interface ScheduleRowData {
   lockedNote?: string;
   featured?: boolean;
   kind: RoomKind;
+  spectate: SpectateMode;
 }
 
 const ROOM1 = { id: 1 as const, color: '#F586AE' };
@@ -42,6 +48,7 @@ export const SCHEDULE: ScheduleRowData[] = [
     topicId: 'ai-copyright',
     featured: true,
     kind: 'chat',
+    spectate: 'none',
   },
   {
     room: ROOM2,
@@ -56,6 +63,7 @@ export const SCHEDULE: ScheduleRowData[] = [
     cta: '입장 신청하기',
     topicId: 'regret-choice',
     kind: 'chat',
+    spectate: 'view',
   },
   {
     room: ROOM3,
@@ -70,6 +78,7 @@ export const SCHEDULE: ScheduleRowData[] = [
     cta: '입장 신청하기',
     topicId: 'meritocracy',
     kind: 'clash',
+    spectate: 'vote',
   },
   {
     room: { id: 4, color: '#17171a', locked: true },
@@ -81,6 +90,7 @@ export const SCHEDULE: ScheduleRowData[] = [
     seats: { top: '', bottom: '' },
     lockedNote: '🔒 초성충부터 참가',
     kind: 'chat',
+    spectate: 'none',
   },
 ];
 

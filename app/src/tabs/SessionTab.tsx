@@ -32,7 +32,10 @@ interface SessionTabProps {
   onLeave: () => void;
   draft: string;
   onDraftChange: (v: string) => void;
-  onSend: () => void;
+  // false: 엔터로 보내는 한 줄(카카오톡처럼 즉시 채팅창에 올라가지만 발언권은
+  // 그대로 나한테 남는다). true: [종료] 버튼(내 발언을 마치고 상대에게
+  // 순서를 넘긴다 — 더 할 말이 없으면 빈 채로 눌러도 된다).
+  onSend: (endTurn: boolean) => void;
   kindLabel?: string;
   closed?: boolean;
   leaveLabel?: string;
@@ -272,7 +275,6 @@ export function SessionTab({
                   {m.text}
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', paddingRight: 6 }}>
-                  {m.done && <div style={{ fontSize: 10, color: '#4a4750' }}>발언 종료</div>}
                   {m.flagged && !m.disputed && !closed && (
                     <button
                       onClick={() => onDispute(m.id)}
@@ -390,20 +392,28 @@ export function SessionTab({
             ref={draftRef}
             value={draft}
             onChange={(e) => onDraftChange(e.target.value)}
+            onKeyDown={(e) => {
+              // 카카오톡처럼: 엔터를 치면 그 자리에서 바로 메시지가 올라간다
+              // (발언권은 그대로 나에게 남는다, 여러 줄을 이어서 보낼 수
+              // 있음). Shift+Enter는 줄바꿈. 실제로 순서를 상대에게 넘기는
+              // 건 오직 [종료] 버튼뿐이다.
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                if (canType && draft.trim()) onSend(false);
+              }
+            }}
             rows={1}
-            // 모바일 키보드에 "전송"이 아니라 "줄바꿈" 아이콘이 뜨게 한다 —
-            // 엔터는 항상 줄바꿈일 뿐이고(카카오톡 채팅창처럼 여러 줄을
-            // 자연스럽게 쓸 수 있음), 실제 전송(발언 종료)은 오직 [종료]
-            // 버튼을 눌러야만 된다.
-            enterKeyHint="enter"
+            enterKeyHint="send"
             placeholder={
               closed
                 ? '세션이 종료됐습니다'
                 : muted
                   ? `${mutedSecondsLeft}초 후 다시 발언할 수 있어요`
                   : isMyTurn
-                    ? '발언대에서 말하기 · 여러 문장을 쓴 뒤 [종료]를 눌러 보내세요'
-                    : '상대 차례를 기다리는 중…'
+                    ? '메시지를 입력하고 Enter로 보내세요'
+                    : isTeamMember2
+                      ? '팀 대표의 의견에 덧붙이기 · Enter로 보내세요'
+                      : '상대 차례를 기다리는 중…'
             }
             disabled={!canType}
             style={{
@@ -425,13 +435,14 @@ export function SessionTab({
             }}
           />
           <button
-            onClick={onSend}
-            disabled={!canType}
+            onClick={() => onSend(!isTeamMember2)}
+            disabled={!canType || (isTeamMember2 && !draft.trim())}
+            title={isTeamMember2 ? undefined : '발언을 마치고 상대에게 순서를 넘깁니다'}
             style={{
-              cursor: canType ? 'pointer' : 'not-allowed',
+              cursor: canType && !(isTeamMember2 && !draft.trim()) ? 'pointer' : 'not-allowed',
               flex: 'none',
-              background: canType ? '#17171a' : '#EFEDF2',
-              color: canType ? '#fff' : '#a9a5af',
+              background: canType && !(isTeamMember2 && !draft.trim()) ? '#17171a' : '#EFEDF2',
+              color: canType && !(isTeamMember2 && !draft.trim()) ? '#fff' : '#a9a5af',
               border: 'none',
               borderRadius: 999,
               padding: '14px 19px',
