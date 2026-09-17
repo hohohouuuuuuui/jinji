@@ -348,12 +348,17 @@ export default function App() {
   async function handleNicknameSubmit(name: string) {
     localStorage.setItem(NICKNAME_KEY, name);
     setNickname(name);
-    // 3장 온보딩: 진짜 대화를 한 번도 해본 적 없는 닉네임이면 스파링 체험을 제안한다.
-    const { count } = await supabase
-      .from('logs')
-      .select('id', { count: 'exact', head: true })
-      .eq('nickname', name);
-    if (!count) setShowOnboarding(true);
+    // 온보딩(스파링 체험 제안) 팝업은 이 닉네임을 "처음 등록하는" 사람에게만
+    // 보여준다 — 예전엔 참가기록(logs) 개수로 판단해서, 이미 써본 적 있는
+    // 닉네임이라도 진짜 대화를 아직 한 번도 안 끝냈으면 매번 "처음이시네요"가
+    // 다시 떴다. profiles 테이블에 이 닉네임 row가 있는지로 "이미 등록된
+    // 적 있는 닉네임인지"를 판단한다 — 없으면 지금 이 순간 만들어서
+    // 등록하고(그래야 다음부턴 신규가 아님), 있으면 기존 사용자이니 넘어간다.
+    const { data: existingProfile } = await supabase.from('profiles').select('nickname').eq('nickname', name).maybeSingle();
+    if (!existingProfile) {
+      await supabase.from('profiles').insert({ nickname: name });
+      setShowOnboarding(true);
+    }
   }
 
   async function handleAck(messageId: number) {
