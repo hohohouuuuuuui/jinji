@@ -185,6 +185,12 @@ export default function App() {
     if (wasActive.current) return false;
     wasActive.current = true;
     if (!hasSeenBriefing(row.id)) {
+      // 여기서 곧바로 "봤다"로 표시한다 — 끝까지 읽고 [입장]을 눌러야만
+      // 표시했다면, 사용자가 ✕로 닫거나 브리핑이 뜬 채로 앱을 나갔다가
+      // 나중에 그 방(이미 대화 중이던 방)에 다시 들어올 때마다 "딱 한
+      // 번만" 뜨기로 한 브리핑이 매번 다시 떴다. "브리핑 완독" 카운트는
+      // 별개로 실제로 읽고 [입장]을 눌렀을 때만(bumpBriefed) 올라간다.
+      markBriefingSeen(row.id);
       setBriefRead(false);
       setSessionSec((row.duration_minutes ?? 18) * 60);
       setBriefingOpen(true);
