@@ -30,6 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   "issues": ["구체적인 쟁점 문장 정확히 3개, 각각 물음표로 끝나는 질문 형태"],
   "objections": ["서로 다른 입장에서의 대표적인 반대 의견 정확히 2개, 각각 인용문처럼 한 문장"]
 }`,
+      { thinkingLevel: 'low' },
     );
     res.status(200).json(briefing);
   } catch (err) {

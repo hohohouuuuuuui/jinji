@@ -285,16 +285,21 @@ export function useRoom(nickname: string | null): UseRoomResult {
 
           if (createErr || !created) throw createErr ?? new Error('room creation failed');
 
-          let finalCreated = created as RoomRow;
+          const finalCreated = created as RoomRow;
           setRoom(finalCreated);
           setMySeat('A');
           setPhase('active');
           setMessages([]);
           subscribe(created.id);
+          // 브리핑 생성(AI 호출)을 기다리지 않고 바로 입장시킨다 — 기다리면
+          // 그동안 "입장 신청 완료" 버튼에 멈춰있는 것처럼 보인다. 대신
+          // 브리핑 모달이 "AI가 브리핑을 준비하고 있어요…" placeholder로
+          // 뜬 채 기다리다가, 완성되는 대로 room 상태에 반영해 자동으로
+          // 채워지게 한다.
           if (!skipBriefing) {
-            const briefing = await generateBriefingIfNeeded(finalCreated);
-            finalCreated = { ...finalCreated, briefing };
-            setRoom(finalCreated);
+            generateBriefingIfNeeded(finalCreated).then((briefing) => {
+              setRoom((prev) => (prev && prev.id === finalCreated.id ? { ...prev, briefing } : prev));
+            });
           }
           return { status: 'active', room: finalCreated };
         }
@@ -318,7 +323,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
             .maybeSingle();
 
           if (joined) {
-            let finalJoined = joined as RoomRow;
+            const finalJoined = joined as RoomRow;
             setRoom(finalJoined);
             setMySeat('B');
             setPhase('active');
@@ -329,9 +334,10 @@ export function useRoom(nickname: string | null): UseRoomResult {
               .eq('room_id', joined.id)
               .order('created_at', { ascending: true });
             setMessages((existingMsgs as MessageRow[]) ?? []);
-            const briefing = await generateBriefingIfNeeded(finalJoined);
-            finalJoined = { ...finalJoined, briefing };
-            setRoom(finalJoined);
+            // 브리핑 생성을 기다리지 않고 바로 입장시킨다(위 vs_ai 분기와 동일한 이유).
+            generateBriefingIfNeeded(finalJoined).then((briefing) => {
+              setRoom((prev) => (prev && prev.id === finalJoined.id ? { ...prev, briefing } : prev));
+            });
             return { status: 'active', room: finalJoined };
           }
           // Someone else grabbed it between our select and update — fall through to create our own.
