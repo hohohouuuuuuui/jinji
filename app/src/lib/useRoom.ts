@@ -45,7 +45,7 @@ interface UseRoomResult {
   rejoin: (topicId: string) => Promise<AttachResult>;
   recoverMyRoom: () => Promise<AttachResult>;
   joinTeamSecondSeat: (topicId: string, side: Seat) => Promise<boolean>;
-  endSessionAsHost: () => Promise<void>;
+  endSessionAsHost: () => Promise<boolean>;
   leave: () => void;
   cancelJoin: () => Promise<void>;
   send: (text: string) => Promise<ModerationResult | null>;
@@ -489,8 +489,14 @@ export function useRoom(nickname: string | null): UseRoomResult {
 
   // 방장 전용 종료 권한: 참가자 한쪽이 조용히 나가는 것과 달리, 방장이
   // 끝내면 즉시 양쪽 모두에게 종료가 통지되고 세션이 닫힌다.
-  const endSessionAsHost = useCallback(async () => {
-    if (!room || !nickname || room.host_nickname !== nickname || room.status === 'closed') return;
+  //
+  // update()가 조용히 실패하면(네트워크 문제 등) 방장 화면만 로컬로
+  // "종료됨"처럼 보이고 실제 DB row는 계속 active로 남아, 새로고침하거나
+  // 다른 사람이 보면 여전히 "진행중"으로 보이는 버그가 있었다. .select()로
+  // 실제로 업데이트된 row를 직접 확인하고, 실패하면 몇 번 재시도한 뒤에도
+  // 안 되면 로컬 상태를 낙관적으로 바꾸지 않고 실패를 알린다.
+  const endSessionAsHost = useCallback(async (): Promise<boolean> => {
+    if (!room || !nickname || room.host_nickname !== nickname || room.status === 'closed') return false;
     await supabase.from('messages').insert({
       room_id: room.id,
       seat: 'SYS',
@@ -498,7 +504,22 @@ export function useRoom(nickname: string | null): UseRoomResult {
       text: '방장이 토론을 종료했습니다.',
       kind: 'session_closed',
     });
-    await supabase.from('rooms').update({ status: 'closed' }).eq('id', room.id);
+
+    let closedRow: RoomRow | null = null;
+    for (let attempt = 0; attempt < 3 && !closedRow; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 400));
+      const { data, error: updateErr } = await supabase
+        .from('rooms')
+        .update({ status: 'closed' })
+        .eq('id', room.id)
+        .select()
+        .maybeSingle();
+      if (updateErr) console.error('room close update failed', updateErr);
+      if (data) closedRow = data as RoomRow;
+    }
+
+    if (!closedRow) return false;
+
     if (mySeat && !loggedRoomIdsRef.current.has(room.id)) {
       loggedRoomIdsRef.current.add(room.id);
       await writeParticipationLog(room, mySeat, nickname, messages);
@@ -507,6 +528,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
     // 잠깐(혹은 연결이 불안정하면 계속) "진행 중"으로 남아 종료 버튼을 또
     // 누를 수 있고, 그러면 참가기록이 중복으로 쌓인다.
     setRoom((prev) => (prev && prev.id === room.id ? { ...prev, status: 'closed' } : prev));
+    return true;
   }, [room, nickname, mySeat, messages]);
 
   // 방장이 종료하거나 상대가 먼저 나가서 방이 닫히면, 참가자도 "나가기"를

@@ -354,7 +354,11 @@ export default function App() {
   }
 
   async function handleEndSessionAsHost() {
-    await roomApi.endSessionAsHost();
+    const ok = await roomApi.endSessionAsHost();
+    if (!ok) {
+      showToast('warn', '방 종료에 실패했어요 · 다시 시도해주세요');
+      return;
+    }
     // 실시간 갱신을 기다리지 않고 바로 반영 — 그래야 토론방 목록에서 방금
     // 종료한 방이 곧장 "진행 중" 목록에서 빠진다.
     refetchCustomRooms();
