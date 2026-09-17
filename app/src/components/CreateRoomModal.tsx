@@ -24,12 +24,42 @@ export function CreateRoomModal({ open, onClose, onCreate, creating, error }: Cr
   const [allowProfanity, setAllowProfanity] = useState(false);
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [handLimit, setHandLimit] = useState(2);
+  const [topicError, setTopicError] = useState<string | null>(null);
+  const [validating, setValidating] = useState(false);
 
   if (!open) return null;
 
-  function submit() {
-    if (!topic.trim() || creating) return;
-    onCreate(topic.trim(), { allowProfanity, durationMinutes, handLimit }, kind);
+  function handleTopicChange(v: string) {
+    setTopic(v);
+    if (topicError) setTopicError(null);
+  }
+
+  // 방장이 쓴 주제가 찬반이 갈리는 토론 주제인지 AI로 먼저 확인한다 —
+  // "결혼", "연애"처럼 입장이 없는 단어형이면 방을 만들기 전에 더 구체적으로
+  // 쓰라고 바로 알려준다(리허설룸 주제 입력과 같은 검증을 재사용).
+  async function submit() {
+    const trimmed = topic.trim();
+    if (!trimmed || creating || validating) return;
+    setValidating(true);
+    setTopicError(null);
+    try {
+      const res = await fetch('/api/validate-topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: trimmed }),
+      });
+      const result = (await res.json()) as { valid: boolean; message: string };
+      if (!result.valid) {
+        setTopicError(result.message || '찬반이 갈리는 토론 주제로 좀 더 구체적으로 써주세요. (예: "OO은 필요한가")');
+        return;
+      }
+    } catch (err) {
+      console.error('topic validation failed', err);
+      // 검증 자체가 실패하면 막지 않고 그냥 진행시킨다.
+    } finally {
+      setValidating(false);
+    }
+    onCreate(trimmed, { allowProfanity, durationMinutes, handLimit }, kind);
   }
 
   return (
@@ -86,13 +116,13 @@ export function CreateRoomModal({ open, onClose, onCreate, creating, error }: Cr
         <div style={{ fontSize: 13, fontWeight: 700, color: '#4a4750', marginTop: 18 }}>주제</div>
         <input
           value={topic}
-          onChange={(e) => setTopic(e.target.value)}
+          onChange={(e) => handleTopicChange(e.target.value)}
           placeholder="예: 재택근무가 사무실 근무보다 생산적인가"
           style={{
             width: '100%',
             marginTop: 6,
             background: '#F3F1F5',
-            border: 'none',
+            border: topicError ? '1.5px solid #c0392b' : 'none',
             borderRadius: 14,
             padding: '12px 14px',
             fontSize: 14,
@@ -100,6 +130,9 @@ export function CreateRoomModal({ open, onClose, onCreate, creating, error }: Cr
             outline: 'none',
           }}
         />
+        {topicError && (
+          <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.55, color: '#c0392b', fontWeight: 500 }}>{topicError}</div>
+        )}
 
         <div style={{ fontSize: 13, fontWeight: 700, color: '#4a4750', marginTop: 18 }}>
           대화·토론 총 시간
@@ -212,12 +245,12 @@ export function CreateRoomModal({ open, onClose, onCreate, creating, error }: Cr
           </button>
           <button
             onClick={submit}
-            disabled={!topic.trim() || creating}
+            disabled={!topic.trim() || creating || validating}
             style={{
               flex: 1,
-              cursor: topic.trim() && !creating ? 'pointer' : 'not-allowed',
-              background: topic.trim() && !creating ? '#17171a' : '#E4E1E8',
-              color: topic.trim() && !creating ? '#fff' : '#a9a5af',
+              cursor: topic.trim() && !creating && !validating ? 'pointer' : 'not-allowed',
+              background: topic.trim() && !creating && !validating ? '#17171a' : '#E4E1E8',
+              color: topic.trim() && !creating && !validating ? '#fff' : '#a9a5af',
               border: 'none',
               borderRadius: 999,
               padding: 15,
@@ -225,7 +258,7 @@ export function CreateRoomModal({ open, onClose, onCreate, creating, error }: Cr
               fontWeight: 700,
             }}
           >
-            {creating ? '만드는 중…' : '방 만들기'}
+            {creating ? '만드는 중…' : validating ? '주제 확인 중…' : '방 만들기'}
           </button>
         </div>
       </div>

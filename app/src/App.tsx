@@ -219,7 +219,15 @@ export default function App() {
       setJoiningTopicId(null);
       setSessionView('list');
     }
-    if (phase === 'active' || phase === 'error') {
+    // phase가 'active'가 되는 순간 여기서 joiningTopicId를 지우면(예전
+    // 코드), handleEnterRoom이 아직 setTab/setSessionView를 호출하기도
+    // 전에 — join() 내부에서 메시지를 불러오고 브리핑을 만드는 동안 이미
+    // 'active'로 바뀌어 있어서 — 시간표 화면의 버튼이 "입장 신청 완료"에서
+    // "참여하기"로 잠깐 되돌아갔다가 화면이 넘어가는 게 보였다(버튼이 계속
+    // 바뀌는 것처럼 느껴짐). 이제는 각 입장 경로(handleEnterRoom 등)가
+    // 화면 전환과 같은 타이밍에 직접 지운다. 여기서는 실패(error)한
+    // 경우만 안전망으로 지운다.
+    if (phase === 'error') {
       setJoiningTopicId(null);
     }
   }, [phase, room, tab, sessionView]);
@@ -274,6 +282,7 @@ export default function App() {
       setJoiningTopicId(topicId);
       const joined = await roomApi.joinTeamSecondSeat(topicId, side);
       refetchCustomRooms();
+      setJoiningTopicId(null);
       if (joined) {
         setTab('session');
         setSessionView('chat');
@@ -304,11 +313,18 @@ export default function App() {
     const result = await roomApi.join(topicId, topicTitle, false, false, scheduleKind);
     refetchCustomRooms();
     refetchMyScheduleRooms();
-    if (!result || result.status === 'error') return;
+    if (!result || result.status === 'error') {
+      setJoiningTopicId(null);
+      return;
+    }
     // 매칭 성공(진행중이든 대기중이든) 시 곧장 그 방 화면으로 데려간다 —
     // 예전엔 버튼 라벨만 바뀌고 사용자는 계속 목록에 남아있어서, 방금 누른
-    // 버튼이 뭘 했는지 체감이 안 됐다.
+    // 버튼이 뭘 했는지 체감이 안 됐다. joiningTopicId도 화면 전환과 같은
+    // 타이밍에 지운다 — 미리 지우면(예전 코드) join() 내부가 메시지·브리핑을
+    // 마무리하는 동안 시간표의 버튼이 "참여하기"로 잠깐 되돌아갔다가 화면이
+    // 넘어가는 게 보였다.
     if (result.status === 'active') activateRoom(result.room);
+    setJoiningTopicId(null);
     setTab('session');
     setSessionView('chat');
   }
@@ -327,7 +343,6 @@ export default function App() {
     const topicId = await roomApi.createCustomRoom(topicTitle, rules, kind);
     setCreatingRoom(false);
     if (topicId) {
-      setJoiningTopicId(topicId);
       setCreateRoomOpen(false);
       refetchCustomRooms();
       // 방을 만들었으면 곧장 그 방(대기 화면)으로 들어간다 — 예전엔 모달만
