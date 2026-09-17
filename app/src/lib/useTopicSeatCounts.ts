@@ -37,8 +37,17 @@ export function useTopicSeatCounts(topicIds: string[]): CountMap {
       })
       .subscribe();
 
+    // realtime을 놓쳐도 주기적으로/탭에 돌아올 때 다시 맞춰준다.
+    const pollTimer = setInterval(load, 15000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
       cancelled = true;
+      clearInterval(pollTimer);
+      document.removeEventListener('visibilitychange', onVisible);
       channel.unsubscribe();
     };
   }, [key]);

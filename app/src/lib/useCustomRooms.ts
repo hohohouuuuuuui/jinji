@@ -90,8 +90,20 @@ export function useCustomRooms(): [CustomRoomSummary[], () => void] {
       )
       .subscribe();
 
+    // realtime 연결이 끊기거나 이벤트를 놓치는 경우(방장이 방을 종료했는데
+    // 다른 사람 화면엔 계속 "진행중"으로 남는 등)에 대비한 안전망 — 주기적
+    // 재조회와, 탭을 다시 들여다볼 때 재조회를 추가해서 realtime 하나만
+    // 믿지 않게 한다.
+    const pollTimer = setInterval(load, 15000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
+      clearInterval(pollTimer);
+      document.removeEventListener('visibilitychange', onVisible);
       channel.unsubscribe();
     };
   }, [load]);

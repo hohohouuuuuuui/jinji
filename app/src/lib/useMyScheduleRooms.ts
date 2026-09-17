@@ -53,8 +53,17 @@ export function useMyScheduleRooms(nickname: string | null): [MyScheduleRoomSumm
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: 'is_custom=eq.false' }, scheduleLoad)
       .subscribe();
 
+    // realtime을 놓쳐도 주기적으로/탭에 돌아올 때 다시 맞춰준다.
+    const pollTimer = setInterval(load, 15000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
+      clearInterval(pollTimer);
+      document.removeEventListener('visibilitychange', onVisible);
       channel.unsubscribe();
     };
   }, [load]);
