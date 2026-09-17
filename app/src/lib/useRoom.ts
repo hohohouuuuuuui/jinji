@@ -649,49 +649,70 @@ export function useRoom(nickname: string | null): UseRoomResult {
       const handLeft = mySeat === 'A' ? room.hand_left_a : room.hand_left_b;
       if (isTeamMember2 && handLeft <= 0) return null;
 
-      let moderation: ModerationResult | null = null;
+      let currentRoom: RoomRow = room;
+
+      // 메시지는 모더레이션(AI 호출) 결과를 기다리지 않고 곧바로 올린다 —
+      // AI 호출이 느려지면(특히 API 한도 초과 시) "엔터 치면 바로 뜬다"는
+      // 카카오톡 같은 느낌이 깨진다. 턴 넘김/손들기 토큰도 모더레이션
+      // 결과와 무관하니 같이 먼저 반영한다. 모더레이션은 메시지가 이미
+      // 화면에 있는 채로 백그라운드에서 검사해 그 메시지에 표시만 뒤늦게
+      // 갱신한다(위반 처리도 그 결과가 나온 뒤에 이어서 처리).
+      let insertedMsg: MessageRow | null = null;
       if (trimmed) {
-        try {
-          moderation = await callApi<ModerationResult>('/api/moderate', { text: trimmed });
-        } catch (err) {
-          console.error('moderation call failed', err);
+        const { data: inserted } = await supabase
+          .from('messages')
+          .insert({ room_id: room.id, seat: mySeat, sender: nickname, text: trimmed, kind: 'chat', moderation: null })
+          .select()
+          .single();
+        insertedMsg = inserted as MessageRow | null;
+        if (insertedMsg) {
+          const msg = insertedMsg;
+          setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
         }
-
-        // 방장이 욕설 허용으로 완화했다면 profanity 축만 눈감아준다.
-        // 조롱·인신공격 축은 방장 권한으로도 해제할 수 없다.
-        if (moderation?.flagged && moderation.axis === 'profanity' && room.allow_profanity) {
-          moderation = { ...moderation, flagged: false };
-        }
-
-        await supabase.from('messages').insert({
-          room_id: room.id,
-          seat: mySeat,
-          sender: nickname,
-          text: trimmed,
-          kind: 'chat',
-          moderation,
-        });
       }
 
-      // 이번 send() 호출에서 room 테이블에 적용할 필드 변경을 전부 모아
-      // 한 번의 update로 보낸다 — 턴/손들기 토큰과 위반 처리를 따로따로
-      // 보내면, 엔터로 같은 차례에 연달아 보낼 때 그 사이 로컬 room
-      // 상태가 아직 최신화되지 않아 다음 send()가 오래된 값(예: 위반
-      // 횟수)을 기준으로 계산해버려 카운트가 누락될 수 있다.
       const roomUpdate: Record<string, unknown> = {};
       if (isTeamMember2) {
         roomUpdate[handField] = handLeft - 1;
       } else if (endTurn) {
         roomUpdate.turn = mySeat === 'A' ? 'B' : 'A';
       }
+      if (Object.keys(roomUpdate).length > 0) {
+        const { data: updated } = await supabase.from('rooms').update(roomUpdate).eq('id', room.id).select().maybeSingle();
+        if (updated) {
+          currentRoom = updated as RoomRow;
+          setRoom(currentRoom);
+        }
+      }
+
+      if (!trimmed) return null;
+
+      let moderation: ModerationResult | null = null;
+      try {
+        moderation = await callApi<ModerationResult>('/api/moderate', { text: trimmed });
+      } catch (err) {
+        console.error('moderation call failed', err);
+      }
+
+      // 방장이 욕설 허용으로 완화했다면 profanity 축만 눈감아준다.
+      // 조롱·인신공격 축은 방장 권한으로도 해제할 수 없다.
+      if (moderation?.flagged && moderation.axis === 'profanity' && currentRoom.allow_profanity) {
+        moderation = { ...moderation, flagged: false };
+      }
+
+      if (insertedMsg) {
+        const msgId = insertedMsg.id;
+        await supabase.from('messages').update({ moderation }).eq('id', msgId);
+        setMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, moderation } : m)));
+      }
 
       // 6장 모더레이션 경고 처리: 1차는 비공개 토스트(App.tsx)뿐이지만,
       // 2차는 30초 발언정지, 3차는 세션 종료 — AI와 동일한 잣대를 사람에게도.
       let justClosed = false;
-      if (trimmed && moderation?.flagged) {
+      if (moderation?.flagged) {
         const violationsField = mySeat === 'A' ? 'violations_a' : 'violations_b';
-        const violations = (mySeat === 'A' ? room.violations_a : room.violations_b) + 1;
-        roomUpdate[violationsField] = violations;
+        const violations = (mySeat === 'A' ? currentRoom.violations_a : currentRoom.violations_b) + 1;
+        const violationUpdate: Record<string, unknown> = { [violationsField]: violations };
 
         if (violations >= 3) {
           justClosed = true;
@@ -702,25 +723,30 @@ export function useRoom(nickname: string | null): UseRoomResult {
             text: '세션이 종료되었습니다 · 반복된 규정 위반',
             kind: 'session_closed',
           });
-          const closedRow = await closeRoomWithRetry(room.id, roomUpdate);
-          if (closedRow) setRoom(closedRow);
-        } else if (violations === 2) {
-          const mutedField = mySeat === 'A' ? 'muted_until_a' : 'muted_until_b';
-          roomUpdate[mutedField] = new Date(Date.now() + MUTE_SECONDS * 1000).toISOString();
+          const closedRow = await closeRoomWithRetry(room.id, violationUpdate);
+          if (closedRow) {
+            currentRoom = closedRow;
+            setRoom(currentRoom);
+          }
+        } else {
+          if (violations === 2) {
+            const mutedField = mySeat === 'A' ? 'muted_until_a' : 'muted_until_b';
+            violationUpdate[mutedField] = new Date(Date.now() + MUTE_SECONDS * 1000).toISOString();
+          }
+          const { data: updated } = await supabase.from('rooms').update(violationUpdate).eq('id', room.id).select().maybeSingle();
+          if (updated) {
+            currentRoom = updated as RoomRow;
+            setRoom(currentRoom);
+          }
         }
-      }
-
-      if (!justClosed && Object.keys(roomUpdate).length > 0) {
-        const { data: updated } = await supabase.from('rooms').update(roomUpdate).eq('id', room.id).select().maybeSingle();
-        if (updated) setRoom(updated as RoomRow);
       }
 
       // AI 상대는 내 턴이 진짜로 끝났을 때만(엔터로 보내는 중간 문장에는
       // 반응하지 않고, [종료]로 순서를 넘겼을 때) 응답한다.
-      if (room.vs_ai && mySeat === 'A' && room.status === 'active' && endTurn && !justClosed) {
+      if (currentRoom.vs_ai && mySeat === 'A' && currentRoom.status === 'active' && endTurn && !justClosed) {
         const history = messages.map((m) => ({ seat: m.seat, text: m.text }));
-        if (trimmed) history.push({ seat: 'A', text: trimmed });
-        callApi<{ text: string }>('/api/opponent', { topic: room.topic_title, history })
+        history.push({ seat: 'A', text: trimmed });
+        callApi<{ text: string }>('/api/opponent', { topic: currentRoom.topic_title, history })
           .then(async (reply) => {
             await supabase.from('messages').insert({
               room_id: room.id,
@@ -740,7 +766,7 @@ export function useRoom(nickname: string | null): UseRoomResult {
             }
 
             if (aiModeration?.flagged) {
-              const strikes = room.ai_strikes + 1;
+              const strikes = currentRoom.ai_strikes + 1;
               await supabase.from('messages').insert({
                 room_id: room.id,
                 seat: 'SYS',
@@ -760,11 +786,13 @@ export function useRoom(nickname: string | null): UseRoomResult {
                 if (closedRow) setRoom(closedRow);
                 return;
               }
-              await supabase.from('rooms').update({ ai_strikes: strikes, turn: 'A' }).eq('id', room.id);
+              const { data: updated } = await supabase.from('rooms').update({ ai_strikes: strikes, turn: 'A' }).eq('id', room.id).select().maybeSingle();
+              if (updated) setRoom(updated as RoomRow);
               return;
             }
 
-            await supabase.from('rooms').update({ turn: 'A' }).eq('id', room.id);
+            const { data: updated } = await supabase.from('rooms').update({ turn: 'A' }).eq('id', room.id).select().maybeSingle();
+            if (updated) setRoom(updated as RoomRow);
           })
           .catch((err) => console.error('opponent reply failed', err));
       }
