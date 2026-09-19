@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
-import { ButterflyPixel } from '../icons/ButterflyPixel';
-import { CaterpillarPixel } from '../icons/CaterpillarPixel';
+import { GrowthCharacter } from '../components/GrowthCharacter';
 import { supabase } from '../lib/supabase';
-import { getGrowth } from '../lib/growth';
+import type { GrowthInfo } from '../lib/growth';
 import type { LogRow } from '../lib/db-types';
 
 interface ShelfTabProps {
+  growth: GrowthInfo;
   changedCount: number;
   listenedCount: number;
   briefedCount: number;
   stillmanCount: number;
   nickname: string;
+  onOpenGrowthPreview: () => void;
 }
 
 function pct(count: number, cap = 20) {
@@ -28,9 +29,8 @@ function formatLogDate(iso: string) {
     .replace('/', '.');
 }
 
-export function ShelfTab({ changedCount, listenedCount, briefedCount, stillmanCount, nickname }: ShelfTabProps) {
+export function ShelfTab({ growth, changedCount, listenedCount, briefedCount, stillmanCount, nickname, onOpenGrowthPreview }: ShelfTabProps) {
   const [logs, setLogs] = useState<LogRow[] | null>(null);
-  const growth = getGrowth(changedCount);
 
   const stats = [
     { emoji: '👂', label: '끝까지 들음', value: listenedCount, pct: pct(listenedCount), color: '#F586AE' },
@@ -67,23 +67,50 @@ export function ShelfTab({ changedCount, listenedCount, briefedCount, stillmanCo
 
   return (
     <div style={{ padding: '2px 20px 24px', animation: 'jz-fade .25s ease' }}>
-      <div style={{ background: '#E6F5FC', borderRadius: 26, padding: 18, textAlign: 'center' }}>
-        {growth.stage === 'larva' ? <CaterpillarPixel width={240} height={148} /> : <ButterflyPixel />}
+      <div style={{ background: '#E6F5FC', borderRadius: 26, padding: 18, textAlign: 'center', position: 'relative' }}>
+        <button
+          onClick={onOpenGrowthPreview}
+          aria-label="레벨별 캐릭터 미리보기"
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            cursor: 'pointer',
+            width: 26,
+            height: 26,
+            borderRadius: '50%',
+            border: 'none',
+            background: '#fff',
+            color: '#1f5a75',
+            fontSize: 12,
+            fontWeight: 900,
+            boxShadow: '0 1px 4px rgba(23,23,26,0.12)',
+          }}
+        >
+          ?
+        </button>
+        <GrowthCharacter stage={growth.stage} />
         <div style={{ fontFamily: "'DotGothic16',monospace", fontSize: 20, color: '#17171a', marginTop: 4 }}>
-          {growth.tierLabel} LV.{changedCount}
+          {growth.tierLabel} LV.{growth.level}
         </div>
         <div style={{ fontSize: 11.5, fontWeight: 700, color: '#1f5a75', marginTop: 5 }}>{growth.subLabel}</div>
-        {growth.stage === 'butterfly' && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 10 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, padding: '6px 13px', borderRadius: 999, background: '#fff', color: '#8d3f70' }}>
-              철학 날개
-            </span>
-            <span style={{ fontSize: 11, fontWeight: 700, padding: '6px 13px', borderRadius: 999, background: '#fff', color: '#1f5a75' }}>
-              기술 날개
-            </span>
-            <span style={{ fontSize: 11, fontWeight: 700, padding: '6px 13px', borderRadius: 999, background: '#FBE9AE', color: '#63510f' }}>
-              🔥 각성
-            </span>
+        {growth.badges.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+            {growth.badges.map((badge) => (
+              <span
+                key={badge}
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: '6px 13px',
+                  borderRadius: 999,
+                  background: badge.includes('각성') ? '#FBE9AE' : '#fff',
+                  color: badge.includes('각성') ? '#63510f' : '#8d3f70',
+                }}
+              >
+                {badge}
+              </span>
+            ))}
           </div>
         )}
       </div>

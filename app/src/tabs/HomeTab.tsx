@@ -1,13 +1,12 @@
 import { useRef, useState } from 'react';
-import { CaterpillarPixel } from '../icons/CaterpillarPixel';
-import { ButterflyPixel } from '../icons/ButterflyPixel';
+import { GrowthCharacter } from '../components/GrowthCharacter';
 import { FILTER_CHIPS, SCHEDULE } from '../data';
 import { formatKSTDateLabel, formatKSTClock } from '../lib/kst';
-import { getGrowth } from '../lib/growth';
 import { useTopicSeatCounts } from '../lib/useTopicSeatCounts';
 import type { CustomRoomSummary } from '../lib/useCustomRooms';
 import type { RoomKind } from '../lib/db-types';
 import type { SpectateMode } from '../data';
+import type { GrowthInfo } from '../lib/growth';
 
 function parseCapacity(bottom: string): number {
   const digits = bottom.match(/\d+/);
@@ -40,7 +39,7 @@ interface DisplayRow {
 
 interface HomeTabProps {
   countdownLabel: string;
-  changedCount: number;
+  growth: GrowthInfo;
   nickname: string;
   onEnterRoom: (topicId: string, topicTitle: string) => void;
   onEnterMyRoom: (topicId: string) => void;
@@ -55,7 +54,7 @@ interface HomeTabProps {
 
 export function HomeTab({
   countdownLabel,
-  changedCount,
+  growth,
   nickname,
   onEnterRoom,
   onEnterMyRoom,
@@ -96,7 +95,6 @@ export function HomeTab({
       dragState.current.moved = false;
     }
   }
-  const growth = getGrowth(changedCount);
   const openCount = SCHEDULE.filter((row) => !row.room.locked).length + customRooms.length;
   const topicIds = SCHEDULE.filter((row) => row.topicId).map((row) => row.topicId!);
   const seatCounts = useTopicSeatCounts(topicIds);
@@ -223,11 +221,11 @@ export function HomeTab({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 20px 0' }}>
-        {growth.stage === 'larva' ? <CaterpillarPixel /> : <ButterflyPixel width={100} height={84} />}
+        <GrowthCharacter stage={growth.stage} size="small" />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <span style={{ fontFamily: "'DotGothic16',monospace", fontSize: 15, color: '#17171a' }}>
-              {growth.tierLabel} LV.{changedCount}
+              {growth.tierLabel} LV.{growth.level}
             </span>
           </div>
           <div style={{ display: 'flex', gap: 3, marginTop: 8 }}>

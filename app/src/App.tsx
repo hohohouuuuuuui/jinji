@@ -8,6 +8,7 @@ import { NicknameGate } from './components/NicknameGate';
 import { OnboardingModal } from './components/OnboardingModal';
 import { StillmanModal } from './components/StillmanModal';
 import { LeaveConfirmModal } from './components/LeaveConfirmModal';
+import { GrowthPreviewModal } from './components/GrowthPreviewModal';
 import { CreateRoomModal } from './components/CreateRoomModal';
 import { HomeTab } from './tabs/HomeTab';
 import { SessionTab } from './tabs/SessionTab';
@@ -25,6 +26,7 @@ import { useVotes } from './lib/useVotes';
 import { ClashSpectatorTab } from './tabs/ClashSpectatorTab';
 import { SCHEDULE } from './data';
 import { useProfile } from './lib/useProfile';
+import { getGrowth } from './lib/growth';
 import { supabase } from './lib/supabase';
 import { MODERATION_TOAST } from './lib/moderation';
 import type { Msg, Tab, ToastState } from './types';
@@ -121,6 +123,7 @@ export default function App() {
 
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+  const [growthPreviewOpen, setGrowthPreviewOpen] = useState(false);
   const [stillmanOpen, setStillmanOpen] = useState(false);
   const [stillmanContext, setStillmanContext] = useState<'main' | 'spar'>('main');
   const [stillmanText, setStillmanText] = useState('');
@@ -146,6 +149,7 @@ export default function App() {
   const sparRoomApi = useRoom(nickname);
   const { changedCount, listenedCount, briefedCount, stillmanCount, bumpListened, bumpBriefed, bumpStillman } =
     useProfile(nickname);
+  const growth = getGrowth({ changedCount, listenedCount, briefedCount, stillmanCount });
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logRef = useRef<HTMLDivElement | null>(null);
@@ -653,7 +657,7 @@ export default function App() {
             {tab === 'home' && (
               <HomeTab
                 countdownLabel={fmt(countdown)}
-                changedCount={changedCount}
+                growth={growth}
                 nickname={nickname}
                 matchingTopicId={joiningTopicId}
                 matchError={phase === 'error' && errorSource === 'match' ? roomApi.error : null}
@@ -789,11 +793,13 @@ export default function App() {
 
             {tab === 'shelf' && (
               <ShelfTab
-                changedCount={changedCount}
+                growth={growth}
                 listenedCount={listenedCount}
                 briefedCount={briefedCount}
                 stillmanCount={stillmanCount}
+                changedCount={changedCount}
                 nickname={nickname}
+                onOpenGrowthPreview={() => setGrowthPreviewOpen(true)}
               />
             )}
           </div>
@@ -835,6 +841,8 @@ export default function App() {
             onCancel={() => setLeaveConfirmOpen(false)}
             onConfirm={confirmLeaveSession}
           />
+
+          <GrowthPreviewModal open={growthPreviewOpen} growth={growth} onClose={() => setGrowthPreviewOpen(false)} />
 
           <OnboardingModal
             open={showOnboarding}
