@@ -1,5 +1,5 @@
 import { GrowthCharacter } from './GrowthCharacter';
-import { upcomingTiers } from '../lib/growth';
+import { LEVEL_BANDS, type EvolutionStageKey } from '../icons/evolutionData';
 import type { GrowthInfo } from '../lib/growth';
 
 interface GrowthPreviewModalProps {
@@ -8,11 +8,14 @@ interface GrowthPreviewModalProps {
   onClose: () => void;
 }
 
-// "?" 버튼으로 여는 미리보기 — 지금 내 단계와, 앞으로 나올 단계를 최대
-// 3개까지만 보여준다(전부 다 보여주면 스포일러라서 일부러 제한).
+const ALL_LEVELS = Array.from({ length: 101 }, (_, i) => i);
+
+// "?" 버튼으로 여는 진화 도감 — 카드 한 장씩 스크롤하던 예전 방식 대신,
+// Lv.0~100 전체 101단계를 참고 이미지처럼 촘촘한 그리드로 보여준다.
+// 아직 도달 못한 레벨은 잠금(회색) 처리해서 스포일러는 피하면서도 전체
+// 여정이 한눈에 보이게 한다. 메인 화면 캐릭터와 동일한 도감 그림을 쓴다.
 export function GrowthPreviewModal({ open, growth, onClose }: GrowthPreviewModalProps) {
   if (!open) return null;
-  const upcoming = upcomingTiers(growth.level, 3);
 
   return (
     <div
@@ -23,74 +26,92 @@ export function GrowthPreviewModal({ open, growth, onClose }: GrowthPreviewModal
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 24,
+        padding: 18,
         animation: 'jz-fade .2s ease',
       }}
     >
       <div
         style={{
           background: '#fff',
-          borderRadius: 26,
-          padding: '22px 20px',
+          borderRadius: 24,
+          padding: '16px 14px',
           width: '100%',
-          maxHeight: '82%',
-          overflowY: 'auto',
+          maxHeight: '88%',
+          display: 'flex',
+          flexDirection: 'column',
           animation: 'jz-pop .3s ease',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flex: 'none', padding: '0 4px' }}>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: -0.6, color: '#17171a' }}>진지충 진화 단계</div>
-            <div style={{ fontSize: 12, color: '#78747e', marginTop: 4 }}>LV.1 ~ LV.{growth.maxLevel} · 총 4단계</div>
+            <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: -0.6, color: '#17171a' }}>진지충 진화 도감</div>
+            <div style={{ fontSize: 10.5, color: '#78747e', marginTop: 3 }}>
+              LV.{growth.level} · {growth.tierLabel} ({growth.level + 1}/101 해금)
+            </div>
           </div>
           <button
             onClick={onClose}
-            style={{ cursor: 'pointer', background: '#F3F1F5', border: 'none', width: 30, height: 30, borderRadius: '50%', fontSize: 13, color: '#4a4750' }}
+            style={{ cursor: 'pointer', background: '#F3F1F5', border: 'none', width: 26, height: 26, borderRadius: '50%', fontSize: 11, color: '#4a4750', flex: 'none' }}
           >
             ✕
           </button>
         </div>
 
-        <div style={{ marginTop: 18, background: '#F7F6F9', borderRadius: 18, padding: '16px 14px', textAlign: 'center' }}>
-          <div style={{ fontSize: 10.5, fontWeight: 700, color: '#b0568f', letterSpacing: 0.5 }}>현재</div>
-          <div style={{ marginTop: 6 }}>
-            <GrowthCharacter stage={growth.stage} size="small" />
-          </div>
-          <div style={{ marginTop: 8, fontSize: 14, fontWeight: 900, color: '#17171a' }}>
-            {growth.tierLabel} · LV.{growth.level}
-          </div>
-        </div>
-
-        <div style={{ marginTop: 18, fontSize: 12.5, fontWeight: 700, color: '#4a4750' }}>다음 단계</div>
-        {upcoming.length === 0 ? (
-          <div style={{ padding: '20px 0', textAlign: 'center', fontSize: 12.5, color: '#78747e' }}>
-            이미 가장 높은 단계예요 · 전설의 진지충
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
-            {upcoming.map((tier) => (
+        <div
+          style={{
+            marginTop: 12,
+            overflowY: 'auto',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: 5,
+          }}
+        >
+          {ALL_LEVELS.map((level) => {
+            const key = `lv${level}` as EvolutionStageKey;
+            const unlocked = growth.level >= level;
+            const isCurrent = level === growth.level;
+            const band = LEVEL_BANDS[key];
+            return (
               <div
-                key={tier.stage}
+                key={level}
                 style={{
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 14,
-                  background: '#F3F1F5',
-                  borderRadius: 16,
-                  padding: '12px 14px',
+                  background: isCurrent ? '#FBE9AE' : band.bg,
+                  borderRadius: 10,
+                  padding: '5px 2px 4px',
+                  border: isCurrent ? '1.5px solid #E3A93A' : '1px solid transparent',
+                  opacity: unlocked ? 1 : 0.4,
+                  filter: unlocked ? 'none' : 'grayscale(85%)',
                 }}
               >
-                <div style={{ flex: 'none', width: 56, display: 'flex', justifyContent: 'center', opacity: 0.55, filter: 'grayscale(40%)' }}>
-                  <GrowthCharacter stage={tier.stage} size="small" />
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, color: '#17171a' }}>{tier.label}</div>
-                  <div style={{ fontSize: 11, color: '#78747e', marginTop: 2 }}>LV.{tier.minLevel}부터</div>
+                <span
+                  style={{
+                    fontFamily: "'Space Mono',monospace",
+                    fontSize: 7.5,
+                    fontWeight: 700,
+                    padding: '1px 5px',
+                    borderRadius: 999,
+                    color: isCurrent ? '#7a5a12' : '#fff',
+                    background: isCurrent ? 'transparent' : band.color,
+                  }}
+                >
+                  Lv.{level}
+                </span>
+                <div style={{ marginTop: 2 }}>
+                  {unlocked ? (
+                    <GrowthCharacter stage={key} size="tiny" />
+                  ) : (
+                    <div style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>
+                      🔒
+                    </div>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

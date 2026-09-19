@@ -104,8 +104,8 @@ export function ShelfTab({ growth, changedCount, listenedCount, briefedCount, st
                   fontWeight: 700,
                   padding: '6px 13px',
                   borderRadius: 999,
-                  background: badge.includes('각성') ? '#FBE9AE' : '#fff',
-                  color: badge.includes('각성') ? '#63510f' : '#8d3f70',
+                  background: badge.includes('🔥') ? '#FBE9AE' : '#fff',
+                  color: badge.includes('🔥') ? '#63510f' : '#8d3f70',
                 }}
               >
                 {badge}

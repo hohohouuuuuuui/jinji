@@ -1,4 +1,6 @@
-export type GrowthStage = 'larva' | 'butterfly' | 'butterfly_super' | 'butterfly_legend';
+import { EVOLUTION_TIERS, type EvolutionStageKey } from '../icons/evolutionData';
+
+export type GrowthStage = EvolutionStageKey;
 
 export interface ProfileCounts {
   changedCount: number;
@@ -11,7 +13,6 @@ export interface Tier {
   minLevel: number;
   stage: GrowthStage;
   label: string;
-  badges: string[];
 }
 
 export interface GrowthInfo {
@@ -29,8 +30,7 @@ const MAX_LEVEL = 100;
 // 레벨당 필요한 경험치 — "생각이 바뀜"(가장 어렵고, 상대가 동의해야만
 // 오르는 지표)을 가장 무겁게, 스틸맨(AI 판정 통과)을 그 다음으로, 끝까지
 // 듣기·브리핑 완독은 매 세션마다 자연히 쌓이니 가볍게 쳐서 경험치(XP)로
-// 환산한다. 예전엔 "생각이 바뀜" 누적 횟수를 그대로 LV로 보여줘서 보통
-// 한 자리수를 못 넘었는데, 이제 여러 활동을 합쳐 레벨 100까지 설계한다.
+// 환산한다.
 const XP_WEIGHTS = { changed: 25, stillman: 12, briefed: 4, listened: 2 } as const;
 const XP_PER_LEVEL = 40;
 
@@ -47,13 +47,15 @@ function levelFromXp(xp: number): number {
   return Math.min(MAX_LEVEL, Math.floor(xp / XP_PER_LEVEL) + 1);
 }
 
-// 진화 4단계 — 레벨 구간마다 다른 모습으로 보인다(분기 없이 하나의
-// 정해진 순서). 레벨 1~100 구간에 고르게 걸쳐 있다.
-export const TIERS: Tier[] = [
-  { minLevel: 1, stage: 'larva', label: '성장 애벌레', badges: [] },
-  { minLevel: 25, stage: 'butterfly', label: '성충 논객', badges: ['철학 날개', '기술 날개'] },
-  { minLevel: 55, stage: 'butterfly_super', label: '초성충', badges: ['철학 날개', '기술 날개', '초월의 뿔'] },
-  { minLevel: 85, stage: 'butterfly_legend', label: '전설의 진지충', badges: ['철학 날개', '기술 날개', '초월의 뿔', '🔥 각성'] },
+// 진화 도감 — 5레벨마다 한 단계씩, 총 21단계(Lv.1~100). 분기 없이 하나의
+// 정해진 순서로 쭉 이어진다.
+export const TIERS: Tier[] = EVOLUTION_TIERS;
+
+const MILESTONE_BADGES = [
+  { minLevel: 25, label: '지식인 배지' },
+  { minLevel: 50, label: '우주인 배지' },
+  { minLevel: 75, label: '마법사 배지' },
+  { minLevel: 100, label: '🔥 뇌절 끝판왕' },
 ];
 
 export function tierForLevel(level: number): Tier {
@@ -77,17 +79,19 @@ export function getGrowth(counts: ProfileCounts): GrowthInfo {
   return {
     level,
     maxLevel: MAX_LEVEL,
-    stage: tier.stage,
+    // 메인 화면·참가기록 캐릭터는 5단계 단위가 아니라 "지금 레벨" 그
+    // 자체의 도감 그림을 쓴다 — 레벨이 오를 때마다 매번 조금씩 달라진다.
+    stage: `lv${level}` as GrowthStage,
     tierLabel: tier.label,
     subLabel,
-    badges: tier.badges,
+    badges: MILESTONE_BADGES.filter((b) => level >= b.minLevel).map((b) => b.label),
     dotsFilled: level >= MAX_LEVEL ? 4 : Math.min(4, Math.floor((xpIntoLevel / XP_PER_LEVEL) * 4)),
     dotsTotal: 4,
   };
 }
 
-// "?" 미리보기 버튼용: 지금 단계 기준으로 앞으로 나올 다음 단계를 최대
-// `max`개까지만 보여준다(한꺼번에 다 보여주면 스포일러라서 일부러 제한).
+// "?" 도감 버튼용: 전체 21단계를 한 화면에 그리드로 보여주고, 아직
+// 도달하지 못한 단계는 잠금 처리한다.
 export function upcomingTiers(level: number, max = 3): Tier[] {
   return TIERS.filter((t) => t.minLevel > level).slice(0, max);
 }
