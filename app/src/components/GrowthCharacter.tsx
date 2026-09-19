@@ -27,7 +27,7 @@ export function GrowthCharacter({ stage, size = 'large' }: GrowthCharacterProps)
       alt={`레벨 ${level} 캐릭터`}
       width={px}
       height={px}
-      style={{ display: 'block', objectFit: 'contain', imageRendering: 'pixelated' }}
+      style={{ display: 'inline-block', objectFit: 'contain', imageRendering: 'pixelated' }}
     />
   );
 }
