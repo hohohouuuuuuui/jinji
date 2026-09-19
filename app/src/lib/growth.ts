@@ -1,4 +1,4 @@
-import { EVOLUTION_TIERS, type EvolutionStageKey } from '../icons/evolutionData';
+import { EVOLUTION_TIERS } from '../icons/evolutionData';
 
 // 캐릭터 그림은 5단계 이름표(EvolutionStageKey)보다 촘촘하게, 레벨 0~100
 // 하나하나마다 다른 이미지를 쓴다 (characterImages.ts가 처리).
