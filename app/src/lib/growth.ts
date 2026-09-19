@@ -1,6 +1,8 @@
 import { EVOLUTION_TIERS, type EvolutionStageKey } from '../icons/evolutionData';
 
-export type GrowthStage = EvolutionStageKey;
+// 캐릭터 그림은 5단계 이름표(EvolutionStageKey)보다 촘촘하게, 레벨 0~100
+// 하나하나마다 다른 이미지를 쓴다 (characterImages.ts가 처리).
+export type GrowthStage = `lv${number}`;
 
 export interface ProfileCounts {
   changedCount: number;
@@ -88,10 +90,4 @@ export function getGrowth(counts: ProfileCounts): GrowthInfo {
     dotsFilled: level >= MAX_LEVEL ? 4 : Math.min(4, Math.floor((xpIntoLevel / XP_PER_LEVEL) * 4)),
     dotsTotal: 4,
   };
-}
-
-// "?" 도감 버튼용: 전체 21단계를 한 화면에 그리드로 보여주고, 아직
-// 도달하지 못한 단계는 잠금 처리한다.
-export function upcomingTiers(level: number, max = 3): Tier[] {
-  return TIERS.filter((t) => t.minLevel > level).slice(0, max);
 }

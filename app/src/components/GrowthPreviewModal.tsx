@@ -1,5 +1,4 @@
-import { GrowthCharacter } from './GrowthCharacter';
-import { LEVEL_BANDS, type EvolutionStageKey } from '../icons/evolutionData';
+import { imageForLevel } from '../lib/characterImages';
 import type { GrowthInfo } from '../lib/growth';
 
 interface GrowthPreviewModalProps {
@@ -10,10 +9,9 @@ interface GrowthPreviewModalProps {
 
 const ALL_LEVELS = Array.from({ length: 101 }, (_, i) => i);
 
-// "?" 버튼으로 여는 진화 도감 — 카드 한 장씩 스크롤하던 예전 방식 대신,
-// Lv.0~100 전체 101단계를 참고 이미지처럼 촘촘한 그리드로 보여준다.
-// 아직 도달 못한 레벨은 잠금(회색) 처리해서 스포일러는 피하면서도 전체
-// 여정이 한눈에 보이게 한다. 메인 화면 캐릭터와 동일한 도감 그림을 쓴다.
+// "?" 버튼으로 여는 진화 도감 — Lv.0~100 전체 101단계를 한 화면에
+// 그리드로 보여준다. 잠금 없이 전부 다 보이고, 이미 지난 레벨은 연한
+// 보라, 지금 레벨은 연한 노랑, 아직 안 깬 레벨은 회색 배경으로 구분한다.
 export function GrowthPreviewModal({ open, growth, onClose }: GrowthPreviewModalProps) {
   if (!open) return null;
 
@@ -46,7 +44,7 @@ export function GrowthPreviewModal({ open, growth, onClose }: GrowthPreviewModal
           <div>
             <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: -0.6, color: '#17171a' }}>진지충 진화 도감</div>
             <div style={{ fontSize: 10.5, color: '#78747e', marginTop: 3 }}>
-              LV.{growth.level} · {growth.tierLabel} ({growth.level + 1}/101 해금)
+              LV.{growth.level} · {growth.tierLabel}
             </div>
           </div>
           <button
@@ -57,9 +55,21 @@ export function GrowthPreviewModal({ open, growth, onClose }: GrowthPreviewModal
           </button>
         </div>
 
+        <div style={{ display: 'flex', gap: 10, marginTop: 10, padding: '0 4px', fontSize: 9.5, fontWeight: 700, color: '#4a4750' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ width: 9, height: 9, borderRadius: 3, background: '#E4D8FA' }} /> 지난 레벨
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ width: 9, height: 9, borderRadius: 3, background: '#FBE9AE' }} /> 지금 레벨
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ width: 9, height: 9, borderRadius: 3, background: '#E2E2E6' }} /> 아직 안 깬 레벨
+          </span>
+        </div>
+
         <div
           style={{
-            marginTop: 12,
+            marginTop: 10,
             overflowY: 'auto',
             display: 'grid',
             gridTemplateColumns: 'repeat(5, 1fr)',
@@ -67,10 +77,9 @@ export function GrowthPreviewModal({ open, growth, onClose }: GrowthPreviewModal
           }}
         >
           {ALL_LEVELS.map((level) => {
-            const key = `lv${level}` as EvolutionStageKey;
-            const unlocked = growth.level >= level;
             const isCurrent = level === growth.level;
-            const band = LEVEL_BANDS[key];
+            const isPast = level < growth.level;
+            const bg = isCurrent ? '#FBE9AE' : isPast ? '#E4D8FA' : '#E2E2E6';
             return (
               <div
                 key={level}
@@ -78,12 +87,10 @@ export function GrowthPreviewModal({ open, growth, onClose }: GrowthPreviewModal
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  background: isCurrent ? '#FBE9AE' : band.bg,
+                  background: bg,
                   borderRadius: 10,
                   padding: '5px 2px 4px',
                   border: isCurrent ? '1.5px solid #E3A93A' : '1px solid transparent',
-                  opacity: unlocked ? 1 : 0.4,
-                  filter: unlocked ? 'none' : 'grayscale(85%)',
                 }}
               >
                 <span
@@ -91,23 +98,18 @@ export function GrowthPreviewModal({ open, growth, onClose }: GrowthPreviewModal
                     fontFamily: "'Space Mono',monospace",
                     fontSize: 7.5,
                     fontWeight: 700,
-                    padding: '1px 5px',
-                    borderRadius: 999,
-                    color: isCurrent ? '#7a5a12' : '#fff',
-                    background: isCurrent ? 'transparent' : band.color,
+                    color: isCurrent ? '#7a5a12' : isPast ? '#5a4a8f' : '#6f6f78',
                   }}
                 >
                   Lv.{level}
                 </span>
-                <div style={{ marginTop: 2 }}>
-                  {unlocked ? (
-                    <GrowthCharacter stage={key} size="tiny" />
-                  ) : (
-                    <div style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>
-                      🔒
-                    </div>
-                  )}
-                </div>
+                <img
+                  src={imageForLevel(level)}
+                  alt={`레벨 ${level} 캐릭터`}
+                  width={44}
+                  height={44}
+                  style={{ display: 'block', marginTop: 2, objectFit: 'contain', imageRendering: 'pixelated' }}
+                />
               </div>
             );
           })}
