@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch",
+      "Bash(python3 tools/fin_model.py:*)",
+      "Bash(mkdir -p outputs/:*)",
+      "Write(outputs/**)",
+      "Edit(outputs/**)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
+    ]
+  }
+}

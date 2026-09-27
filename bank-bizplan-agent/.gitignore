@@ -1,0 +1,9 @@
+# 내부 자료와 산출물은 커밋하지 않는다
+inputs/*
+!inputs/.gitkeep
+outputs/*
+!outputs/.gitkeep
+.env
+.env.*
+__pycache__/
+.claude/settings.local.json
